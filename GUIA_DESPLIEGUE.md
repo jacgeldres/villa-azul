@@ -285,3 +285,4 @@ Las fotos de las boletas se guardan en la misma base de datos: no hay que config
 
 Excursiones ya se puede usar con clientes reales. Registrar, Caja y Cuentas siguen siendo de prueba: la caja diaria se sigue cerrando en la app actual hasta la fase 3.
 Lo que se registre aquí durante las pruebas se limpia antes del corte definitivo.
+ 
