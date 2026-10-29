@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0B1B33">
+<title>Elige tu asiento · Villa Azul</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4EF; --surface:#FFFFFF; --ink:#1D2B3A; --muted:#566476; --line:#D3DAD1;
+  --free:#1E4FD1; --free-bg:#E4F0EB; --taken:#DCE1E6; --taken-ink:#3F4D5C; --hold:#F6E7C4; --hold-ink:#6B4E0E;
+  --pick:#E8B23A; --pick-ink:#3A2A00; --van:#FFFFFF; --van-line:#1D2B3A; --danger:#B3402B;
+  --display:"Plus Jakarta Sans",system-ui,sans-serif;
+  --body:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light; box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131A21; --surface:#1B242E; --ink:#E8EEF2; --muted:#9DABB8; --line:#2D3946;
+    --free:#7DA2FF; --free-bg:#1D3934; --taken:#2B3540; --taken-ink:#C3CDD6; --hold:#3D3420; --hold-ink:#F0D58E;
+    --pick:#F0C14E; --pick-ink:#2A1E00; --van:#17202A; --van-line:#9DABB8; --danger:#E5826B; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131A21; --surface:#1B242E; --ink:#E8EEF2; --muted:#9DABB8; --line:#2D3946;
+  --free:#7DA2FF; --free-bg:#1D3934; --taken:#2B3540; --taken-ink:#C3CDD6; --hold:#3D3420; --hold-ink:#F0D58E;
+  --pick:#F0C14E; --pick-ink:#2A1E00; --van:#17202A; --van-line:#9DABB8; --danger:#E5826B; color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.5 var(--body);-webkit-text-size-adjust:100%}
+main{max-width:560px;margin:0 auto;padding:28px 20px 130px}
+h1,h2{font-family:var(--display);line-height:1.02;margin:0}
+h1{font-size:clamp(32px,9vw,52px);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+h2{font-size:26px;font-weight:800;margin-bottom:10px}
+p{margin:0}
+.marca{font-weight:700;color:var(--free);margin-bottom:10px;font-size:15px}
+.ruta{margin-top:14px;font-size:19px;font-weight:700}
+.via{color:var(--muted);font-size:15px}
+.fechas{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin-top:10px;color:var(--muted)}
+.fechas b{color:var(--ink)}
+.precio{margin-top:14px;font-size:18px}
+.precio strong{font-family:var(--display);font-size:30px}
+.conteo{margin:26px 0 6px;font-size:18px}
+.conteo strong{font-family:var(--display);font-size:44px;font-weight:800;color:var(--free);margin-right:6px;vertical-align:-4px}
+.pasos{margin:14px 0 0;padding-left:22px;color:var(--muted)}
+.pasos li{margin:3px 0}
+.cerrado{margin-top:22px;padding:16px;border-radius:14px;background:var(--surface);border:2px solid var(--danger);font-weight:700}
+/* ═══ Toyota Hiace: foto interactiva + esquema, como el modelo ═══ */
+.hiace{position:relative;left:50%;transform:translateX(-50%);width:min(1000px,calc(100vw - 24px));margin:28px 0 8px;padding:14px;border-radius:24px;
+  background:linear-gradient(135deg,#ECEEEE 0%,#D6DADA 100%);color:#1E2427;display:grid;gap:16px;
+  grid-template-areas:"titulo" "foto" "esquema"}
+@media (min-width:760px){.hiace{grid-template-columns:1.5fr 1fr;grid-template-rows:auto 1fr;grid-template-areas:"foto titulo" "foto esquema";padding:18px;column-gap:26px}}
+.hiace .titulo{grid-area:titulo;text-align:center;align-self:end}
+.hiace .titulo b{display:block;font-family:var(--display);font-size:28px;font-weight:800;letter-spacing:.01em;text-transform:uppercase;color:#1E2427}
+.hiace .titulo span{font-size:16px;color:#3D4549}
+/* La foto: cada asiento es un botón encima del respaldo */
+.foto{grid-area:foto;align-self:start;aspect-ratio:652/683;position:relative;container-type:inline-size;border-radius:16px;overflow:hidden;background:#15191C;box-shadow:0 10px 26px rgba(0,0,0,.22)}
+.foto img{display:block;width:100%;height:100%;object-fit:cover}
+.ho{position:absolute;padding:0;margin:0;border:none;background:transparent;border-radius:14%/12%;cursor:pointer;font:inherit;transition:box-shadow .2s ease,background-color .2s ease}
+.ho .num{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:20%;font-family:var(--body);font-weight:700;
+  font-size:15px;font-size:3.6cqw;line-height:1;pointer-events:none;transition:background-color .2s ease,box-shadow .2s ease}
+.ho.libre .num{background:rgba(8,22,19,.94);border:1.5px solid #74F0C6;color:#A0F6D8;box-shadow:0 0 10px rgba(116,240,198,.55),inset 0 0 8px rgba(116,240,198,.18)}
+.ho.libre:hover .num{box-shadow:0 0 18px rgba(116,240,198,.95),inset 0 0 10px rgba(116,240,198,.3)}
+.ho.reservado,.ho.off{cursor:default;box-shadow:inset 0 -8px 14px rgba(0,0,0,.18),0 3px 8px rgba(0,0,0,.4);
+  background:linear-gradient(to top right,transparent calc(50% - 1.5px),rgba(110,116,120,.75) 50%,transparent calc(50% + 1.5px)),
+             linear-gradient(to top left,transparent calc(50% - 1.5px),rgba(110,116,120,.75) 50%,transparent calc(50% + 1.5px)),
+             linear-gradient(160deg,#DDE0E1 0%,#BEC3C5 100%)}
+.ho.reservado .num,.ho.off .num{color:#5E666A;font-size:17px;font-size:4cqw}
+.ho.off{opacity:.7}
+.ho.elegido{background:rgba(242,181,58,.12);box-shadow:0 0 0 2px rgba(242,181,58,.95),0 0 30px 6px rgba(242,181,58,.55)}
+.ho.elegido .num{background:#F2B53A;border:1.5px solid #FFD98A;color:#2A1E00;box-shadow:0 0 16px rgba(242,181,58,.85);animation:elegir .22s ease}
+.ho:focus-visible{outline:3px solid #F2B53A;outline-offset:2px}
+/* El esquema (tablet) */
+.esquema{grid-area:esquema;display:flex;flex-direction:column;align-items:center}
+.tablet{position:relative;width:100%;max-width:300px;padding:46px 16px 20px;border-radius:26px;background:linear-gradient(180deg,#F8F9F9,#EDEFEF);
+  border:1.5px solid #C9CED0;box-shadow:0 12px 26px rgba(0,0,0,.13),inset 0 0 0 5px rgba(255,255,255,.65)}
+.tablet .muesca{position:absolute;top:-1.5px;left:50%;transform:translateX(-50%);width:128px;height:26px;background:#E2E5E6;border:1.5px solid #C9CED0;border-top:none;
+  border-radius:0 0 16px 16px;font-size:12px;color:#454D52;display:flex;align-items:center;justify-content:center}
+.grilla{display:grid;grid-template-columns:repeat(4,1fr);gap:10px 8px}
+.fila-sep{grid-column:1/-1;height:8px}
+.celda{aspect-ratio:1/1.12;min-width:0}
+.st{width:100%;height:100%;border-radius:10px;font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;padding:2px;transition:background-color .2s ease,box-shadow .2s ease}
+.st .n{font-size:20px;font-weight:700;line-height:1}
+.st .q{font-size:10px;line-height:1.1;white-space:nowrap}
+.st.libre{background:#EAF7F1;border:1.5px solid #8FE0C3;color:#2E7D63;box-shadow:0 0 9px rgba(110,220,180,.5)}
+.st.libre:hover{box-shadow:0 0 14px rgba(110,220,180,.85)}
+.st.reservado{background:#8B9094;border:1.5px solid #8B9094;color:#F3F5F6;cursor:default}
+.st.off{background:transparent;border:1.5px dashed #A9AFB2;color:#848B8F;cursor:default}
+.st.elegido{background:#E9AA2B;border:1.5px solid #E9AA2B;color:#2A1E00;box-shadow:0 0 12px rgba(233,170,43,.55);animation:elegir .22s ease}
+.st.elegido .q{font-size:8.5px}
+.st:focus-visible{outline:3px solid #E9AA2B;outline-offset:2px}
+.cond{width:100%;height:100%;border-radius:10px;background:#E5E8E9;border:1px solid #CDD2D4;color:#2E3538;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:10px}
+.cond svg{width:22px;height:22px}
+.puerta-e{position:relative;display:flex;align-items:center;justify-content:flex-end;gap:3px;font-size:11px;font-weight:700;color:#3D4549}
+.puerta-e::after{content:"";position:absolute;right:-12px;top:-4px;bottom:-4px;border-right:2px dashed #9AA1A4}
+.leyenda-h{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin-top:18px;font-size:14px;color:#2E3538}
+.leyenda-h i{display:inline-block;width:15px;height:15px;border-radius:4px;vertical-align:-3px;margin-right:6px}
+.leyenda-h .l1{background:#EAF7F1;border:1.5px solid #8FE0C3;box-shadow:0 0 5px rgba(110,220,180,.6)}
+.leyenda-h .l2{background:#8B9094}
+.leyenda-h .l3{background:#E9AA2B}
+@keyframes elegir{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.ho,.ho .num,.st{transition:none}.ho.elegido .num,.st.elegido{animation:none}}
+
+dialog{border:none;padding:0;margin:auto auto 0;width:min(100%,520px);max-height:92vh;border-radius:22px 22px 0 0;background:var(--surface);color:var(--ink);box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+dialog::backdrop{background:rgba(15,22,30,.55)}
+.hoja{padding:24px 22px calc(24px + env(safe-area-inset-bottom,0px))}
+.hoja .desc{color:var(--muted);margin-bottom:8px}
+.bloque{border-top:1px solid var(--line);padding-top:6px;margin-top:16px}
+.bloque h3{font-family:var(--display);font-size:20px;margin:6px 0 0}
+.bloque h3 small{font-family:var(--body);font-size:14px;font-weight:400;color:var(--muted)}
+label{display:block;font-weight:700;margin:12px 0 6px}
+label small{font-weight:400;color:var(--muted)}
+input{width:100%;font:inherit;font-size:18px;padding:12px 14px;border-radius:12px;border:2px solid var(--line);background:var(--bg);color:var(--ink)}
+.trampa{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+.error{color:var(--danger);font-weight:700;margin-top:12px;min-height:1.5em}
+.acciones{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.btn{display:block;width:100%;text-align:center;font:700 18px/1.2 var(--body);padding:15px 18px;border-radius:14px;border:2px solid transparent;cursor:pointer;text-decoration:none}
+.btn.primario{background:var(--free);color:var(--surface)}
+.btn.secundario{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn[disabled]{opacity:.55;cursor:default}
+.nota{font-size:14px;color:var(--muted);margin-top:12px}
+.barra{position:fixed;left:0;right:0;bottom:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);display:flex;align-items:center;gap:12px;justify-content:space-between;z-index:5}
+.barra .btn{width:auto;padding:12px 18px;background:var(--pick);color:var(--pick-ink)}
+.pago{margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.pago h3{font-family:var(--display);font-size:20px;margin:0 0 4px}
+.chipe{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:700;background:var(--taken);color:var(--taken-ink)}
+.chipe.ok{background:var(--free-bg);color:var(--free)} .chipe.pend{background:var(--hold);color:var(--hold-ink)} .chipe.mal{background:#F7E3DE;color:var(--danger)}
+.previa{max-width:100%;max-height:220px;border-radius:12px;margin-top:8px;display:block}
+.listo{margin-top:22px;padding:22px;border-radius:18px;background:var(--surface);border:3px solid var(--free)}
+.listo h2{color:var(--free)}
+.listo .codigo{font-family:var(--display);font-size:34px;font-weight:800;letter-spacing:.06em}
+.listo dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:12px 0 0}
+.listo dt{color:var(--muted)}.listo dd{margin:0;font-weight:700}
+.aviso{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:12px;font-weight:700;max-width:90vw;z-index:6}
+.cargando{padding:60px 0;text-align:center;color:var(--muted)}
+
+html,body{overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+</style>
+</head>
+<body>
+<main id="root"><p class="cargando">Cargando el viaje…</p></main>
+<dialog id="sheet"></dialog>
+<script>
+(function(){
+  var SEATS = {
+    1:'Adelante, junto al conductor', 2:'Adelante, ventana',
+    3:'Fila 2, ventana', 4:'Fila 2, centro', 5:'Fila 2, pasillo',
+    6:'Fila 3, ventana', 7:'Fila 3, pasillo', 8:'Fila 3, ventana junto a la puerta',
+    9:'Fila 4, ventana', 10:'Fila 4, pasillo', 11:'Fila 4, ventana (detrás del 8)',
+    12:'Última fila, ventana', 13:'Última fila, centro', 14:'Última fila, centro', 15:'Última fila, ventana (detrás del 11)'
+  };
+  var PLANO = [['conductor','vacio',1,2],'sep',[3,4,5,'puerta'],[6,7,'pasillo',8],[9,10,'pasillo',11],[12,13,14,15]];
+  var MAX = 6;
+  var codigo = (new URLSearchParams(location.search).get('e') || '').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var V = null, elegidos = [], hecho = null, ocupado = false, pintado = null;
+  var root = document.getElementById('root'), sheet = document.getElementById('sheet');
+
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function soles(n){return 'S/ '+Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function fecha(s){
+    if(!s) return 'Por confirmar';
+    var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if(!m) return s;
+    var d = new Date(+m[1], m[2]-1, +m[3], +(m[4]||0), +(m[5]||0));
+    var t = d.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'});
+    if(m[4]) t += ', ' + d.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'});
+    return t.charAt(0).toUpperCase()+t.slice(1);
+  }
+  function horaLima(iso){
+    return new Date(iso).toLocaleString('es-PE',{timeZone:'America/Lima',weekday:'long',day:'numeric',month:'long',hour:'numeric',minute:'2-digit'});
+  }
+  function aviso(t){var a=document.createElement('div');a.className='aviso';a.setAttribute('role','status');a.textContent=t;document.body.appendChild(a);setTimeout(function(){a.remove();},3600);}
+  function api(body){
+    var get = body.action==='exc.publica';
+    return fetch(get ? '/api/publico/excursion/'+encodeURIComponent(body.codigo) : '/api/publico/reservar',
+      get ? {cache:'no-store'} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json();});
+  }
+
+  var VOLANTE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.5"/><path d="M3.5 10.5h6M14.5 10.5h6M12 14.5V21"/></svg>';
+
+  function estadoAsiento(n){
+    if(n > V.asientos_total || V.bloqueados.indexOf(n) >= 0) return 'off';
+    var o = V.ocupados[n]; if(o) return o.estado === 'reservado' ? 'hold' : 'taken';
+    return elegidos.indexOf(n) >= 0 ? 'pick' : 'free';
+  }
+  function libres(){var c=0;for(var i=1;i<=V.asientos_total;i++){if(estadoAsiento(i)==='free'||estadoAsiento(i)==='pick')c++;}return c;}
+
+  /* Respaldo de cada asiento en la foto (px de la imagen 652×683): x0,y0,x1,y1, centro del número, tamaño del recuadro */
+  var FW=652, FH=683, FOTO={
+    1:[343,125,410,198,377,152,44], 2:[422,125,490,198,455,152,44],
+    3:[150,215,236,293,192,245,44], 4:[247,215,330,293,286,245,44], 5:[340,215,422,293,380,245,44],
+    6:[98,306,205,390,151,348,48], 7:[223,306,333,390,278,348,48], 8:[465,306,565,392,515,350,48],
+    9:[65,420,182,522,123,467,50], 10:[215,420,330,522,271,467,50], 11:[465,420,585,522,526,467,50],
+    12:[65,546,195,630,130,590,52], 13:[205,546,330,630,267,590,52], 14:[342,546,468,630,405,590,52], 15:[478,546,586,630,522,592,52]
+  };
+  function vis(n){ var e = estadoAsiento(n); return e==='free'?'libre':e==='pick'?'elegido':e==='off'?'off':'reservado'; }
+  function txtVis(v){ return {libre:'libre',elegido:'tu elección',reservado:'reservado',off:'no disponible'}[v]; }
+
+  function botonFoto(n){
+    var f = FOTO[n], w = f[2]-f[0], h = f[3]-f[1], pc = function(x){ return (Math.round(x*1000)/1000)+'%'; };
+    var st = 'left:'+pc(f[0]/FW*100)+';top:'+pc(f[1]/FH*100)+';width:'+pc(w/FW*100)+';height:'+pc(h/FH*100);
+    var ns = 'left:'+pc((f[4]-f[6]/2-f[0])/w*100)+';top:'+pc((f[5]-f[6]/2-f[1])/h*100)+';width:'+pc(f[6]/w*100)+';height:'+pc(f[6]/h*100);
+    return '<button type="button" class="ho" data-seat="'+n+'" style="'+st+'"><span class="num" style="'+ns+'">'+n+'</span></button>';
+  }
+  function celda(c){
+    if(c==='conductor') return '<div class="celda"><div class="cond">'+VOLANTE+'Conductor</div></div>';
+    if(c==='vacio'||c==='pasillo') return '<div class="celda" aria-hidden="true"></div>';
+    if(c==='puerta') return '<div class="celda puerta-e">Puerta ▸</div>';
+    return '<div class="celda"><button type="button" class="st" data-seat="'+c+'"><span class="n">'+c+'</span><span class="q"></span></button></div>';
+  }
+
+  /* Pinta el estado de los 15 asientos en la foto y en el esquema a la vez, sin rehacer la página. */
+  function refrescarMapa(){
+    for(var n=1;n<=15;n++){
+      var v = vis(n), bloqueado = (v==='reservado'||v==='off'||!V.abierta);
+      root.querySelectorAll('[data-seat="'+n+'"]').forEach(function(b){
+        b.className = (b.classList.contains('ho')?'ho ':'st ') + v;
+        b.disabled = bloqueado;
+        b.setAttribute('aria-pressed', v==='elegido');
+        b.setAttribute('aria-label','Asiento '+n+', '+SEATS[n]+', '+txtVis(v));
+        var q = b.querySelector('.q'); if(q) q.textContent = v==='libre'?'Libre':v==='elegido'?'(Tu elección)':'';
+      });
+    }
+    var c = document.getElementById('conteo'), k = libres();
+    if(c) c.innerHTML = k>0 ? '<strong>'+k+'</strong>'+(k===1?'asiento libre':'asientos libres') : '<strong>0</strong>La van está completa';
+    barra();
+  }
+
+  function render(){
+    if(!V) return;
+    var h = '<header><p class="marca">Villa Azul · Turismo &amp; Excursiones</p><h1>'+esc(V.titulo)+'</h1>';
+    h += '<p class="ruta">'+esc(V.origen)+' ⇄ '+esc(V.destino)+'</p>';
+    if(V.via) h += '<p class="via">Vía '+esc(V.via)+'</p>';
+    h += '<div class="fechas"><b>Salida</b><span>'+esc(fecha(V.salida))+'</span>'+(V.retorno?'<b>Retorno</b><span>'+esc(fecha(V.retorno))+'</span>':'')+'</div>';
+    if(V.precio_asiento) h += '<p class="precio"><strong>'+soles(V.precio_asiento)+'</strong> por asiento</p>';
+    h += '</header>';
+
+    if(hecho){ h += confirmacion(); root.innerHTML = h; enlazarListo(); barra(); return; }
+
+    h += '<p class="conteo" id="conteo"></p>';
+    if(!V.abierta) h += '<p class="cerrado">'+esc(V.motivo_cierre)+'</p>';
+    else h += '<ol class="pasos"><li>Toca uno o más asientos libres, en la foto o en el esquema (hasta '+MAX+').</li><li>Escribe nombre completo y DNI de cada pasajero.</li><li>Tu reserva llega al instante a Villa Azul.</li></ol>';
+
+    h += '<figure class="hiace" aria-label="Distribución de asientos de la Toyota Hiace">';
+    h += '<figcaption class="titulo"><b>Toyota Hiace</b><span>Distribución de asientos</span></figcaption>';
+    h += '<div class="foto"><img src="/hiace-interior.jpg" width="652" height="683" alt="Interior de la van vista desde atrás, con los 15 asientos numerados">';
+    for(var n=1;n<=15;n++) h += botonFoto(n);
+    h += '</div><div class="esquema"><div class="tablet"><span class="muesca">Adelante</span><div class="grilla">';
+    PLANO.forEach(function(f){ if(f==='sep'){h+='<div class="fila-sep"></div>';return;} f.forEach(function(c){h+=celda(c);}); });
+    h += '</div></div><div class="leyenda-h"><span><i class="l1"></i>Libre</span><span><i class="l2"></i>Reservado</span><span><i class="l3"></i>Tu elección</span></div></div></figure>';
+    root.innerHTML = h;
+    root.querySelectorAll('[data-seat]').forEach(function(b){ b.onclick = function(){ if(!b.disabled) alternar(+b.dataset.seat); }; });
+    pintado = V.abierta;
+    refrescarMapa();
+  }
+
+  function alternar(n){
+    var i = elegidos.indexOf(n);
+    if(i >= 0) elegidos.splice(i,1);
+    else { if(elegidos.length >= MAX){ aviso('Puedes elegir hasta '+MAX+' asientos por reserva.'); return; } elegidos.push(n); }
+    elegidos.sort(function(a,b){return a-b;});
+    refrescarMapa();
+  }
+
+  function barra(){
+    var b = document.getElementById('barra');
+    if(!elegidos.length || hecho){ if(b) b.remove(); return; }
+    if(!b){ b = document.createElement('div'); b.id='barra'; b.className='barra'; document.body.appendChild(b); }
+    var txt = elegidos.length===1 ? 'Asiento '+elegidos[0] : 'Asientos '+elegidos.join(', ');
+    if(V.precio_asiento) txt += ' · '+soles(V.precio_asiento*elegidos.length);
+    b.innerHTML = '<span>'+esc(txt)+'</span><button type="button" class="btn" id="continuar">Continuar</button>';
+    document.getElementById('continuar').onclick = formulario;
+  }
+
+  function formulario(){
+    var h = '<form class="hoja" id="f" novalidate><h2>Datos de los pasajeros</h2><p class="desc">Se piden para el control en carretera. En el mapa solo se verá el nombre y la inicial del apellido.</p>';
+    elegidos.forEach(function(n){
+      h += '<div class="bloque"><h3>Asiento '+n+' <small>'+esc(SEATS[n])+'</small></h3>';
+      h += '<label for="nom-'+n+'">Nombre completo</label><input id="nom-'+n+'" autocomplete="'+(n===elegidos[0]?'name':'off')+'" placeholder="Ej.: María Rodríguez Pérez" required>';
+      h += '<label for="dni-'+n+'">DNI <small>(8 números)</small></label><input id="dni-'+n+'" inputmode="numeric" maxlength="8" autocomplete="off" required></div>';
+    });
+    h += '<div class="bloque"><label for="cel">Celular de contacto <small>(para avisarte de tu reserva)</small></label><input id="cel" inputmode="tel" autocomplete="tel" placeholder="9XX XXX XXX" required>';
+    h += '<input class="trampa" id="web" tabindex="-1" autocomplete="off" aria-hidden="true"></div>';
+    h += '<p class="error" id="err" role="alert"></p><div class="acciones"><button type="submit" class="btn primario" id="enviar">Reservar '+(elegidos.length===1?'mi asiento':elegidos.length+' asientos')+'</button><button type="button" class="btn secundario" id="cerrar">Volver al mapa</button></div>';
+    if(V.vence_horas>0 && V.precio_asiento) h += '<p class="nota">La reserva se guarda '+V.vence_horas+' h. Si en ese plazo no se registra tu pago, el asiento vuelve a quedar libre.</p>';
+    h += '</form>';
+    sheet.innerHTML = h; sheet.showModal();
+    document.getElementById('cerrar').onclick = function(){ sheet.close(); };
+    document.getElementById('f').onsubmit = function(e){ e.preventDefault(); enviar(); };
+  }
+
+  function enviar(){
+    if(ocupado) return;
+    var err = document.getElementById('err'), pas = [];
+    for(var i=0;i<elegidos.length;i++){
+      var n = elegidos[i];
+      var nom = document.getElementById('nom-'+n).value.trim().replace(/\s+/g,' ');
+      var dni = document.getElementById('dni-'+n).value.replace(/\D/g,'');
+      if(nom.split(' ').length < 2){ err.textContent='Asiento '+n+': escribe nombre y al menos un apellido.'; document.getElementById('nom-'+n).focus(); return; }
+      if(dni.length !== 8){ err.textContent='Asiento '+n+': el DNI debe tener 8 números.'; document.getElementById('dni-'+n).focus(); return; }
+      pas.push({asiento:n, nombre:nom, dni:dni});
+    }
+    var cel = document.getElementById('cel').value.replace(/\D/g,'');
+    if(!/^9\d{8}$/.test(cel)){ err.textContent='El celular debe tener 9 dígitos y empezar en 9.'; document.getElementById('cel').focus(); return; }
+    err.textContent = '';
+    var btn = document.getElementById('enviar'); btn.disabled = true; btn.textContent = 'Reservando…'; ocupado = true;
+    api({action:'exc.reservar', codigo:codigo, pasajeros:pas, celular:cel, web:document.getElementById('web').value})
+      .then(function(r){
+        ocupado = false;
+        if(r.ok){
+          hecho = { r:r.data, pas:pas };
+          elegidos = []; sheet.close(); render(); window.scrollTo(0,0); cargar(true);
+          return;
+        }
+        if(r.codigo==='OCUPADO' && r.data){
+          V = r.data; elegidos = elegidos.filter(function(n){return !V.ocupados[n];});
+          sheet.close(); refrescarMapa(); aviso(r.error); return;
+        }
+        btn.disabled = false; btn.textContent = 'Intentar de nuevo'; err.textContent = r.error || 'No se pudo reservar.';
+      })
+      .catch(function(){
+        ocupado = false; btn.disabled = false; btn.textContent = 'Intentar de nuevo';
+        err.textContent = 'Sin conexión. Revisa tu señal e inténtalo de nuevo: tu reserva aún no se envió.';
+      });
+  }
+
+  function confirmacion(){
+    var r = hecho.r;
+    var h = '<section class="listo" aria-live="polite"><h2>¡Reserva registrada!</h2><p>Tu código de reserva:</p><p class="codigo">'+esc(r.grupo)+'</p><dl>';
+    hecho.pas.forEach(function(p){ h += '<dt>Asiento '+p.asiento+'</dt><dd>'+esc(p.nombre)+'</dd>'; });
+    if(r.total) h += '<dt>Total</dt><dd>'+soles(r.total)+'</dd>';
+    if(r.vence_en) h += '<dt>Paga antes de</dt><dd>'+esc(horaLima(r.vence_en))+'</dd>';
+    h += '</dl>';
+    if(V.instrucciones_pago && r.tipo!=='contrato') h += '<p class="nota" style="white-space:pre-wrap">'+esc(V.instrucciones_pago)+'</p>';
+    if(r.tipo!=='contrato') h += formVoucherHtml(r.total);
+    var miLink = location.origin+'/reservar?e='+codigo+'&g='+r.grupo+'&c='+r.cel4;
+    h += '<p class="nota">Guarda este enlace para ver tu reserva, el estado de tu pago y tu boleto digital:<br><a href="'+esc(miLink)+'">'+esc(miLink)+'</a></p>';
+    h += '<div class="acciones" style="margin-top:16px">';
+    if(r.whatsapp) h += '<a class="btn secundario" id="wa" target="_blank" rel="noopener" href="https://wa.me/'+esc(r.whatsapp)+'?text='+encodeURIComponent(mensajeWa()+'\nMi reserva: '+miLink)+'">Escribir por WhatsApp</a>';
+    h += '<button type="button" class="btn secundario" id="otra">Reservar otro asiento</button></div>';
+    h += '<p class="nota">'+(r.tipo==='contrato'?'Tu asiento quedó registrado en el grupo. El organizador coordina el pago con Villa Azul.':'Tu asiento aparece como «Separado» y pasa a tu nombre cuando Villa Azul confirme tu pago.')+'</p></section>';
+    return h;
+  }
+  function mensajeWa(){
+    var r = hecho.r;
+    return 'Hola, reservé para «'+V.titulo+'» ('+V.origen+' – '+V.destino+', '+fecha(V.salida)+').\nCódigo: '+r.grupo+'\n'+
+      hecho.pas.map(function(p){return 'Asiento '+p.asiento+': '+p.nombre+' (DNI '+p.dni+')';}).join('\n')+
+      (r.total?'\nTotal: '+soles(r.total)+'. Adjunto mi comprobante de pago.':'');
+  }
+  function enlazarListo(){
+    document.getElementById('otra').onclick = function(){ hecho = null; render(); };
+    enlazarVoucher(hecho.r.grupo, hecho.r.cel4, function(){ var b=document.getElementById('vform'); if(b) b.outerHTML='<div class="pago"><span class="chipe pend">Voucher recibido · en revisión</span><p class="nota">Te avisaremos al confirmar tu pago, con tu boleto digital.</p></div>'; });
+  }
+  /* ── Pago con voucher ── */
+  function formVoucherHtml(total){
+    return '<div class="pago" id="vform"><h3>Paga y envía tu voucher</h3><p class="nota" style="margin-top:0">Haz tu Yape o transferencia y sube la captura. Villa Azul la verifica y te envía tu boleto digital.</p>'+
+      '<label for="vmo">Monto pagado</label><input id="vmo" inputmode="decimal" value="'+(total?Number(total).toFixed(2):'')+'">'+
+      '<label for="vop">Número de operación <small>(lo ves en el detalle del Yape)</small></label><input id="vop" inputmode="numeric" autocomplete="off">'+
+      '<label for="vfo">Captura del pago</label><input id="vfo" type="file" accept="image/*" style="font-size:15px"><img id="vpr" class="previa" alt="Vista previa de la captura" style="display:none">'+
+      '<p class="error" id="verr" role="alert"></p><button type="button" class="btn primario" id="venv">Enviar voucher</button></div>';
+  }
+  function comprimir(file){
+    return new Promise(function(ok, mal){ var lec=new FileReader(); lec.onerror=function(){ mal(new Error('No se pudo leer la imagen.')); };
+      lec.onload=function(){ var img=new Image(); img.onload=function(){ var f=Math.min(1,1280/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas'); c.width=Math.round(img.naturalWidth*f); c.height=Math.round(img.naturalHeight*f); c.getContext('2d').drawImage(img,0,0,c.width,c.height); ok({mime:'image/jpeg',data:c.toDataURL('image/jpeg',0.72).split(',')[1]}); }; img.onerror=function(){ mal(new Error('Ese archivo no es una imagen.')); }; img.src=lec.result; };
+      lec.readAsDataURL(file); });
+  }
+  function enlazarVoucher(grupo, cel4, listo){
+    var foto = null, el = function(id){ return document.getElementById(id); };
+    if(!el('venv')) return;
+    el('vfo').onchange = function(){ var f=this.files[0]; if(!f) return; el('venv').disabled=true; comprimir(f).then(function(x){ foto=x; el('vpr').src='data:image/jpeg;base64,'+x.data; el('vpr').style.display='block'; el('venv').disabled=false; }).catch(function(e){ el('verr').textContent=e.message; el('venv').disabled=false; }); };
+    el('venv').onclick = function(){
+      var mt = Number(String(el('vmo').value).replace(',','.'));
+      if(!(mt>0)){ el('verr').textContent='Escribe el monto que pagaste.'; return; }
+      if(!foto){ el('verr').textContent='Adjunta la captura de tu pago.'; return; }
+      el('venv').disabled=true; el('venv').textContent='Enviando…';
+      fetch('/api/publico/voucher',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:codigo,grupo:grupo,cel4:cel4,monto:mt,operacion:el('vop').value,foto:foto})}).then(function(r){return r.json();}).then(function(r){
+        if(!r.ok){ el('verr').textContent=r.error; el('venv').disabled=false; el('venv').textContent='Enviar voucher'; return; }
+        listo();
+      }).catch(function(){ el('verr').textContent='Sin conexión. Inténtalo de nuevo.'; el('venv').disabled=false; el('venv').textContent='Enviar voucher'; });
+    };
+  }
+  /* ── «Mi reserva»: estado, pago y boleto ── */
+  function miReserva(grupo, cel4){
+    var h0 = '<header><p class="marca">Villa Azul · Turismo &amp; Excursiones</p><h1>Mi reserva</h1></header>';
+    if(!cel4){
+      root.innerHTML = h0+'<section class="listo"><p>Escribe los 4 últimos dígitos del celular con el que reservaste.</p><label for="c4">Últimos 4 dígitos</label><input id="c4" inputmode="numeric" maxlength="4"><p class="error" id="c4e"></p><button type="button" class="btn primario" id="c4b">Ver mi reserva</button></section>';
+      document.getElementById('c4b').onclick = function(){ var v=document.getElementById('c4').value.replace(/\D/g,''); if(v.length!==4){ document.getElementById('c4e').textContent='Son 4 números.'; return; } miReserva(grupo, v); };
+      return;
+    }
+    root.innerHTML = '<p class="cargando">Buscando tu reserva…</p>';
+    fetch('/api/publico/reserva/'+codigo+'/'+encodeURIComponent(grupo)+'?c='+cel4,{cache:'no-store'}).then(function(r){return r.json();}).then(function(r){
+      if(!r.ok){ root.innerHTML = h0+'<p class="cerrado">'+esc(r.error)+'</p>'; return; }
+      var d = r.data, porPagar = d.pasajeros.some(function(p){ return p.estado==='reservado' || p.estado==='confirmado'; }), v = d.voucher;
+      var h = '<header><p class="marca">Villa Azul · Turismo &amp; Excursiones</p><h1>'+esc(d.titulo)+'</h1><p class="ruta">'+esc(d.origen)+' ⇄ '+esc(d.destino)+'</p><div class="fechas"><b>Salida</b><span>'+esc(fecha(d.salida))+'</span>'+(d.retorno?'<b>Retorno</b><span>'+esc(fecha(d.retorno))+'</span>':'')+'</div></header>';
+      h += '<section class="listo"><p>Código de reserva</p><p class="codigo">'+esc(d.grupo)+'</p><dl>';
+      var TX = {reservado:['Separado · falta pagar','pend'],confirmado:['Confirmado','ok'],pagado:['Pagado','ok'],liberado:['Liberado','mal'],vencido:['Venció sin pago','mal']};
+      d.pasajeros.forEach(function(p){ var t=TX[p.estado]||[p.estado,'']; h += '<dt>Asiento '+p.asiento+'</dt><dd>'+esc(p.nombre)+' <span class="chipe '+t[1]+'">'+t[0]+'</span></dd>'; });
+      h += '</dl>';
+      var boletos = d.pasajeros.filter(function(p){ return p.boleto; });
+      if(boletos.length) h += '<div class="acciones" style="margin-top:14px">'+boletos.map(function(p){ return '<a class="btn primario" href="/boleto?b='+esc(p.boleto)+'">Ver boleto · asiento '+p.asiento+'</a>'; }).join('')+'</div>';
+      if(v && v.estado==='pendiente') h += '<div class="pago"><span class="chipe pend">Voucher recibido · en revisión</span><p class="nota">Monto declarado '+soles(v.monto)+'. Te avisaremos al confirmarlo.</p></div>';
+      if(v && v.estado==='rechazado') h += '<div class="pago"><span class="chipe mal">Voucher rechazado</span><p class="nota">'+esc(v.motivo||'')+'. Puedes subir otra captura.</p></div>';
+      if(porPagar && d.tipo!=='contrato' && !(v && v.estado==='pendiente')){ if(d.instrucciones_pago) h += '<p class="nota" style="white-space:pre-wrap">'+esc(d.instrucciones_pago)+'</p>'; h += formVoucherHtml(d.total); }
+      if(d.whatsapp) h += '<div class="acciones" style="margin-top:14px"><a class="btn secundario" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, consulto por mi reserva '+d.grupo+' de «'+d.titulo+'».')+'">Escribir por WhatsApp</a></div>';
+      h += '</section>';
+      root.innerHTML = h;
+      enlazarVoucher(d.grupo, cel4, function(){ miReserva(grupo, cel4); });
+    }).catch(function(){ root.innerHTML = h0+'<p class="cerrado">Sin conexión. Vuelve a abrir el enlace.</p>'; });
+  }
+
+  function cargar(silencioso){
+    if(!codigo){ root.innerHTML = '<p class="cerrado">Este enlace está incompleto. Pide el enlace de nuevo a Villa Azul.</p>'; return; }
+    return api({action:'exc.publica', codigo:codigo}).then(function(r){
+      if(!r.ok){ root.innerHTML = '<p class="cerrado">'+esc(r.error)+'</p>'; return; }
+      V = r.data; document.title = V.titulo + ' · Elige tu asiento';
+      elegidos = elegidos.filter(function(n){ return !V.ocupados[n] && V.bloqueados.indexOf(n) < 0; });
+      if(!sheet.open){ if(!hecho && pintado===V.abierta && root.querySelector('.hiace')) refrescarMapa(); else render(); }
+    }).catch(function(){
+      if(!silencioso) root.innerHTML = '<p class="cerrado">Sin conexión. Revisa tu señal y vuelve a abrir el enlace.</p>';
+    });
+  }
+
+  var qs = new URLSearchParams(location.search);
+  if(qs.get('g')){ hecho = {modo:'reserva'}; miReserva(qs.get('g').toUpperCase().replace(/[^A-Z0-9]/g,''), (qs.get('c')||'').replace(/\D/g,'').slice(-4)); }
+  else cargar();
+  // El mapa se refresca solo mientras la persona mira, para que no elija un asiento que otro ya tomó.
+  setInterval(function(){ if(document.visibilityState==='visible' && !sheet.open && !hecho) cargar(true); }, 30000);
+})();
+</script>
+</body>
+</html>

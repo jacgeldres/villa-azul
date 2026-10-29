@@ -1,0 +1,14 @@
+// Villa Azul · Turismo & Excursiones — un solo Worker sirve la app (public/) y la API (/api/*).
+{
+  "name": "villa-azul",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-08-01",
+  "assets": { "directory": "./public", "binding": "ASSETS" },
+  "d1_databases": [
+    // Base D1 de producción de Villa Azul (villazul.telemetryx.pe).
+    { "binding": "DB", "database_name": "villa-azul", "database_id": "a6125133-772b-4d2a-98fd-74d07db870c2" }
+  ],
+  "observability": { "enabled": true },
+  // v5.1: cada 15 min revisa la hora del checklist de salida, documentos, mantenimiento y novedades por regularizar.
+  "triggers": { "crons": ["*/15 * * * *"] }
+}

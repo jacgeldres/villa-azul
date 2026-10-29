@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0B1B33">
+<title>Boleto digital · Villa Azul</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F4F7;--surface:#FFFFFF;--ink:#0C1A2E;--muted:#536077;--line:#D9DFE8;--brand:#1E4FD1;--night:#0B1B33;--ok:#0F7A55;--ok-soft:#DDF3EA;--warn:#9A5B00;--warn-soft:#FDF0D9;--bad:#C0392F;--bad-soft:#FBE3E0;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#090F1A;--surface:#111A29;--ink:#E8EDF5;--muted:#9AA6BA;--line:#243149;--brand:#7DA2FF;--night:#050B16;--ok:#45C99A;--ok-soft:#12352A;--warn:#F2B54C;--warn-soft:#3A2C12;--bad:#FF8A7E;--bad-soft:#3A1C1A;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#090F1A;--surface:#111A29;--ink:#E8EDF5;--muted:#9AA6BA;--line:#243149;--brand:#7DA2FF;--night:#050B16;--ok:#45C99A;--ok-soft:#12352A;--warn:#F2B54C;--warn-soft:#3A2C12;--bad:#FF8A7E;--bad-soft:#3A1C1A;color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.45 var(--font)}
+main{max-width:440px;margin:0 auto;padding:22px 16px 40px}
+.boleto{background:var(--surface);border-radius:22px;overflow:hidden;box-shadow:0 1px 2px rgba(12,26,46,.06),0 14px 40px rgba(12,26,46,.12);border:1px solid var(--line)}
+.cab{background:linear-gradient(160deg,#0B1B33,#132A4E);color:#EAF0FB;padding:18px 20px 22px}
+.marca{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.01em}
+.marca svg{width:30px;height:30px}
+.marca small{display:block;font-weight:500;opacity:.75;font-size:12px}
+.titulo{margin:16px 0 0;font-size:15px;opacity:.85}
+.ruta{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:8px;margin-top:10px}
+.ruta b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.ruta small{display:block;font-size:12px;opacity:.7;text-transform:uppercase;letter-spacing:.08em}
+.ruta .fl{font-size:22px;opacity:.7;padding-bottom:2px}
+.ruta .d{text-align:right}
+.corte{position:relative;height:22px;background:var(--surface)}
+.corte::before,.corte::after{content:"";position:absolute;top:0;width:22px;height:22px;border-radius:50%;background:var(--bg)}
+.corte::before{left:-11px}.corte::after{right:-11px}
+.corte i{position:absolute;left:18px;right:18px;top:10px;border-top:2px dashed var(--line)}
+.cuerpo{padding:4px 20px 22px}
+.datos{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.datos small{display:block;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.datos b{display:block;font-size:17px;font-weight:800}
+.asiento{grid-column:2;grid-row:1/3;text-align:right}
+.asiento b{font-size:52px;line-height:1;color:var(--brand);font-variant-numeric:tabular-nums}
+.estado{display:inline-flex;align-items:center;gap:6px;margin-top:16px;padding:6px 12px;border-radius:999px;font-weight:800;font-size:14px}
+.estado.ok{background:var(--ok-soft);color:var(--ok)} .estado.pend{background:var(--warn-soft);color:var(--warn)} .estado.mal{background:var(--bad-soft);color:var(--bad)}
+.qr{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:18px}
+.qr div{background:#fff;padding:10px;border-radius:14px;line-height:0}
+.qr div svg,.qr div img{width:180px;height:180px}
+.qr code{font-size:13px;color:var(--muted);letter-spacing:.12em}
+.acciones{display:flex;gap:8px;margin-top:16px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:800 15px var(--font);text-decoration:none;cursor:pointer}
+.btn.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+.nota{color:var(--muted);font-size:13px;text-align:center;margin-top:14px}
+.vacio{padding:60px 10px;text-align:center;color:var(--muted)}
+@media print{body{background:#fff}.acciones,.nota{display:none}.boleto{box-shadow:none}}
+
+html,body{overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+</style>
+</head>
+<body>
+<main id="root"><p class="vacio">Cargando tu boleto…</p></main>
+<script src="/vendor/qrcode.js"></script>
+<script>
+(function(){
+  var LOGO='<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#1E4FD1"/><path d="M7 26c4-7 7-10 10-10 4 0 4 6 8 6 2.6 0 4.6-2 8-6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 31h26" stroke="#9DB7FF" stroke-width="2.2" stroke-linecap="round"/></svg>';
+  var root = document.getElementById('root'), b = (new URLSearchParams(location.search).get('b')||'').toLowerCase().replace(/[^a-f0-9]/g,'');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function fecha(s){ var m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if(!m) return s||''; var d=new Date(+m[1],m[2]-1,+m[3],+(m[4]||0),+(m[5]||0)); var t=d.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}); return {dia:t.charAt(0).toUpperCase()+t.slice(1), hora:m[4]?d.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'}):''}; }
+  if(!b){ root.innerHTML='<p class="vacio">Este enlace de boleto está incompleto.</p>'; return; }
+  fetch('/api/publico/boleto/'+b,{cache:'no-store'}).then(function(r){return r.json();}).then(function(r){
+    if(!r.ok){ root.innerHTML='<p class="vacio">'+esc(r.error)+'</p>'; return; }
+    var d = r.data, f = fecha(d.salida);
+    var est = d.valido ? ['ok','✓ Boleto válido · '+(d.estado==='pagado'?'pagado':'confirmado')] : d.estado==='reservado' ? ['pend','Separado · falta confirmar el pago'] : ['mal', d.estado_viaje==='anulada'?'Viaje cancelado':'Boleto no válido ('+d.estado+')'];
+    var h = '<article class="boleto" aria-label="Boleto digital"><div class="cab"><div class="marca">'+LOGO+'<span>Villa Azul<small>Turismo &amp; Excursiones</small></span></div>'+
+      '<p class="titulo">'+esc(d.titulo)+'</p><div class="ruta"><div><small>Origen</small><b>'+esc(d.origen)+'</b></div><span class="fl" aria-hidden="true">→</span><div class="d"><small>Destino</small><b>'+esc(d.destino)+'</b></div></div></div>'+
+      '<div class="corte"><i></i></div><div class="cuerpo"><div class="datos"><div><small>Pasajero</small><b>'+esc(d.nombre)+'</b></div><div class="asiento"><small>Asiento</small><b>'+esc(d.asiento)+'</b></div>'+
+      '<div><small>DNI</small><b>'+esc(d.dni)+'</b></div><div><small>Salida</small><b>'+esc(f.dia)+'</b></div><div><small>Hora</small><b>'+esc(f.hora||'—')+'</b></div>'+(d.via?'<div style="grid-column:1/-1"><small>Vía</small><b>'+esc(d.via)+'</b></div>':'')+'</div>'+
+      '<span class="estado '+est[0]+'">'+esc(est[1])+'</span>'+
+      (d.valido?'<div class="qr"><div id="qr" role="img" aria-label="Código QR del boleto"></div><code>'+esc(d.boleto.toUpperCase())+'</code></div>':'')+
+      '<div class="acciones"><button type="button" class="btn pri" id="comp">Compartir</button><button type="button" class="btn" id="imp">Imprimir</button></div>'+
+      (d.whatsapp?'<div class="acciones"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, consulto por mi boleto '+d.boleto.toUpperCase()+' (asiento '+d.asiento+', '+d.titulo+').')+'">Escribir a Villa Azul</a></div>':'')+
+      '</div></article><p class="nota">Presenta este boleto al subir. Constancia de reserva y pase de abordar; no es un comprobante de pago SUNAT.</p>';
+    root.innerHTML = h;
+    if(d.valido){ try{ var q = qrcode(0,'M'); q.addData(location.href); q.make(); document.getElementById('qr').innerHTML = q.createSvgTag({cellSize:5, margin:0, scalable:true}); }catch(e){ document.getElementById('qr').style.display='none'; } }
+    document.getElementById('imp').onclick = function(){ window.print(); };
+    document.getElementById('comp').onclick = function(){
+      var data = {title:'Boleto Villa Azul', text:'Mi boleto: '+d.titulo+' · asiento '+d.asiento, url:location.href};
+      if(navigator.share) navigator.share(data).catch(function(){}); else if(navigator.clipboard) navigator.clipboard.writeText(location.href).then(function(){ alert('Enlace copiado'); });
+    };
+  }).catch(function(){ root.innerHTML='<p class="vacio">Sin conexión. Vuelve a abrir el enlace.</p>'; });
+})();
+</script>
+</body>
+</html>

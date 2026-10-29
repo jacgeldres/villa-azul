@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0B1B33">
+<meta name="robots" content="noindex">
+<title>Organizador · Villa Azul</title>
+<link rel="icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F2F4F7;--surface:#FFFFFF;--surface-2:#E9EDF3;--ink:#0C1A2E;--muted:#536077;--line:#D9DFE8;--brand:#1E4FD1;--brand-soft:#E3EBFD;--brand-ink:#fff;
+  --ok:#0F7A55;--ok-soft:#DDF3EA;--warn:#9A5B00;--warn-soft:#FDF0D9;--bad:#C0392F;--bad-soft:#FBE3E0;--shadow:0 1px 2px rgba(12,26,46,.06),0 8px 24px rgba(12,26,46,.06);
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#090F1A;--surface:#111A29;--surface-2:#182335;--ink:#E8EDF5;--muted:#9AA6BA;--line:#243149;--brand:#7DA2FF;--brand-soft:#1A2A4D;--brand-ink:#0A1630;
+  --ok:#45C99A;--ok-soft:#12352A;--warn:#F2B54C;--warn-soft:#3A2C12;--bad:#FF8A7E;--bad-soft:#3A1C1A;--shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);color-scheme:dark}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.45 var(--font);-webkit-text-size-adjust:100%}
+h1,h2,h3,p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+.cab{background:linear-gradient(160deg,#0B1B33,#132A4E);color:#EAF0FB;padding:20px 18px 26px}
+.cab .marca{display:flex;align-items:center;gap:10px;font-weight:800}
+.cab .marca svg{width:30px;height:30px}
+.cab .marca small{display:block;font-weight:500;opacity:.75;font-size:12px}
+.cab h1{margin-top:16px;font-size:clamp(26px,7vw,36px);font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.cab .ruta{margin-top:6px;font-weight:700;opacity:.9}
+.cab .f{opacity:.75;font-size:14px}
+.chip{display:inline-block;border-radius:999px;padding:3px 10px;font-size:12.5px;font-weight:800;background:rgba(255,255,255,.14)}
+main{max-width:720px;margin:-14px auto 0;padding:0 14px 120px;position:relative}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;box-shadow:var(--shadow)}
+.kpi small{display:block;color:var(--muted);font-size:12.5px;font-weight:600}
+.kpi b{display:block;font-size:clamp(15px,4.4vw,22px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+.kpi.al b{color:var(--warn)} .kpi.ok b{color:var(--ok)}
+.sec{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:22px 2px 8px}
+.sec h2{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.ayuda{color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:10px 16px;border-radius:13px;border:1px solid transparent;background:var(--brand);color:var(--brand-ink);font-weight:800;font-size:15px;cursor:pointer;text-decoration:none}
+.btn.sec2{background:var(--surface);color:var(--ink);border-color:var(--line)}
+.btn.mini{min-height:38px;padding:6px 12px;font-size:14px}
+.btn.peligro{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.botones{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+code.url{display:block;word-break:break-all;font-size:13.5px;background:var(--surface-2);padding:9px 10px;border-radius:10px;margin-top:8px}
+.tablet{position:relative;max-width:330px;margin:4px auto 0;padding:44px 14px 16px;border-radius:24px;background:var(--surface);border:1.5px solid var(--line)}
+.muesca{position:absolute;top:-1.5px;left:50%;transform:translateX(-50%);width:118px;height:24px;background:var(--surface-2);border:1.5px solid var(--line);border-top:none;border-radius:0 0 14px 14px;font-size:12px;font-weight:700;color:var(--muted);display:grid;place-items:center}
+.grilla{display:grid;grid-template-columns:repeat(4,1fr);gap:9px 8px}
+.sep{grid-column:1/-1;height:6px}
+.celda{aspect-ratio:1/1.1;min-width:0}
+.as{width:100%;height:100%;border-radius:11px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.as .n{font-size:19px;font-weight:800;line-height:1}
+.as .q{font-size:10px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.as.libre{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 50%,transparent);color:var(--ok)}
+.as.elegido{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.as.ocupado{background:var(--surface-2);border-color:transparent;color:var(--ink);cursor:default}
+.as.apartado{background:var(--warn-soft);border:1.5px dashed var(--warn);color:var(--warn);cursor:default}
+.as.off{background:transparent;border:1.5px dashed var(--line);color:var(--muted);cursor:default}
+.cond{width:100%;height:100%;border-radius:11px;background:var(--surface-2);display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--muted)}
+.puerta{display:flex;align-items:center;justify-content:flex-end;font-size:11px;font-weight:700;color:var(--muted)}
+.leyenda{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;margin-top:12px;font-size:13px;color:var(--muted)}
+.leyenda i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.lista{list-style:none;margin:0;padding:0}
+.fila{display:grid;grid-template-columns:40px 1fr auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.fila:last-child{border-bottom:none}
+.fila .num{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-weight:800;background:var(--surface-2)}
+.fila b{display:block;font-weight:700}
+.fila small{color:var(--muted);font-size:13px}
+.fila .falta{color:var(--warn);font-weight:700}
+.estado{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:4px;background:var(--surface-2);color:var(--muted)}
+.estado.ok{background:var(--ok-soft);color:var(--ok)} .estado.pend{background:var(--warn-soft);color:var(--warn)} .estado.mal{background:var(--bad-soft);color:var(--bad)}
+label{display:block;font-weight:700;font-size:14px;margin:12px 0 5px}
+label small{font-weight:500;color:var(--muted)}
+input,select,textarea{width:100%;padding:11px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--surface);font-size:16px;min-height:48px}
+textarea{min-height:130px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--brand)}
+.tres{display:grid;grid-template-columns:1.6fr 1fr;gap:0 8px}
+.bloque{border-top:1px solid var(--line);margin-top:14px;padding-top:4px}
+.bloque h3{font-size:16px;margin-top:8px}
+.error{color:var(--bad);font-weight:700;font-size:14px;min-height:1.3em;margin-top:8px}
+.barra{position:fixed;left:0;right:0;bottom:0;z-index:5;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.barra .btn{background:#F2B53A;color:#2A1E00}
+dialog{border:none;padding:0;margin:auto auto 0;width:min(100%,560px);max-height:92vh;border-radius:22px 22px 0 0;background:var(--surface);color:var(--ink);box-shadow:0 -12px 40px rgba(0,0,0,.25)}
+@media (min-width:700px){dialog{margin:auto;border-radius:22px}}
+dialog::backdrop{background:rgba(6,12,24,.55)}
+.hoja{padding:22px 18px calc(22px + env(safe-area-inset-bottom,0px))}
+.hoja h2{font-size:21px;font-weight:800}
+.tabla{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+.tabla td,.tabla th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
+.aviso{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:12px;font-weight:700;z-index:20;max-width:92vw}
+.aviso.mal{background:var(--bad);color:#fff}
+.vacio{padding:50px 10px;text-align:center;color:var(--muted)}
+:focus-visible{outline:3px solid var(--brand);outline-offset:2px}
+
+html,body{overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+</style>
+</head>
+<body>
+<div id="app"><p class="vacio">Cargando el panel del organizador…</p></div>
+<dialog id="hoja"></dialog>
+<script>
+(function(){
+'use strict';
+var LOGO='<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#1E4FD1"/><path d="M7 26c4-7 7-10 10-10 4 0 4 6 8 6 2.6 0 4.6-2 8-6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 31h26" stroke="#9DB7FF" stroke-width="2.2" stroke-linecap="round"/></svg>';
+var PLANO = [['conductor','vacio',1,2],'sep',[3,4,5,'puerta'],[6,7,'pasillo',8],[9,10,'pasillo',11],[12,13,14,15]];
+var token = (new URLSearchParams(location.search).get('t')||'').toLowerCase().replace(/[^a-f0-9]/g,'');
+var app = document.getElementById('app'), hoja = document.getElementById('hoja');
+var D = null, sel = [];
+function $(id){ if(hoja.open){ var x = hoja.querySelector('[id="'+id+'"]'); if(x) return x; } return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function soles(n){ return 'S/ '+Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fecha(s){ var m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if(!m) return s||''; var d=new Date(+m[1],m[2]-1,+m[3],+(m[4]||0),+(m[5]||0)); var t=d.toLocaleDateString('es-PE',{weekday:'long',day:'numeric',month:'long'}); if(m[4]) t+=', '+d.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'}); return t.charAt(0).toUpperCase()+t.slice(1); }
+function aviso(t, mal){ var a=document.createElement('div'); a.className='aviso'+(mal?' mal':''); a.setAttribute('role','status'); a.textContent=t; document.body.appendChild(a); setTimeout(function(){ a.remove(); },3500); }
+function api(ruta, metodo, cuerpo){
+  return fetch('/api/publico/org/'+token+ruta, {method:metodo||'GET', headers:{'Content-Type':'application/json'}, body:cuerpo?JSON.stringify(cuerpo):undefined, cache:'no-store'})
+    .then(function(r){ return r.json(); }, function(){ return {ok:false, error:'Sin conexión. Revisa tu señal.'}; });
+}
+function abrir(h){ hoja.innerHTML='<div class="hoja">'+h+'</div>'; if(!hoja.open) hoja.showModal(); hoja.querySelectorAll('[data-cerrar]').forEach(function(b){ b.onclick=function(){ hoja.close(); }; }); }
+hoja.addEventListener('click', function(e){ if(e.target===hoja) hoja.close(); });
+
+function cargar(){
+  if(!token){ app.innerHTML='<p class="vacio">Este enlace está incompleto. Pídelo de nuevo a Villa Azul.</p>'; return; }
+  api('').then(function(r){ if(!r.ok){ app.innerHTML='<p class="vacio">'+esc(r.error)+'</p>'; return; } D=r.data; sel=sel.filter(libre); pintar(); });
+}
+function ocupante(n){ return D.pasajeros.filter(function(p){ return +p.asiento===n; })[0]; }
+function libre(n){ return n<=D.asientos_total && D.bloqueados.indexOf(n)<0 && !ocupante(n); }
+function pintar(){
+  var d = D, falta = d.pasajeros.filter(function(p){ return p.falta_datos; }).length, vend = d.asientos_total - d.bloqueados.length;
+  var h = '<header class="cab"><div class="marca">'+LOGO+'<span>Villa Azul<small>Panel del organizador</small></span></div><h1>'+esc(d.titulo)+'</h1><p class="ruta">'+esc(d.origen)+' ⇄ '+esc(d.destino)+(d.via?' · vía '+esc(d.via):'')+'</p><p class="f">Salida '+esc(fecha(d.salida))+(d.retorno?' · Retorno '+esc(fecha(d.retorno)):'')+'</p>'+
+    '<p style="margin-top:10px"><span class="chip">'+(d.editable?'Puedes registrar y corregir':'Reservas cerradas')+'</span>'+(d.cliente?' <span class="chip">'+esc(d.cliente)+'</span>':'')+'</p></header><main>';
+  h += '<div class="kpis"><div class="kpi"><small>Registrados</small><b>'+d.pasajeros.length+'/'+vend+'</b></div><div class="kpi'+(falta?' al':' ok')+'"><small>Faltan datos</small><b>'+falta+'</b></div><div class="kpi"><small>Asientos libres</small><b>'+Math.max(0, vend-d.pasajeros.length)+'</b></div></div>';
+  h += '<div class="kpis" style="margin-top:8px"><div class="kpi"><small>'+(d.tipo==='contrato'?'Contrato':'Total')+'</small><b>'+soles(d.resumen.pactado)+'</b></div><div class="kpi ok"><small>Pagado</small><b>'+soles(d.resumen.pagado)+'</b></div><div class="kpi'+(d.resumen.por_pagar?' al':'')+'"><small>Por pagar</small><b>'+soles(d.resumen.por_pagar)+'</b></div></div>';
+  if(d.estado==='abierta'){ var url = location.origin+'/reservar?e='+d.codigo;
+    h += '<div class="card"><b>Invita a tu grupo</b><p class="ayuda">Comparte este enlace en el grupo de WhatsApp: cada viajero elige su asiento y escribe su nombre y DNI. Tú ves aquí quién ya se registró.</p><code class="url">'+esc(url)+'</code>'+
+      '<div class="botones"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent('🚐 '+d.titulo+'\n'+d.origen+' ⇄ '+d.destino+'\nSalida: '+fecha(d.salida)+'\n\nElige tu asiento y registra tus datos aquí 👇\n'+url)+'">Compartir por WhatsApp</a><button type="button" class="btn sec2" id="cp">Copiar enlace</button></div></div>'; }
+  else if(d.estado==='borrador') h += '<div class="card"><p class="ayuda">Puedes ir registrando a tu grupo desde aquí. El enlace para que cada viajero se registre solo se activa cuando Villa Azul abra las reservas.</p></div>';
+  h += '<div class="sec"><h2>Asientos</h2>'+(d.editable?'<button type="button" class="btn sec2 mini" id="pegar">Pegar lista</button>':'')+'</div><div class="card"><div class="tablet"><span class="muesca">Adelante</span><div class="grilla">';
+  PLANO.forEach(function(f){
+    if(f==='sep'){ h+='<div class="sep"></div>'; return; }
+    f.forEach(function(c){
+      if(c==='conductor'){ h+='<div class="celda"><div class="cond">Conductor</div></div>'; return; }
+      if(c==='vacio'||c==='pasillo'){ h+='<div class="celda"></div>'; return; }
+      if(c==='puerta'){ h+='<div class="celda puerta">Puerta ▸</div>'; return; }
+      var p = ocupante(c), off = c>d.asientos_total || d.bloqueados.indexOf(c)>=0;
+      var cls = off?'off':p?(p.falta_datos?'apartado':'ocupado'):(sel.indexOf(c)>=0?'elegido':'libre');
+      var q = off?'Bloqueado':p?(p.falta_datos?'Sin datos':corto(p.nombre)):(sel.indexOf(c)>=0?'Elegido':'Libre');
+      h += '<div class="celda"><button type="button" class="as '+cls+'" data-s="'+c+'"'+((off||p||!d.editable)?' disabled':'')+' aria-label="Asiento '+c+', '+esc(q)+'" aria-pressed="'+(sel.indexOf(c)>=0)+'"><span class="n">'+c+'</span><span class="q">'+esc(q)+'</span></button></div>';
+    });
+  });
+  h += '</div></div><div class="leyenda"><span><i style="background:var(--ok-soft);border:1px solid var(--ok)"></i>Libre</span><span><i style="background:var(--brand)"></i>Elegido</span><span><i style="background:var(--surface-2)"></i>Registrado</span><span><i style="background:var(--warn-soft);border:1px dashed var(--warn)"></i>Apartado sin datos</span></div>'+
+    (d.editable?'<p class="ayuda" style="text-align:center;margin-top:8px">Toca los asientos libres que quieras para tu grupo.</p>':'')+'</div>';
+  h += '<div class="sec"><h2>Tu grupo</h2><span class="ayuda">'+d.pasajeros.length+' persona(s)</span></div><div class="card"><ul class="lista">';
+  h += d.pasajeros.length ? d.pasajeros.map(function(p){
+    var est = p.falta_datos?['pend','Faltan datos']:p.estado==='pagado'?['ok','Pagado']:p.estado==='confirmado'?['ok','Confirmado']:['pend','Separado'];
+    return '<li class="fila"><span class="num">'+p.asiento+'</span><div><b>'+esc(p.falta_datos?'Asiento apartado':p.nombre)+'</b><small>'+(p.falta_datos?'<span class="falta">Falta nombre y DNI</span>':'DNI '+esc(p.dni))+' <span class="estado '+est[0]+'">'+est[1]+'</span>'+(p.origen==='enlace'?' <span class="estado">se registró solo</span>':'')+'</small>'+
+      (p.boleto?'<small style="display:block"><a href="/boleto?b='+esc(p.boleto)+'" target="_blank" rel="noopener">Ver boleto</a></small>':'')+'</div>'+
+      (d.editable?'<span class="botones" style="margin:0"><button type="button" class="btn sec2 mini" data-ed="'+esc(p.id)+'">'+(p.falta_datos?'Completar':'Editar')+'</button></span>':'')+'</li>'; }).join('') : '<li class="vacio" style="padding:20px">Aún no hay nadie registrado.</li>';
+  h += '</ul></div>';
+  h += '<div class="sec"><h2>Pagos</h2></div><div class="card">'+(d.instrucciones_pago?'<p style="white-space:pre-wrap">'+esc(d.instrucciones_pago)+'</p>':'<p class="ayuda">Pide a Villa Azul el número de Yape.</p>')+
+    (d.vouchers.length?'<ul class="lista" style="margin-top:8px">'+d.vouchers.map(function(v){ var e=v.estado==='aprobado'?['ok','Aprobado']:v.estado==='rechazado'?['mal','Rechazado']:v.estado==='reemplazado'?['','Reemplazado']:['pend','En revisión'];
+      return '<li class="fila" style="grid-template-columns:1fr auto"><div><b>'+esc((v.concepto||'pago').replace(/^./,function(c){return c.toUpperCase();}))+'</b><small>'+esc(String(v.creado_en).slice(0,10))+(v.operacion?' · op '+esc(v.operacion):'')+' <span class="estado '+e[0]+'">'+e[1]+'</span>'+(v.motivo?'<br>'+esc(v.motivo):'')+'</small></div><b>'+soles(v.monto)+'</b></li>'; }).join('')+'</ul>':'')+
+    '<div class="botones"><button type="button" class="btn" id="pagar">Enviar voucher de pago</button></div></div>';
+  if(d.whatsapp) h += '<div class="botones" style="justify-content:center;margin-top:18px"><a class="btn sec2" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, soy el organizador de «'+d.titulo+'».')+'">Escribir a Villa Azul</a></div>';
+  h += '<p class="ayuda" style="text-align:center;margin-top:14px">Este enlace es solo para ti: con él se registran y corrigen los datos de todo el grupo.</p></main>';
+  app.innerHTML = h;
+  barra();
+  app.querySelectorAll('[data-s]').forEach(function(b){ b.onclick=function(){ var n=+b.dataset.s, i=sel.indexOf(n); if(i>=0) sel.splice(i,1); else sel.push(n); sel.sort(function(a,b){return a-b;}); pintar(); }; });
+  app.querySelectorAll('[data-ed]').forEach(function(b){ b.onclick=function(){ editar(D.pasajeros.filter(function(p){ return p.id===b.dataset.ed; })[0]); }; });
+  if($('cp')) $('cp').onclick=function(){ var u=location.origin+'/reservar?e='+D.codigo; (navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(function(){ aviso('Enlace copiado'); }, function(){ prompt('Copia el enlace:', u); }); };
+  if($('pegar')) $('pegar').onclick = pegarLista;
+  $('pagar').onclick = formPago;
+}
+function corto(n){ var p=String(n).split(' '); return p[0]+(p[1]?' '+p[1].charAt(0)+'.':''); }
+function barra(){
+  var b = document.getElementById('barra');
+  if(!sel.length){ if(b) b.remove(); return; }
+  if(!b){ b=document.createElement('div'); b.id='barra'; b.className='barra'; document.body.appendChild(b); }
+  b.innerHTML = '<span>'+(sel.length===1?'Asiento '+sel[0]:sel.length+' asientos: '+sel.join(', '))+'</span><button type="button" class="btn" id="reg">Registrar</button>';
+  document.getElementById('reg').onclick = function(){ formRegistrar(sel.slice()); };
+}
+function enviar(ruta, metodo, cuerpo, ok){
+  var b = $('ok'); if(b) b.disabled = true;
+  return api(ruta, metodo, cuerpo).then(function(r){
+    if(b) b.disabled = false;
+    if(!r.ok){ if($('err')) $('err').textContent = r.error; else aviso(r.error, true); if(r.codigo==='OCUPADO') cargar(); return; }
+    D = r.data; hoja.close(); sel = sel.filter(libre); pintar(); aviso(ok);
+  });
+}
+function formRegistrar(asientos){
+  var h = '<h2>Registrar '+(asientos.length===1?'el asiento '+asientos[0]:asientos.length+' asientos')+'</h2><p class="ayuda">Escribe nombre y DNI de cada viajero. Si aún no los tienes, apártalos y complétalos después.</p>';
+  asientos.forEach(function(n){ h += '<div class="bloque"><h3>Asiento '+n+'</h3><label for="n'+n+'">Nombre completo</label><input id="n'+n+'" autocomplete="off"><div class="tres"><div><label for="d'+n+'">DNI</label><input id="d'+n+'" inputmode="numeric" maxlength="8"></div><div><label for="c'+n+'">Celular <small>(opc.)</small></label><input id="c'+n+'" inputmode="tel" maxlength="9"></div></div></div>'; });
+  h += '<p class="error" id="err" role="alert"></p><div class="botones"><button type="button" class="btn" id="ok" style="flex:1">Guardar</button></div><div class="botones"><button type="button" class="btn sec2" id="apartar" style="flex:1">Apartar sin datos (completar después)</button><button type="button" class="btn sec2" data-cerrar style="flex:1">Cancelar</button></div>';
+  abrir(h);
+  $('ok').onclick = function(){
+    var lista = [];
+    for(var i=0;i<asientos.length;i++){ var n=asientos[i], nom=$('n'+n).value.trim(), dni=$('d'+n).value.replace(/\D/g,'');
+      if(!nom && !dni){ lista.push({asiento:n}); continue; }
+      if(nom.split(/\s+/).length<2){ $('err').textContent='Asiento '+n+': escribe nombre y al menos un apellido.'; return; }
+      if(dni.length!==8){ $('err').textContent='Asiento '+n+': el DNI debe tener 8 números.'; return; }
+      lista.push({asiento:n, nombre:nom, dni:dni, celular:$('c'+n).value}); }
+    enviar('/pasajeros','POST',{pasajeros:lista}, lista.length===1?'Asiento registrado':lista.length+' asientos registrados');
+  };
+  $('apartar').onclick = function(){ enviar('/pasajeros','POST',{pasajeros:asientos.map(function(n){ return {asiento:n}; })}, asientos.length+' asiento(s) apartados: complétalos cuando tengas los datos'); };
+}
+function editar(p){
+  abrir('<h2>'+(p.falta_datos?'Completar asiento '+p.asiento:'Editar asiento '+p.asiento)+'</h2>'+(p.falta_datos?'':'<p class="ayuda">Por privacidad no se muestra el DNI completo: escríbelo de nuevo para confirmar el cambio.</p>')+
+    '<label for="en">Nombre completo</label><input id="en" value="'+esc(p.falta_datos?'':p.nombre)+'" autocomplete="off"><div class="tres"><div><label for="ed">DNI</label><input id="ed" inputmode="numeric" maxlength="8"></div><div><label for="ea">Asiento</label><input id="ea" inputmode="numeric" value="'+p.asiento+'"></div></div>'+
+    '<label for="ec">Celular <small>(opcional)</small></label><input id="ec" inputmode="tel" maxlength="9">'+
+    '<p class="error" id="err" role="alert"></p><div class="botones"><button type="button" class="btn" id="ok" style="flex:1">Guardar</button></div><div class="botones"><button type="button" class="btn peligro" id="quitar" style="flex:1">Quitar del grupo</button><button type="button" class="btn sec2" data-cerrar style="flex:1">Cancelar</button></div>');
+  $('ok').onclick = function(){ enviar('/pasajeros/'+p.id,'PATCH',{nombre:$('en').value, dni:$('ed').value, asiento:+$('ea').value, celular:$('ec').value}, 'Datos guardados'); };
+  $('quitar').onclick = function(){ if(confirm('¿Quitar el asiento '+p.asiento+' del grupo? Queda libre para otra persona.')) enviar('/pasajeros/'+p.id,'DELETE',null,'Asiento liberado'); };
+}
+/* Pegar una lista copiada de WhatsApp o Excel: una persona por línea, con su DNI de 8 números. */
+function pegarLista(){
+  abrir('<h2>Pegar lista</h2><p class="ayuda">Una persona por línea, con nombre y DNI. Por ejemplo:<br><code>María Rodríguez Pérez 41234567</code><br>Se asignan a los asientos libres en orden'+(sel.length?' (empezando por los que elegiste)':'')+'.</p><label for="tl">Lista</label><textarea id="tl" placeholder="Nombre Apellido 12345678"></textarea><div id="prev"></div>'+
+    '<p class="error" id="err" role="alert"></p><div class="botones"><button type="button" class="btn sec2" id="ver" style="flex:1">Revisar</button><button type="button" class="btn" id="ok" style="flex:1" disabled>Registrar</button></div><div class="botones"><button type="button" class="btn sec2" data-cerrar style="flex:1">Cancelar</button></div>');
+  var lista = [];
+  $('ver').onclick = function(){
+    var libres = sel.filter(libre).concat(range().filter(function(n){ return libre(n) && sel.indexOf(n)<0; }));
+    var malas = []; lista = [];
+    $('tl').value.split(/\n+/).map(function(l){ return l.trim(); }).filter(Boolean).forEach(function(l){
+      var m = l.match(/(\d{8})/), nom = l.replace(/\d{8}/,'').replace(/^[\d\s.\-)]+/,'').replace(/[,;|\t·-]+/g,' ').replace(/\s+/g,' ').trim();
+      if(!m || nom.split(' ').length<2){ malas.push(l); return; }
+      lista.push({nombre:nom, dni:m[1]});
+    });
+    if(lista.length > libres.length){ $('err').textContent='Hay '+lista.length+' personas y solo '+libres.length+' asientos libres.'; $('ok').disabled=true; return; }
+    lista.forEach(function(x,i){ x.asiento = libres[i]; });
+    $('prev').innerHTML = (lista.length?'<table class="tabla"><tr><th>Asiento</th><th>Nombre</th><th>DNI</th></tr>'+lista.map(function(x){ return '<tr><td>'+x.asiento+'</td><td>'+esc(x.nombre)+'</td><td>'+x.dni+'</td></tr>'; }).join('')+'</table>':'')+
+      (malas.length?'<p class="error">No entendí '+malas.length+' línea(s): falta el DNI de 8 números o el apellido.<br>'+malas.map(esc).join('<br>')+'</p>':'');
+    $('err').textContent=''; $('ok').disabled = !lista.length;
+  };
+  $('ok').onclick = function(){ enviar('/pasajeros','POST',{pasajeros:lista}, lista.length+' viajero(s) registrados'); };
+}
+function range(){ var a=[]; for(var i=1;i<=D.asientos_total;i++) a.push(i); return a; }
+function formPago(){
+  var porPagar = D.resumen.por_pagar;
+  abrir('<h2>Enviar voucher de pago</h2><p class="ayuda">Haz tu Yape o transferencia y sube la captura. Villa Azul la verifica y la verás aquí como «Aprobado».</p>'+
+    (D.tipo==='contrato'?'<label for="pc">Concepto</label><select id="pc"><option value="adelanto">Adelanto del contrato</option><option value="saldo">Saldo del contrato</option></select>':'')+
+    '<label for="pm">Monto pagado</label><input id="pm" inputmode="decimal" value="'+(porPagar?porPagar.toFixed(2):'')+'"><label for="po">Número de operación <small>(lo ves en el detalle del Yape)</small></label><input id="po" inputmode="numeric">'+
+    '<label for="pf">Captura del pago</label><input id="pf" type="file" accept="image/*"><img id="pv" alt="Vista previa" style="display:none;max-width:100%;max-height:200px;border-radius:12px;margin-top:8px">'+
+    '<p class="error" id="err" role="alert"></p><div class="botones"><button type="button" class="btn" id="ok" style="flex:1">Enviar</button><button type="button" class="btn sec2" data-cerrar style="flex:1">Cancelar</button></div>');
+  var foto = null;
+  $('pf').onchange = function(){ var f=this.files[0]; if(!f) return; var lec=new FileReader(); lec.onload=function(){ var img=new Image(); img.onload=function(){ var k=Math.min(1,1280/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas'); c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); foto={mime:'image/jpeg',data:c.toDataURL('image/jpeg',0.72).split(',')[1]}; $('pv').src='data:image/jpeg;base64,'+foto.data; $('pv').style.display='block'; }; img.src=lec.result; }; lec.readAsDataURL(f); };
+  $('ok').onclick = function(){ var m=Number(String($('pm').value).replace(',','.')); if(!(m>0)) return $('err').textContent='Escribe el monto.'; if(!foto) return $('err').textContent='Adjunta la captura.';
+    enviar('/voucher','POST',{monto:m, operacion:$('po').value, concepto:$('pc')?$('pc').value:'pasaje', foto:foto}, 'Voucher enviado: Villa Azul lo revisará'); };
+}
+cargar();
+setInterval(function(){ if(document.visibilityState==='visible' && !hoja.open && !sel.length) cargar(); }, 30000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,471 @@
+{
+ "version": 2,
+ "nota": "Plantilla del checklist de la unidad. Las claves (mot-01…) son fijas: si cambia el texto de un ítem, la clave se mantiene; un ítem nuevo lleva una clave nueva. Prioridad: C crítico · A alto · M medio · B bajo. v2: el checklist es solo de salida.",
+ "categorias": [
+  {
+   "id": "mot",
+   "nombre": "Motor y sistema diésel",
+   "zona": "motor",
+   "items": [
+    [
+     "mot-01",
+     "Nivel de aceite del motor",
+     "C"
+    ],
+    [
+     "mot-02",
+     "Nivel de refrigerante / anticongelante",
+     "C"
+    ],
+    [
+     "mot-03",
+     "Correa de accesorios sin grietas ni desgaste",
+     "A"
+    ],
+    [
+     "mot-04",
+     "Mangueras del radiador sin fugas ni ablandamiento",
+     "A"
+    ],
+    [
+     "mot-05",
+     "Aceite de dirección hidráulica",
+     "M"
+    ],
+    [
+     "mot-06",
+     "Líquido limpiaparabrisas",
+     "B"
+    ],
+    [
+     "mot-07",
+     "Tablero sin alertas (motor, DPF, AdBlue)",
+     "C"
+    ]
+   ],
+   "guia": "Capó abierto, motor frío y la van nivelada. Mira también el tablero al encender."
+  },
+  {
+   "id": "neu",
+   "nombre": "Neumáticos y ruedas",
+   "zona": "ruedas",
+   "items": [
+    [
+     "neu-01",
+     "Delantero izquierdo: 75 PSI y cocada",
+     "C"
+    ],
+    [
+     "neu-02",
+     "Delantero derecho: 75 PSI y cocada",
+     "C"
+    ],
+    [
+     "neu-03",
+     "Trasero izquierdo: 75 PSI y cocada",
+     "C"
+    ],
+    [
+     "neu-04",
+     "Trasero derecho: 75 PSI y cocada",
+     "C"
+    ],
+    [
+     "neu-05",
+     "Llanta de repuesto: 75 PSI",
+     "C"
+    ],
+    [
+     "neu-06",
+     "Tuercas completas y seguro de aro",
+     "C"
+    ]
+   ],
+   "guia": "Las 4 llantas y la de repuesto, con el manómetro. La cocada no debe estar lisa ni con cortes."
+  },
+  {
+   "id": "fre",
+   "nombre": "Frenos",
+   "zona": "ruedas",
+   "items": [
+    [
+     "fre-01",
+     "Nivel de líquido de frenos",
+     "C"
+    ],
+    [
+     "fre-02",
+     "Pedal de freno firme y con recorrido correcto",
+     "C"
+    ],
+    [
+     "fre-03",
+     "Freno de mano / estacionamiento",
+     "C"
+    ],
+    [
+     "fre-04",
+     "Sin ruidos extraños al frenar",
+     "A"
+    ],
+    [
+     "fre-05",
+     "ABS sin luz de alerta en el tablero",
+     "A"
+    ],
+    [
+     "fre-06",
+     "Pastillas delanteras izquierdas sin desgaste",
+     "A"
+    ],
+    [
+     "fre-07",
+     "Pastillas delanteras derechas sin desgaste",
+     "A"
+    ],
+    [
+     "fre-08",
+     "Pastillas traseras izquierdas sin desgaste",
+     "A"
+    ],
+    [
+     "fre-09",
+     "Pastillas traseras derechas sin desgaste",
+     "A"
+    ]
+   ],
+   "guia": "Prueba el pedal y el freno de mano antes de mover la van; escucha al frenar en los primeros metros."
+  },
+  {
+   "id": "ele",
+   "nombre": "Luces y sistema eléctrico",
+   "zona": "luces",
+   "items": [
+    [
+     "ele-01",
+     "Luces altas",
+     "A"
+    ],
+    [
+     "ele-02",
+     "Luces bajas",
+     "C"
+    ],
+    [
+     "ele-03",
+     "Luces de posición delanteras y traseras",
+     "A"
+    ],
+    [
+     "ele-04",
+     "Direccionales izquierda y derecha",
+     "C"
+    ],
+    [
+     "ele-05",
+     "Luces de freno",
+     "C"
+    ],
+    [
+     "ele-06",
+     "Luces de retroceso",
+     "A"
+    ],
+    [
+     "ele-07",
+     "Luces de emergencia (intermitentes)",
+     "C"
+    ],
+    [
+     "ele-08",
+     "Plumillas del limpiaparabrisas",
+     "A"
+    ],
+    [
+     "ele-09",
+     "Bocina",
+     "A"
+    ],
+    [
+     "ele-10",
+     "Alarma de retroceso activa",
+     "M"
+    ],
+    [
+     "ele-11",
+     "Batería sin corrosión en los bornes",
+     "A"
+    ]
+   ],
+   "guia": "Enciende todo y da una vuelta a la van: delante, atrás y los costados. Pide ayuda para las luces de freno."
+  },
+  {
+   "id": "car",
+   "nombre": "Carga y parrilla de techo",
+   "zona": "techo",
+   "items": [
+    [
+     "car-01",
+     "Parrilla: soportes y anclajes firmes",
+     "C"
+    ],
+    [
+     "car-02",
+     "Equipaje repartido y dentro del máximo (150 kg)",
+     "C"
+    ],
+    [
+     "car-03",
+     "Amarre con sogas o mallas, sin piezas sueltas",
+     "C"
+    ],
+    [
+     "car-04",
+     "Lona protectora extendida y ajustada",
+     "A"
+    ],
+    [
+     "car-05",
+     "Nada sobresale del techo (riesgo de impacto)",
+     "C"
+    ],
+    [
+     "car-06",
+     "Altura total con carga verificada",
+     "A"
+    ]
+   ],
+   "guia": "Sube a revisar la parrilla antes de cargar y otra vez con el equipaje amarrado."
+  },
+  {
+   "id": "int",
+   "nombre": "Cabina y seguridad de pasajeros",
+   "zona": "cabina",
+   "items": [
+    [
+     "int-01",
+     "Cinturones de seguridad (16) operativos",
+     "C"
+    ],
+    [
+     "int-02",
+     "Puerta corrediza y trasera: cierre y seguros",
+     "C"
+    ],
+    [
+     "int-03",
+     "Pasillo y piso libres de objetos peligrosos",
+     "A"
+    ],
+    [
+     "int-04",
+     "Aire acondicionado enfría",
+     "A"
+    ],
+    [
+     "int-05",
+     "Calefacción funciona (zona altoandina)",
+     "A"
+    ],
+    [
+     "int-06",
+     "Asientos fijos, sin roturas, con apoyacabezas",
+     "M"
+    ],
+    [
+     "int-07",
+     "Espejos retrovisores limpios y ajustados",
+     "A"
+    ],
+    [
+     "int-08",
+     "Parabrisas y lunas sin rajaduras",
+     "C"
+    ],
+    [
+     "int-09",
+     "Limpieza general de la cabina",
+     "B"
+    ]
+   ],
+   "guia": "Recorre el pasillo: cada cinturón debe abrochar y soltar; prueba la puerta corrediza desde adentro."
+  },
+  {
+   "id": "eme",
+   "nombre": "Emergencia y herramientas",
+   "zona": "equipo",
+   "items": [
+    [
+     "eme-01",
+     "Extintor PQS 6 kg cargado y vigente",
+     "C"
+    ],
+    [
+     "eme-02",
+     "Botiquín completo y vigente",
+     "C"
+    ],
+    [
+     "eme-03",
+     "Triángulos o conos de seguridad (mínimo 2)",
+     "C"
+    ],
+    [
+     "eme-04",
+     "Gata hidráulica operativa",
+     "A"
+    ],
+    [
+     "eme-05",
+     "Llave de ruedas y extensión",
+     "A"
+    ],
+    [
+     "eme-06",
+     "Linterna con pilas cargadas",
+     "M"
+    ],
+    [
+     "eme-07",
+     "Chaleco reflectivo del conductor",
+     "A"
+    ],
+    [
+     "eme-08",
+     "Cables de arranque (cocodrilos)",
+     "A"
+    ],
+    [
+     "eme-09",
+     "Eslinga para remolque",
+     "A"
+    ],
+    [
+     "eme-10",
+     "Kit de herramientas básicas",
+     "A"
+    ],
+    [
+     "eme-11",
+     "Inflador portátil operativo",
+     "A"
+    ],
+    [
+     "eme-12",
+     "Arrancador portátil cargado",
+     "A"
+    ]
+   ],
+   "guia": "Abre el compartimento y comprueba que cada cosa está, funciona y está vigente."
+  },
+  {
+   "id": "rut",
+   "nombre": "Ruta y viaje",
+   "zona": "ruta",
+   "items": [
+    [
+     "rut-01",
+     "Combustible suficiente para el recorrido",
+     "C"
+    ],
+    [
+     "rut-02",
+     "Carrocería sin daños que afecten la seguridad",
+     "M"
+    ],
+    [
+     "rut-03",
+     "Ruta habilitada, sin bloqueos ni derrumbes",
+     "A"
+    ],
+    [
+     "rut-04",
+     "Celular cargado y con señal",
+     "A"
+    ],
+    [
+     "rut-05",
+     "Pronóstico del tiempo en la zona altoandina revisado",
+     "A"
+    ],
+    [
+     "rut-06",
+     "Freno motor funciona para las bajadas",
+     "C"
+    ]
+   ],
+   "guia": "Antes de salir: combustible, estado de la ruta y del tiempo en la sierra."
+  },
+  {
+   "id": "doc",
+   "nombre": "Documentos a bordo",
+   "zona": "documentos",
+   "items": [
+    [
+     "doc-01",
+     "SOAT vigente a bordo",
+     "C"
+    ],
+    [
+     "doc-02",
+     "Tarjeta de propiedad",
+     "C"
+    ],
+    [
+     "doc-03",
+     "Seguro vehicular (póliza impresa)",
+     "C"
+    ],
+    [
+     "doc-04",
+     "Licencia de conducir vigente (A-IIb)",
+     "C"
+    ],
+    [
+     "doc-05",
+     "Certificado de revisión técnica (cuando ya sea exigible)",
+     "C"
+    ],
+    [
+     "doc-06",
+     "Tarjeta de circulación vigente",
+     "C"
+    ]
+   ],
+   "guia": "Los originales o copias deben ir dentro de la van. En la app también los tienes en «Documentos a bordo»."
+  },
+  {
+   "id": "acc",
+   "nombre": "Equipos a bordo",
+   "zona": "accesorios",
+   "items": [
+    [
+     "acc-01",
+     "Cámaras de tablero grabando",
+     "A"
+    ],
+    [
+     "acc-02",
+     "Starlink conectado y con señal (Premium)",
+     "A"
+    ],
+    [
+     "acc-03",
+     "Equipo de sonido",
+     "B"
+    ],
+    [
+     "acc-04",
+     "Faros exploradores",
+     "B"
+    ],
+    [
+     "acc-05",
+     "Neblineros",
+     "B"
+    ]
+   ],
+   "guia": "Enciende cámaras, Starlink y luces auxiliares antes de recoger a los pasajeros."
+  }
+ ]
+}

@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#0B1B33">
+<title>Arma tu viaje · Villa Azul Turismo &amp; Excursiones</title>
+<meta name="description" content="Excursiones y transporte privado en van desde Angasmarca. Elige fechas y viajeros, y recibe tu cotización Estándar y Premium por WhatsApp.">
+<meta property="og:title" content="Arma tu viaje con Villa Azul">
+<meta property="og:description" content="Excursiones y transporte privado. Elige fechas y viajeros; te cotizamos por WhatsApp.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Villa Azul · Turismo &amp; Excursiones">
+<meta property="og:url" content="https://villazul.telemetryx.pe/viaja">
+<meta property="og:image" content="https://villazul.telemetryx.pe/og-viaja.jpg">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_PE">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --noche:#0B1B33;--noche-2:#132A4E;--azul:#1E4FD1;--azul-hover:#1843B4;--cielo:#9DB7FF;--ambar:#F2B53A;--ambar-ink:#3A2700;
+  --fondo:#EEF2F7;--sup:#FFFFFF;--sup-2:#F4F6FA;--tinta:#0C1A2E;--gris:#536077;--linea:#DCE2EA;--azul-suave:#E3EBFD;--ok:#0F7A55;--ok-suave:#DDF3EA;--mal:#C0392F;--mal-suave:#FBE3E0;
+  --sombra:0 1px 2px rgba(12,26,46,.06),0 12px 32px rgba(12,26,46,.10);--r:18px;
+  --font:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:light;box-sizing:border-box}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --fondo:#08101D;--sup:#111B2B;--sup-2:#172338;--tinta:#E8EDF5;--gris:#9AA6BA;--linea:#243149;--azul:#5B86FF;--azul-hover:#7DA2FF;--azul-suave:#18284A;
+  --ok:#45C99A;--ok-suave:#12352A;--mal:#FF8A7E;--mal-suave:#3A1C1A;--sombra:0 1px 2px rgba(0,0,0,.3),0 12px 32px rgba(0,0,0,.35);color-scheme:dark}}
+:root[data-theme="dark"]{--fondo:#08101D;--sup:#111B2B;--sup-2:#172338;--tinta:#E8EDF5;--gris:#9AA6BA;--linea:#243149;--azul:#5B86FF;--azul-hover:#7DA2FF;--azul-suave:#18284A;--ok:#45C99A;--ok-suave:#12352A;--mal:#FF8A7E;--mal-suave:#3A1C1A;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px);background:linear-gradient(var(--noche) 50%,var(--fondo) 50%);-webkit-tap-highlight-color:transparent}
+*,*::before,*::after{box-sizing:inherit}
+html,body{overflow-x:hidden}
+@supports (overflow:clip){html,body{overflow-x:clip}}
+body{margin:0;min-height:100vh;background:var(--fondo);color:var(--tinta);font:500 16px/1.5 var(--font);-webkit-text-size-adjust:100%;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button,a,input,select,textarea,label{touch-action:manipulation}
+button{cursor:pointer}
+img,svg{max-width:100%}
+a{color:var(--azul)}
+:focus-visible{outline:3px solid var(--ambar);outline-offset:2px;border-radius:8px}
+.oculto{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ─── Cabecera y portada ─── */
+.portada{position:relative;background:linear-gradient(175deg,var(--noche) 0%,var(--noche-2) 100%);color:#EAF0FB;padding:0 max(16px,env(safe-area-inset-right,0px)) 120px max(16px,env(safe-area-inset-left,0px));padding-top:env(safe-area-inset-top,0px);overflow:hidden;isolation:isolate}
+.barra{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:14px 0}
+.marca{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;font-weight:800;line-height:1.15;margin-right:auto;min-width:0}
+.marca span{min-width:0}
+.marca svg{width:36px;height:36px;flex:none}
+.marca small{display:block;font-weight:600;font-size:12px;opacity:.72}
+.barra a.mini{flex:none;display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:8px 14px;border-radius:999px;color:#EAF0FB;text-decoration:none;font-weight:700;font-size:14px;border:1px solid rgba(157,183,255,.35)}
+.barra a.mini:hover{background:rgba(157,183,255,.12)}
+.barra a.mini svg{width:18px;height:18px}
+@media (max-width:419px){.barra{gap:8px}.barra a.mini{padding:8px 11px}.barra #waTop span{display:none}.marca small{display:none}}
+.titular{position:relative;max-width:1080px;margin:28px auto 0;z-index:2}
+.titular h1{margin:0;font-size:42px;font-size:clamp(38px,9vw,68px);line-height:.98;letter-spacing:-.035em;font-weight:800;max-width:11ch}
+.titular p{margin:16px 0 0;max-width:46ch;font-size:16px;font-size:clamp(15px,3.6vw,18px);color:#C8D4EC}
+.sierra{position:absolute;left:0;right:0;bottom:0;width:100%;height:160px;height:clamp(150px,30vw,300px);z-index:1;pointer-events:none}
+.sierra .r1{fill:#173363}.sierra .r2{fill:#1B3C75}.sierra .r3{fill:#21468A;opacity:.9}
+.sierra .camino{fill:none;stroke:var(--cielo);stroke-width:2.4;stroke-linecap:round;stroke-dasharray:2 9}
+.sierra .pin{fill:var(--ambar)}
+.sierra text{fill:#C8D4EC;font:700 12px var(--font)}
+@media (prefers-reduced-motion: no-preference){
+  .sierra .camino{stroke-dasharray:2 9;animation:avanzar 2.8s cubic-bezier(.3,.6,.2,1) .3s both}
+  .sierra .van{animation:llegar 2.8s cubic-bezier(.3,.6,.2,1) .3s both}
+  @keyframes avanzar{from{stroke-dashoffset:600;opacity:.2}to{stroke-dashoffset:0;opacity:1}}
+  @keyframes llegar{from{opacity:0}35%{opacity:1}}
+}
+
+/* ─── Tarjeta del buscador ─── */
+main{max-width:1080px;margin:-96px auto 0;padding:0 max(12px,env(safe-area-inset-right,0px)) 48px max(12px,env(safe-area-inset-left,0px));position:relative;z-index:3}
+.buscador{background:var(--sup);border-radius:24px;box-shadow:var(--sombra);padding:18px;border:1px solid var(--linea)}
+@media (min-width:760px){.buscador{padding:26px 28px}}
+.pasos{display:flex;gap:6px;margin:0 0 18px;padding:0;list-style:none}
+.pasos li{flex:1;font-size:12.5px;font-weight:700;color:var(--gris)}
+.pasos li::before{content:"";display:block;height:4px;border-radius:4px;background:var(--linea);margin-bottom:6px;transition:background-color .3s}
+.pasos li.hecho::before,.pasos li.ahora::before{background:var(--azul)}
+.pasos li.ahora{color:var(--tinta)}
+.servicio{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:var(--sup-2);border-radius:16px}
+.servicio button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:48px;border:none;border-radius:12px;background:none;font-weight:800;color:var(--gris);font-size:15px}
+.servicio button svg{width:20px;height:20px;flex:none}
+.servicio button[aria-pressed="true"]{background:var(--sup);color:var(--azul);box-shadow:0 1px 3px rgba(12,26,46,.12)}
+.trayecto{display:flex;gap:8px;margin:14px 0 6px;flex-wrap:wrap}
+.pill{border:1.5px solid var(--linea);background:var(--sup);border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;color:var(--gris);min-height:40px}
+.pill[aria-pressed="true"]{border-color:var(--azul);color:var(--azul);background:var(--azul-suave)}
+.grilla{display:grid;gap:10px;margin-top:10px}
+.grilla>*,.lugares>*,.fechas>*,.dos>*,.planes>*,.datos>*,.ruta>*,.talon>*,.servicio>*{min-width:0}
+@media (min-width:760px){.grilla.g-viaje{grid-template-columns:1.1fr 1.1fr .9fr .8fr;align-items:stretch}}
+.lugares{position:relative;display:grid;gap:8px}
+@media (min-width:760px){.lugares{grid-column:1 / span 2;grid-template-columns:1fr 1fr}}
+.casilla{position:relative;display:block;border:1.5px solid var(--linea);border-radius:16px;background:var(--sup);padding:9px 14px 10px;min-height:66px;text-align:left;width:100%;transition:border-color .15s}
+.casilla:focus-within,.casilla:hover{border-color:var(--azul)}
+.casilla .et{display:block;font-size:12.5px;font-weight:700;color:var(--gris)}
+.casilla input,.casilla select{display:block;width:100%;border:none;background:none;padding:2px 0 0;font-size:17px;font-weight:800;outline:none;min-height:30px}
+.casilla input::placeholder{color:var(--gris);font-weight:600;opacity:.75}
+.casilla .val{display:block;font-size:17px;font-weight:800;padding-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.casilla .val.vacio{color:var(--gris);font-weight:600}
+.casilla .sub{display:block;font-size:12.5px;color:var(--gris);font-weight:600}
+button.casilla{font:inherit}
+.cambiar{position:absolute;right:14px;top:50%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1.5px solid var(--linea);background:var(--sup);display:grid;place-items:center;z-index:2;color:var(--azul)}
+.cambiar svg{width:18px;height:18px}
+@media (min-width:760px){.cambiar{left:50%;right:auto;transform:translate(-50%,-50%) rotate(90deg)}}
+.fechas{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1.5px solid var(--linea);border-radius:16px;overflow:hidden}
+.fechas:hover,.fechas:focus-within{border-color:var(--azul)}
+.fechas .casilla{border:none;border-radius:0}
+.fechas .casilla+.casilla{border-left:1.5px solid var(--linea)}
+.fechas.una{grid-template-columns:1fr}
+.fechas.una .casilla+.casilla{display:none}
+.acciones{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:54px;padding:12px 22px;border-radius:14px;border:1.5px solid transparent;font-weight:800;font-size:16.5px;background:var(--azul);color:#fff;text-decoration:none;transition:background-color .15s,transform .1s}
+.btn:hover{background:var(--azul-hover)}
+.btn:active{transform:scale(.98)}
+.btn.sec{background:var(--sup);color:var(--tinta);border-color:var(--linea)}
+.btn.sec:hover{border-color:var(--azul)}
+.btn.wa{background:#128C4B;color:#fff}
+.btn.wa:hover{background:#0E7A40}
+.btn.ancho{flex:1 1 220px}
+.btn[disabled]{opacity:.6;cursor:default}
+.btn svg{width:20px;height:20px;flex:none}
+.error{color:var(--mal);font-weight:700;font-size:14.5px;min-height:1.2em;margin:10px 0 0}
+.campo{display:block;margin-top:12px}
+.campo>label,.etq{display:block;font-size:14px;font-weight:800;margin-bottom:6px}
+.campo small.n{font-weight:600;color:var(--gris)}
+.campo input,.campo textarea,.campo select{width:100%;border:1.5px solid var(--linea);border-radius:14px;background:var(--sup);padding:12px 14px;font-size:16px;font-weight:600;min-height:52px}
+.campo textarea{min-height:96px;resize:vertical;line-height:1.45}
+.campo input:focus,.campo textarea:focus,.campo select:focus{border-color:var(--azul);outline:none}
+.ayuda{font-size:13.5px;color:var(--gris);margin:6px 0 0}
+.dos{display:grid;gap:0 12px}
+@media (min-width:640px){.dos{grid-template-columns:1fr 1fr}}
+.tel{display:flex;align-items:stretch;border:1.5px solid var(--linea);border-radius:14px;overflow:hidden;background:var(--sup)}
+.tel:focus-within{border-color:var(--azul)}
+.tel span{display:grid;place-items:center;padding:0 12px;background:var(--sup-2);font-weight:800;color:var(--gris)}
+.tel input{border:none!important;border-radius:0!important}
+.interruptor{display:flex;align-items:center;gap:14px;padding:14px;border:1.5px solid var(--linea);border-radius:16px;margin-top:12px;background:var(--sup);width:100%;text-align:left}
+.interruptor b{display:block}
+.interruptor small{display:block;color:var(--gris);font-weight:600;font-size:13.5px}
+.interruptor .sw{flex:none;margin-left:auto;width:52px;height:32px;border-radius:999px;background:var(--linea);position:relative;transition:background-color .2s}
+.interruptor .sw::after{content:"";position:absolute;top:3px;left:3px;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.interruptor[aria-checked="true"]{border-color:var(--azul)}
+.interruptor[aria-checked="true"] .sw{background:var(--azul)}
+.interruptor[aria-checked="true"] .sw::after{transform:translateX(20px)}
+.interno{border-left:3px solid var(--azul);margin:4px 0 0 18px;padding:2px 0 4px 16px}
+.planes{display:grid;gap:10px}
+@media (min-width:640px){.planes{grid-template-columns:repeat(3,1fr)}}
+.plan{position:relative;text-align:left;border:1.5px solid var(--linea);border-radius:16px;background:var(--sup);padding:14px 14px 14px 46px;min-height:100%}
+.plan::before{content:"";position:absolute;left:14px;top:16px;width:20px;height:20px;border-radius:50%;border:2px solid var(--linea);background:var(--sup)}
+.plan[aria-checked="true"]{border-color:var(--azul);background:var(--azul-suave)}
+.plan[aria-checked="true"]::before{border:6px solid var(--azul)}
+.plan b{display:block;font-size:16px}
+.plan small{display:block;color:var(--gris);font-weight:600;font-size:13.5px;margin-top:2px}
+.revisa{margin-top:16px;border:1.5px dashed var(--linea);border-radius:16px;padding:14px}
+.revisa h3{margin:0 0 8px;font-size:15px}
+.revisa dl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;margin:0;font-size:14.5px}
+.revisa dt{color:var(--gris);font-weight:700}
+.revisa dd{margin:0;font-weight:700}
+.casilla-check{display:flex;gap:12px;align-items:flex-start;margin-top:14px;font-size:14.5px;font-weight:600}
+.casilla-check input{width:22px;height:22px;flex:none;margin-top:1px;accent-color:var(--azul)}
+.trampa{position:absolute;left:-5000px}
+
+/* ─── Pase de abordar (confirmación y seguimiento) ─── */
+.pase{position:relative;max-width:640px;margin:0 auto;background:var(--sup);border-radius:24px;box-shadow:var(--sombra);border:1px solid var(--linea);overflow:hidden}
+.pase-top{background:linear-gradient(135deg,var(--noche),var(--noche-2));color:#EAF0FB;padding:18px 20px 22px}
+.pase-top .marca{margin:0}
+.pase-top .estado-txt{margin:14px 0 0;font-size:24px;font-size:clamp(22px,5.5vw,28px);font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.ruta{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;padding:20px 20px 6px}
+.ruta .cod{font-size:44px;font-size:clamp(40px,12vw,58px);font-weight:800;letter-spacing:-.03em;line-height:1}
+.ruta .lug{display:block;font-size:13.5px;font-weight:700;color:var(--gris);margin-top:4px;line-height:1.25}
+.ruta .fin{text-align:right}
+.ruta .medio{display:flex;flex-direction:column;align-items:center;gap:2px;color:var(--azul);font-size:12px;font-weight:800}
+.ruta .medio svg{width:56px;height:24px}
+.datos{display:grid;grid-template-columns:repeat(2,1fr);gap:14px 18px;padding:16px 20px 20px}
+@media (min-width:520px){.datos{grid-template-columns:repeat(3,1fr)}}
+.datos small{display:block;color:var(--gris);font-size:12.5px;font-weight:700}
+.datos b{display:block;font-size:16px;font-weight:800;line-height:1.25}
+.corte{position:relative;height:0;border-top:2px dashed var(--linea);margin:0 22px}
+.corte::before,.corte::after{content:"";position:absolute;top:-15px;width:28px;height:28px;border-radius:50%;background:var(--fondo);border:1px solid var(--linea)}
+.corte::before{left:-38px}.corte::after{right:-38px}
+.talon{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center;padding:20px}
+.talon .qr{width:112px;height:112px;background:#fff;border-radius:12px;padding:8px;border:1px solid var(--linea)}
+.talon .qr svg{width:100%;height:100%;display:block}
+.talon .cs{font-size:24px;font-weight:800;letter-spacing:.02em}
+.talon p{margin:4px 0 0;font-size:14px;color:var(--gris);font-weight:600}
+.flujo{list-style:none;margin:22px auto 0;padding:0;max-width:640px}
+.flujo li{position:relative;display:grid;grid-template-columns:32px 1fr;gap:14px;padding:0 0 18px}
+.flujo li::before{content:attr(data-n);width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13.5px;background:var(--sup);color:var(--gris);border:1.5px solid var(--linea);position:relative;z-index:1}
+.flujo li::after{content:"";position:absolute;left:15px;top:32px;bottom:0;width:2px;background:var(--linea)}
+.flujo li:last-child::after{display:none}
+.flujo li.hecho::before{content:"✓";background:var(--ok);border-color:var(--ok);color:#fff}
+.flujo li.hecho::after{background:var(--ok)}
+.flujo li.ahora::before{background:var(--azul);border-color:var(--azul);color:#fff}
+.flujo b{display:block;font-size:15.5px;padding-top:4px}
+.flujo li:not(.hecho):not(.ahora) b{color:var(--gris)}
+.flujo small{display:block;color:var(--gris);font-size:13.5px;font-weight:600}
+.aviso-c{max-width:640px;margin:16px auto 0;padding:14px 16px;border-radius:16px;font-weight:700;font-size:15px}
+.aviso-c.ok{background:var(--ok-suave);color:var(--ok)}
+.aviso-c.mal{background:var(--mal-suave);color:var(--mal)}
+.botones-pase{max-width:640px;margin:16px auto 0;display:flex;gap:10px;flex-wrap:wrap}
+
+/* ─── Debajo del buscador ─── */
+section.bloque{margin-top:44px}
+section.bloque>h2{font-size:24px;font-size:clamp(22px,5vw,30px);letter-spacing:-.02em;margin:0 0 6px;font-weight:800}
+section.bloque>p.intro{margin:0 0 16px;color:var(--gris);max-width:60ch}
+.destinos{display:flex;flex-wrap:wrap;gap:8px}
+.destinos button{border:1.5px solid var(--linea);background:var(--sup);border-radius:999px;padding:9px 16px;font-weight:700;font-size:15px;min-height:44px}
+.destinos button:hover{border-color:var(--azul);color:var(--azul)}
+.comparar{display:grid;gap:14px}
+@media (min-width:860px){.comparar{grid-template-columns:1.1fr 1fr 1fr;align-items:stretch}}
+.foto{border-radius:var(--r);overflow:hidden;min-height:220px;background:var(--noche-2) center/cover no-repeat;position:relative}
+.foto span{position:absolute;left:12px;bottom:12px;background:rgba(11,27,51,.78);color:#EAF0FB;font-weight:700;font-size:13px;border-radius:999px;padding:6px 12px}
+.serv{background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:20px;box-shadow:var(--sombra)}
+.serv h3{margin:0;font-size:20px}
+.serv .tag{display:inline-block;margin-top:4px;font-size:13px;font-weight:700;color:var(--gris)}
+.serv.prem{border-color:var(--azul);box-shadow:0 0 0 1px var(--azul),var(--sombra)}
+.serv ul{list-style:none;padding:0;margin:14px 0 0}
+.serv li{display:flex;gap:10px;padding:8px 0;border-top:1px solid var(--linea);font-weight:600;font-size:15px}
+.serv li::before{content:"✓";color:var(--ok);font-weight:800}
+.serv li.no{color:var(--gris)}
+.serv li.no::before{content:"–";color:var(--gris)}
+.como{list-style:none;padding:0;margin:0;display:grid;gap:12px;counter-reset:p}
+@media (min-width:760px){.como{grid-template-columns:repeat(4,1fr)}}
+.como li{counter-increment:p;background:var(--sup);border:1px solid var(--linea);border-radius:var(--r);padding:18px}
+.como li::before{content:counter(p);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--azul-suave);color:var(--azul);font-weight:800;margin-bottom:10px}
+.como b{display:block;font-size:16px}
+.como span{display:block;color:var(--gris);font-size:14.5px;margin-top:4px}
+footer{max-width:1080px;margin:0 auto;padding:28px 18px calc(40px + env(safe-area-inset-bottom,0px));color:var(--gris);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;border-top:1px solid var(--linea)}
+footer b{color:var(--tinta)}
+
+/* ─── Calendario y viajeros: ventanas propias, compatibles con cualquier teléfono ─── */
+body.bloq{position:fixed;left:0;right:0;overflow:hidden}
+.capa{position:fixed;top:0;left:0;right:0;bottom:0;z-index:50;background:rgba(5,11,22,.55);display:flex;align-items:flex-end;justify-content:center}
+.capa[hidden]{display:none}
+.hojita{background:var(--sup);color:var(--tinta);width:100%;max-height:100%;display:flex;flex-direction:column;border-radius:22px 22px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.25)}
+.hojita.grande{height:100%;border-radius:0}
+.hojita.chica{max-height:92%}
+@media (min-width:760px){.capa{align-items:center;padding:24px}.hojita{width:94vw;max-width:760px;border-radius:24px;max-height:90vh;box-shadow:0 30px 80px rgba(0,0,0,.35)}.hojita.grande{height:720px;max-height:90vh}.hojita.chica{max-width:480px}}
+@media (prefers-reduced-motion: no-preference){.capa:not([hidden]) .hojita{animation:subir .22s ease-out}@keyframes subir{from{transform:translateY(24px);opacity:.6}}}
+.dlg{display:flex;flex-direction:column;flex:1;min-height:0;padding-bottom:env(safe-area-inset-bottom,0px)}
+.dlg-h{display:flex;align-items:center;gap:10px;padding:16px 18px 10px;padding-top:max(16px,env(safe-area-inset-top,0px))}
+.dlg-h h2{margin:0;font-size:20px;margin-right:auto}
+.cerrar{width:44px;height:44px;border-radius:50%;border:none;background:var(--sup-2);font-size:22px;line-height:1;display:grid;place-items:center}
+.sel-fechas{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 18px 10px}
+.sel-fechas.una{grid-template-columns:1fr}
+.sel-fechas button{border:1.5px solid var(--linea);border-radius:14px;background:var(--sup);padding:8px 12px;text-align:left}
+.sel-fechas button small{display:block;font-size:12px;font-weight:700;color:var(--gris)}
+.sel-fechas button b{font-size:16px}
+.sel-fechas button[aria-pressed="true"]{border-color:var(--azul);box-shadow:0 0 0 1px var(--azul)}
+.sem{display:grid;grid-template-columns:repeat(7,1fr);padding:6px 18px;font-size:12.5px;font-weight:800;color:var(--gris);text-align:center;border-bottom:1px solid var(--linea)}
+.meses{position:relative;flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:4px 18px 10px;overscroll-behavior:contain}
+@media (min-width:760px){.meses{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-content:start}}
+.mes h3{margin:16px 0 8px;font-size:16px;text-transform:capitalize}
+.sem-m{display:none}
+@media (min-width:760px){.sem{display:none}.sem-m{display:grid;grid-template-columns:repeat(7,1fr);font-size:12px;font-weight:800;color:var(--gris);text-align:center;margin-bottom:4px}}
+.dias{display:grid;grid-template-columns:repeat(7,1fr);row-gap:4px}
+.dia{position:relative;height:46px;border:none;background:none;font-weight:700;font-size:15px;border-radius:0;padding:0}
+.dia span{position:relative;z-index:1;display:grid;place-items:center;width:40px;height:40px;margin:3px auto 0;border-radius:50%}
+.dia:hover:not([disabled]) span{background:var(--azul-suave)}
+.dia[disabled]{color:var(--gris);opacity:.4;cursor:default}
+.dia.hoy span{box-shadow:inset 0 0 0 1.5px var(--gris)}
+.dia.rango{background:var(--azul-suave)}
+.dia.ini{background:linear-gradient(90deg,transparent 50%,var(--azul-suave) 50%)}
+.dia.fin{background:linear-gradient(90deg,var(--azul-suave) 50%,transparent 50%)}
+.dia.ini.fin{background:none}
+.dia.ini span,.dia.fin span{background:var(--azul)!important;color:#fff}
+.dia i{position:absolute;left:50%;bottom:3px;transform:translateX(-50%);display:flex;gap:3px;z-index:2}
+.dia i::before,.dia i::after{content:"";width:5px;height:5px;border-radius:50%;display:none}
+.dia.ocup i::before{display:block;background:var(--ambar)}
+.dia.fer i::after{display:block;background:var(--azul)}
+.dia.ini.fer i::after,.dia.fin.fer i::after{background:#fff}
+.leyenda{display:flex;flex-wrap:wrap;gap:6px 16px;padding:10px 18px 0;font-size:12.5px;font-weight:700;color:var(--gris);border-top:1px solid var(--linea)}
+.leyenda span{display:inline-flex;align-items:center;gap:6px}
+.leyenda span::before{content:"";width:8px;height:8px;border-radius:50%}
+.leyenda .l-oc::before{background:var(--ambar)}.leyenda .l-fe::before{background:var(--azul)}
+.dlg-p{display:flex;align-items:center;gap:12px;padding:12px 18px 16px}
+.dlg-p .res{margin-right:auto;font-size:14px;font-weight:700;color:var(--gris)}
+.dlg-p .res b{display:block;color:var(--tinta);font-size:15.5px}
+.nota-dia{margin:8px 18px 0;padding:10px 12px;border-radius:12px;background:#FDF0D9;color:#7A4A00;font-size:13.5px;font-weight:700}
+:root[data-theme="dark"] .nota-dia{background:#3A2C12;color:#F2B54C}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .nota-dia{background:#3A2C12;color:#F2B54C}}
+.pasajero{display:flex;align-items:center;gap:12px;padding:14px 18px;border-top:1px solid var(--linea)}
+.pasajero>div:first-child{margin-right:auto}
+.pasajero b{display:block}
+.pasajero small{color:var(--gris);font-weight:600;font-size:13.5px}
+.cont{display:flex;align-items:center;gap:6px}
+.cont button{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--linea);background:var(--sup);font-size:22px;font-weight:700;line-height:1;display:grid;place-items:center;color:var(--azul)}
+.cont button[disabled]{opacity:.35;cursor:default}
+.cont output{min-width:34px;text-align:center;font-size:20px;font-weight:800}
+.nota-van{margin:4px 18px 0;font-size:13.5px;color:var(--gris);font-weight:600}
+.nota-van.tope{color:var(--tinta);background:var(--azul-suave);border-radius:12px;padding:10px 12px}
+.nota-van a{font-weight:800}
+.pax-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:6px}
+.cargando{padding:60px 16px;text-align:center;color:var(--gris)}
+@media (prefers-reduced-motion: no-preference){.entra{animation:entra .35s ease both}@keyframes entra{from{opacity:0;transform:translateY(8px)}}}
+</style>
+</head>
+<body>
+<header class="portada">
+  <div class="barra">
+    <a class="marca" href="/viaja"><svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#1E4FD1"/><path d="M7 26c4-7 7-10 10-10 4 0 4 6 8 6 2.6 0 4.6-2 8-6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 31h26" stroke="#9DB7FF" stroke-width="2.2" stroke-linecap="round"/></svg><span>Villa Azul<small>Turismo &amp; Excursiones</small></span></a>
+    <a class="mini oculto" id="miSol" href="#">Mi solicitud</a>
+    <a class="mini" id="waTop" href="https://wa.me/51990587558" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.2-.2-.5-.3Z"/></svg><span>WhatsApp</span></a>
+  </div>
+  <div class="titular" id="titular">
+    <h1>¿A dónde vamos?</h1>
+    <p>Excursiones y transporte privado en van desde Angasmarca. Elige tus fechas y cuántos viajan: te enviamos por WhatsApp dos precios, Estándar y Premium, para que escojas.</p>
+  </div>
+  <svg class="sierra" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <path class="r1" d="M0 170 L110 90 L190 150 L300 60 L410 160 L520 80 L640 170 L760 70 L880 150 L990 90 L1100 160 L1200 110 V300 H0Z"/>
+    <path class="r2" d="M0 220 L140 140 L250 200 L380 120 L500 210 L620 150 L760 220 L880 140 L1010 210 L1120 160 L1200 190 V300 H0Z"/>
+    <path class="r3" d="M0 262 C 200 238, 380 250, 600 240 S 1000 226, 1200 244 V300 H0Z"/>
+    <path class="camino" d="M70 270 C 260 236, 420 262, 620 244 S 980 214, 1140 230"/>
+    <g class="van"><circle class="pin" cx="70" cy="270" r="7"/></g>
+    <g class="van"><circle class="pin" cx="1140" cy="230" r="7"/></g>
+  </svg>
+</header>
+
+<main id="main">
+  <div id="zona"></div>
+
+  <div id="extras">
+    <section class="bloque" aria-labelledby="t-dest">
+      <h2 id="t-dest">Destinos que más nos piden</h2>
+      <p class="intro">Tócalo para ponerlo como destino. Si tu lugar no está, escríbelo: vamos a donde tu grupo necesite.</p>
+      <div class="destinos" id="destinos"></div>
+    </section>
+    <section class="bloque" aria-labelledby="t-serv">
+      <h2 id="t-serv">Dos formas de viajar</h2>
+      <p class="intro">En cada cotización ves ambos precios y eliges desde tu celular.</p>
+      <div class="comparar">
+        <div class="foto" style="background-image:url('/hiace-interior.jpg')" role="img" aria-label="Interior de la van con asientos acolchados"><span>Nuestra van por dentro</span></div>
+        <div class="serv"><h3>Estándar</h3><span class="tag">Cómodo y directo</span><ul><li>Asientos acolchados para viaje</li><li>Asientos reclinables</li><li>Paradas para fotos</li><li class="no">Refrigerio diario</li><li class="no">WiFi a bordo</li></ul></div>
+        <div class="serv prem"><h3>Premium</h3><span class="tag">Todo el Estándar, y además</span><ul><li>Asientos acolchados para viaje</li><li>Asientos reclinables</li><li>Paradas para fotos</li><li>Refrigerio, uno por día</li><li>WiFi a bordo con Starlink</li></ul></div>
+      </div>
+    </section>
+    <section class="bloque" aria-labelledby="t-como">
+      <h2 id="t-como">Cómo funciona</h2>
+      <ol class="como">
+        <li><b>Arma tu viaje</b><span>Fechas, viajeros, punto de recojo y si quieres recorrido por la ciudad.</span></li>
+        <li><b>Revisamos tu pedido</b><span>Calculamos la ruta real, peajes y días, y validamos la fecha con la van.</span></li>
+        <li><b>Te llega por WhatsApp</b><span>Un enlace con tu cotización en servicio Estándar y Premium.</span></li>
+        <li><b>Eliges y confirmamos</b><span>Tocas el servicio que prefieres y coordinamos el adelanto.</span></li>
+      </ol>
+    </section>
+  </div>
+</main>
+<footer>
+  <span><b>Villa Azul · Turismo &amp; Excursiones</b></span>
+  <span>Base en Angasmarca, La Libertad</span>
+  <a id="waPie" href="https://wa.me/51990587558" target="_blank" rel="noopener">WhatsApp +51 990 587 558</a>
+</footer>
+
+<div class="capa" id="dCal" role="dialog" aria-modal="true" aria-labelledby="dCalT" hidden><div class="hojita grande"><div class="dlg">
+  <div class="dlg-h"><h2 id="dCalT">Elige tus fechas</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></div>
+  <div class="sel-fechas" id="selF"><button type="button" id="sfIda" aria-pressed="true"><small>Ida</small><b id="sfIdaV">Elige un día</b></button><button type="button" id="sfVue" aria-pressed="false"><small>Vuelta</small><b id="sfVueV">Elige un día</b></button></div>
+  <div class="sem" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+  <div class="meses" id="meses"></div>
+  <p class="nota-dia oculto" id="notaDia" role="status"></p>
+  <div class="leyenda"><span class="l-oc">La van tiene otro viaje: lo confirmamos contigo</span><span class="l-fe">Feriado: alta demanda</span></div>
+  <div class="dlg-p"><p class="res" id="resF">Elige el día de ida</p><button type="button" class="btn" id="calOk">Listo</button></div>
+</div></div></div>
+
+<div class="capa" id="dPax" role="dialog" aria-modal="true" aria-labelledby="dPaxT" hidden><div class="hojita chica"><div class="dlg">
+  <div class="dlg-h"><h2 id="dPaxT">¿Cuántos viajan?</h2><button type="button" class="cerrar" data-cerrar aria-label="Cerrar">×</button></div>
+  <div class="pax-scroll"><div id="paxL"></div>
+  <p class="nota-van" id="notaVan"></p></div>
+  <div class="dlg-p"><p class="res" id="resP"></p><button type="button" class="btn" data-cerrar>Listo</button></div>
+</div></div></div>
+
+<script src="/vendor/qrcode.js" defer></script>
+<script>
+(function(){
+'use strict';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (x) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+const ls = (k, v) => { try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { return null; } };
+const params = new URLSearchParams(location.search);
+const zona = $('zona');
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const ICO = {
+  monte: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 19 6-10 4 6 2-3 6 7Z"/><circle cx="17" cy="6" r="2"/></svg>',
+  van: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 16V8a2 2 0 0 1 2-2h10l5 5v5h-2"/><path d="M3 16h2m4 0h6"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M14 6v5h6"/></svg>',
+  cambiar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.4.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3 2.2 2.2 0 0 0 .2-1.3c-.1-.1-.2-.2-.5-.3Z"/></svg>',
+  ruta: '<svg viewBox="0 0 56 24" fill="none" aria-hidden="true"><path d="M2 12h48" stroke="currentColor" stroke-width="2" stroke-dasharray="2 5" stroke-linecap="round"/><path d="m44 6 8 6-8 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  rutaIV: '<svg viewBox="0 0 56 24" fill="none" aria-hidden="true"><path d="M8 8h40M8 16h40" stroke="currentColor" stroke-width="2" stroke-dasharray="2 5" stroke-linecap="round"/><path d="m44 4 6 4-6 4M12 12l-6 4 6 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+/* ─── Fechas ─── */
+const pad = (n) => String(n).padStart(2, '0');
+const iso = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const deIso = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], m[2] - 1, +m[3]) : null; };
+const corta = (s) => { const d = deIso(s); if (!d) return ''; const t = d.toLocaleDateString('es-PE', {weekday:'short', day:'numeric', month:'short'}); return t.charAt(0).toUpperCase() + t.slice(1).replace(/\./g, ''); };
+const diasEntre = (a, b) => Math.round((deIso(b) - deIso(a)) / 864e5);
+function pascua(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mes=Math.floor((h+l-7*m+114)/31),dia=((h+l-7*m+114)%31)+1; return new Date(y, mes-1, dia); }
+const FERIADOS_FIJOS = {'01-01':'Año Nuevo','05-01':'Día del Trabajo','06-07':'Día de la Bandera','06-29':'San Pedro y San Pablo','07-23':'Día de la Fuerza Aérea','07-28':'Fiestas Patrias','07-29':'Fiestas Patrias','08-06':'Batalla de Junín','08-30':'Santa Rosa de Lima','10-08':'Combate de Angamos','11-01':'Todos los Santos','12-08':'Inmaculada Concepción','12-09':'Batalla de Ayacucho','12-25':'Navidad'};
+const feriadosCache = {};
+function feriado(s){ const y = +s.slice(0,4); if (!feriadosCache[y]) { const p = pascua(y), o = {}; [-3,-2].forEach(n => { const d = new Date(p); d.setDate(d.getDate()+n); o[iso(d)] = 'Semana Santa'; }); feriadosCache[y] = o; } return FERIADOS_FIJOS[s.slice(5)] || feriadosCache[y][s] || null; }
+
+/* ─── Estado del formulario (se guarda: si sales a WhatsApp y vuelves, sigue ahí) ─── */
+const BASE = {paso:1, tipo:'excursion', ida_vuelta:true, origen:'Angasmarca', destino:'', fecha_ida:'', fecha_retorno:'', hora_salida:'', adultos:2, ninos:0, bebes:0,
+  lugar_recojo:'', punto_llegada:'', recorrido_interno:false, recorrido_ciudad:'', recorrido_horas:3, recorrido_detalle:'', servicio_pref:'ambos', detalles:'', cliente:'', celular:'', email:'', acepto:false};
+let F = Object.assign({}, BASE), P = {whatsapp:'51990587558', ocupados:[], lugares:[], capacidad:15, hoy: iso(new Date())}, ocup = new Set();
+const guardado = ls('va_viaja');
+if (guardado && Date.now() - guardado.t < 3 * 864e5) F = Object.assign(F, guardado.f, {paso: Math.min(guardado.f.paso || 1, 3)});
+const canal = (params.get('src') || ls('va_viaja_src') || 'web').toLowerCase().replace(/[^a-z]/g, '').slice(0, 6);
+if (params.get('src')) ls('va_viaja_src', canal);
+const guardar = () => ls('va_viaja', {t: Date.now(), f: F});
+const waNum = () => P.whatsapp || '51990587558';
+const codigo3 = (s) => { const t = String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z ]/g, '').trim(); if (!t) return '···'; const w = t.split(/\s+/); return (w.length > 1 && w[0].length <= 3 ? (w[0][0] + w[1].slice(0, 2)) : w[0].slice(0, 3)).toUpperCase(); };
+const viajeros = () => F.adultos + F.ninos;
+const textoViajeros = () => { const p = [F.adultos + (F.adultos === 1 ? ' adulto' : ' adultos')]; if (F.ninos) p.push(F.ninos + (F.ninos === 1 ? ' niño' : ' niños')); if (F.bebes) p.push(F.bebes + (F.bebes === 1 ? ' bebé' : ' bebés')); return p.join(', '); };
+const PREF = {estandar:'Estándar', premium:'Premium', ambos:'Que me coticen ambos'};
+const TIPO = {excursion:'Excursión', privado:'Transporte privado'};
+
+function conTiempo(url, ms){
+  // Si la señal es mala, no se queda esperando para siempre.
+  if (typeof AbortController !== 'function') return fetch(url, {cache:'no-store'});
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  return fetch(url, {cache:'no-store', signal: c.signal}).then(r => { clearTimeout(t); return r; }, e => { clearTimeout(t); throw e; });
+}
+function cargarPortal(){
+  return conTiempo('/api/publico/viaja', 12000).then(r => r.json()).then(r => { if (r.ok) { P = r.data; ocup = new Set(P.ocupados); } }).catch(() => {}).then(() => {
+    ['waTop','waPie'].forEach(id => { $(id).href = 'https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, quiero cotizar un viaje.'); });
+    $('destinos').innerHTML = (P.lugares.length ? P.lugares : ['Trujillo','Huamachuco','Cajabamba','Santiago de Chuco','Huanchaco','Cajamarca']).filter(l => l.toLowerCase() !== 'angasmarca').slice(0, 12)
+      .map(l => '<button type="button" data-dest="' + esc(l) + '">' + esc(l) + '</button>').join('');
+    const dl = $('lugL'); if (dl) dl.innerHTML = P.lugares.map(l => '<option value="' + esc(l) + '">').join('');
+    $('destinos').querySelectorAll('[data-dest]').forEach(b => b.onclick = () => { F.destino = b.dataset.dest; F.paso = 1; guardar(); pintar(); $('main').scrollIntoView({behavior:'smooth'}); setTimeout(() => { const f = $('fFechas'); if (f) f.focus(); }, 400); });
+  });
+}
+
+/* ─── Pasos ─── */
+function cabPasos(n){ return '<ol class="pasos" aria-label="Pasos">' + ['Tu viaje','Detalles','Tus datos'].map((t, i) => '<li class="' + (i + 1 < n ? 'hecho' : i + 1 === n ? 'ahora' : '') + '"' + (i + 1 === n ? ' aria-current="step"' : '') + '>' + t + '</li>').join('') + '</ol>'; }
+function pintar(){
+  $('extras').classList.toggle('oculto', F.paso > 1);
+  ({1: paso1, 2: paso2, 3: paso3})[F.paso]();
+}
+function paso1(){
+  const fechasTxt = (s, ph) => s ? '<span class="val">' + esc(corta(s)) + '</span>' : '<span class="val vacio">' + ph + '</span>';
+  const noches = F.ida_vuelta && F.fecha_ida && F.fecha_retorno ? diasEntre(F.fecha_ida, F.fecha_retorno) : null;
+  zona.innerHTML = '<form class="buscador entra" id="f1" novalidate>' + cabPasos(1) +
+    '<div class="servicio" role="group" aria-label="Tipo de servicio">' + ['excursion','privado'].map(t => '<button type="button" data-tipo="' + t + '" aria-pressed="' + (F.tipo === t) + '">' + (t === 'excursion' ? ICO.monte : ICO.van) + TIPO[t] + '</button>').join('') + '</div>' +
+    '<div class="trayecto" role="group" aria-label="Trayecto"><button type="button" class="pill" data-iv="1" aria-pressed="' + F.ida_vuelta + '">Ida y vuelta</button><button type="button" class="pill" data-iv="0" aria-pressed="' + !F.ida_vuelta + '">Solo ida</button></div>' +
+    '<div class="grilla g-viaje"><div class="lugares">' +
+      '<label class="casilla"><span class="et">Desde</span><input id="fOri" list="lugL" value="' + esc(F.origen) + '" placeholder="Ciudad o pueblo de partida" autocomplete="off" maxlength="60"></label>' +
+      '<button type="button" class="cambiar" id="fSwap" aria-label="Intercambiar partida y destino">' + ICO.cambiar + '</button>' +
+      '<label class="casilla"><span class="et">Hacia</span><input id="fDes" list="lugL" value="' + esc(F.destino) + '" placeholder="¿A dónde van?" autocomplete="off" maxlength="60"></label>' +
+    '</div>' +
+    '<div class="fechas' + (F.ida_vuelta ? '' : ' una') + '"><button type="button" class="casilla" id="fFechas"><span class="et">Ida</span>' + fechasTxt(F.fecha_ida, 'Elige') + '</button>' +
+      '<button type="button" class="casilla" id="fFechas2"><span class="et">Vuelta</span>' + fechasTxt(F.fecha_retorno, 'Elige') + '</button></div>' +
+    '<button type="button" class="casilla" id="fPax"><span class="et">Viajeros</span><span class="val">' + viajeros() + (viajeros() === 1 ? ' viajero' : ' viajeros') + '</span><span class="sub">' + esc(textoViajeros()) + '</span></button>' +
+    '</div>' +
+    '<datalist id="lugL">' + P.lugares.map(l => '<option value="' + esc(l) + '">').join('') + '</datalist>' +
+    '<div class="dos"><label class="campo"><span class="etq">Hora de salida <small class="n">(aproximada)</small></span><select id="fHora"><option value="">A coordinar</option>' +
+      Array.from({length: 37}, (_, i) => { const h = 3 + Math.floor(i / 2), m = i % 2 ? '30' : '00', v = pad(h) + ':' + m; return '<option value="' + v + '"' + (F.hora_salida === v ? ' selected' : '') + '>' + v + '</option>'; }).join('') + '</select></label>' +
+      '<div class="campo"><span class="etq">Duración</span><p class="ayuda" style="margin:14px 0 0;font-weight:700" id="fDur">' + (noches === null ? (F.ida_vuelta ? 'Elige ida y vuelta para ver los días.' : 'Viaje de un solo tramo.') : (noches + 1) + ' día(s) y ' + noches + ' noche(s) de viaje.') + '</p></div></div>' +
+    '<p class="error" id="e1" role="alert"></p>' +
+    '<div class="acciones"><button type="submit" class="btn ancho">Continuar</button></div></form>';
+  zona.querySelectorAll('[data-tipo]').forEach(b => b.onclick = () => { F.tipo = b.dataset.tipo; guardar(); paso1(); });
+  zona.querySelectorAll('[data-iv]').forEach(b => b.onclick = () => { F.ida_vuelta = b.dataset.iv === '1'; if (!F.ida_vuelta) F.fecha_retorno = ''; guardar(); paso1(); });
+  $('fOri').oninput = function(){ F.origen = this.value; guardar(); };
+  $('fDes').oninput = function(){ F.destino = this.value; guardar(); };
+  $('fSwap').onclick = () => { const o = F.origen; F.origen = F.destino; F.destino = o; guardar(); paso1(); };
+  $('fFechas').onclick = () => abrirCal('ida'); $('fFechas2').onclick = () => abrirCal(F.fecha_ida ? 'vuelta' : 'ida');
+  $('fPax').onclick = abrirPax;
+  $('fHora').onchange = function(){ F.hora_salida = this.value; guardar(); };
+  $('f1').onsubmit = (e) => { e.preventDefault();
+    const err = !F.origen.trim() ? ['Escribe desde dónde parten.', 'fOri'] : !F.destino.trim() ? ['Escribe a dónde quieren ir.', 'fDes'] : F.origen.trim().toLowerCase() === F.destino.trim().toLowerCase() ? ['La partida y el destino son el mismo lugar.', 'fDes']
+      : !F.fecha_ida ? ['Elige la fecha de ida.', 'fFechas'] : F.ida_vuelta && !F.fecha_retorno ? ['Elige la fecha de vuelta.', 'fFechas2'] : null;
+    if (err) { $('e1').textContent = err[0]; const el = $(err[1]); el.focus(); if (err[1].indexOf('fFechas') === 0) el.click(); return; }
+    F.paso = 2; guardar(); pintar(); window.scrollTo({top: $('main').offsetTop - 20, behavior:'smooth'}); };
+}
+function paso2(){
+  zona.innerHTML = '<form class="buscador entra" id="f2" novalidate>' + cabPasos(2) +
+    '<div class="dos"><label class="campo"><span class="etq">Lugar exacto de recojo</span><input id="dRec" value="' + esc(F.lugar_recojo) + '" maxlength="120" placeholder="Ej.: Plaza de Armas de ' + esc(F.origen || 'Angasmarca') + '"></label>' +
+    '<label class="campo"><span class="etq">Punto de llegada <small class="n">(opcional)</small></span><input id="dLle" value="' + esc(F.punto_llegada) + '" maxlength="120" placeholder="Hotel, dirección o terminal en ' + esc(F.destino) + '"></label></div>' +
+    '<button type="button" class="interruptor" role="switch" id="dInt" aria-checked="' + F.recorrido_interno + '"><span><b>La van hace recorrido dentro de la ciudad</b><small>Para visitas, compras o traslados internos en destino</small></span><span class="sw" aria-hidden="true"></span></button>' +
+    '<div class="interno' + (F.recorrido_interno ? '' : ' oculto') + '" id="dIntB"><div class="dos"><label class="campo"><span class="etq">¿En qué ciudad?</span><input id="dCiu" value="' + esc(F.recorrido_ciudad || F.destino) + '" maxlength="60"></label>' +
+      '<div class="campo"><span class="etq">Horas aproximadas</span><div class="cont"><button type="button" id="hMenos" aria-label="Menos horas">−</button><output id="hVal">' + F.recorrido_horas + ' h</output><button type="button" id="hMas" aria-label="Más horas">+</button></div></div></div>' +
+      '<label class="campo"><span class="etq">¿Qué lugares quieren visitar?</span><textarea id="dIntD" maxlength="300" placeholder="Ej.: centro histórico, miradores, mercado, restaurante para almorzar">' + esc(F.recorrido_detalle) + '</textarea></label></div>' +
+    '<div class="campo"><span class="etq" id="tPref">Servicio que prefieres</span><div class="planes" role="radiogroup" aria-labelledby="tPref">' +
+      [['estandar','Estándar','Asientos reclinables y paradas para fotos'],['premium','Premium','Además: refrigerio diario y WiFi a bordo'],['ambos','Cotícenme ambos','Decido cuando vea los dos precios']].map(p => '<button type="button" class="plan" role="radio" data-pref="' + p[0] + '" aria-checked="' + (F.servicio_pref === p[0]) + '"><b>' + p[1] + '</b><small>' + p[2] + '</small></button>').join('') + '</div></div>' +
+    '<label class="campo"><span class="etq">Detalles del viaje <small class="n">(opcional)</small></span><textarea id="dDet" maxlength="600" placeholder="Motivo del viaje, equipaje grande, paradas que necesitan, si llevan mascota…">' + esc(F.detalles) + '</textarea></label>' +
+    '<div class="acciones"><button type="button" class="btn sec" id="atras2">Atrás</button><button type="submit" class="btn ancho">Continuar</button></div></form>';
+  const v = (id, k) => { $(id).oninput = function(){ F[k] = this.value; guardar(); }; };
+  v('dRec','lugar_recojo'); v('dLle','punto_llegada'); v('dCiu','recorrido_ciudad'); v('dIntD','recorrido_detalle'); v('dDet','detalles');
+  $('dInt').onclick = function(){ F.recorrido_interno = !F.recorrido_interno; if (F.recorrido_interno && !F.recorrido_ciudad) F.recorrido_ciudad = F.destino; this.setAttribute('aria-checked', F.recorrido_interno); $('dIntB').classList.toggle('oculto', !F.recorrido_interno); guardar(); };
+  const horas = (d) => { F.recorrido_horas = Math.max(1, Math.min(12, F.recorrido_horas + d)); $('hVal').textContent = F.recorrido_horas + ' h'; $('hMenos').disabled = F.recorrido_horas <= 1; $('hMas').disabled = F.recorrido_horas >= 12; guardar(); };
+  $('hMenos').onclick = () => horas(-1); $('hMas').onclick = () => horas(1); horas(0);
+  zona.querySelectorAll('[data-pref]').forEach(b => b.onclick = () => { F.servicio_pref = b.dataset.pref; zona.querySelectorAll('[data-pref]').forEach(z => z.setAttribute('aria-checked', z === b)); guardar(); });
+  $('atras2').onclick = () => { F.paso = 1; guardar(); pintar(); };
+  $('f2').onsubmit = (e) => { e.preventDefault(); F.paso = 3; guardar(); pintar(); window.scrollTo({top: $('main').offsetTop - 20, behavior:'smooth'}); };
+}
+function resumenFilas(){
+  const f = [['Servicio', TIPO[F.tipo]], ['Ruta', F.origen + (F.ida_vuelta ? ' ⇄ ' : ' → ') + F.destino], ['Ida', corta(F.fecha_ida) + (F.hora_salida ? ', ' + F.hora_salida : '')]];
+  if (F.ida_vuelta) f.push(['Vuelta', corta(F.fecha_retorno)]);
+  f.push(['Viajeros', textoViajeros()]);
+  if (F.lugar_recojo) f.push(['Recojo', F.lugar_recojo]);
+  if (F.recorrido_interno) f.push(['En la ciudad', (F.recorrido_ciudad || F.destino) + ', ' + F.recorrido_horas + ' h']);
+  f.push(['Prefieres', PREF[F.servicio_pref]]);
+  return f;
+}
+function paso3(){
+  zona.innerHTML = '<form class="buscador entra" id="f3" novalidate>' + cabPasos(3) +
+    '<div class="dos"><label class="campo"><span class="etq">Nombre y apellido</span><input id="cNom" value="' + esc(F.cliente) + '" maxlength="80" autocomplete="name" required></label>' +
+    '<div class="campo"><label for="cTel" class="etq">WhatsApp</label><div class="tel"><span>+51</span><input id="cTel" inputmode="tel" autocomplete="tel-national" value="' + esc(F.celular) + '" maxlength="15" placeholder="9XX XXX XXX" required></div></div></div>' +
+    '<label class="campo"><span class="etq">Correo <small class="n">(opcional)</small></span><input id="cMail" type="email" value="' + esc(F.email) + '" maxlength="80" autocomplete="email"></label>' +
+    '<div class="revisa"><h3>Revisa tu viaje</h3><dl>' + resumenFilas().map(r => '<dt>' + esc(r[0]) + '</dt><dd>' + esc(r[1]) + '</dd>').join('') + '</dl></div>' +
+    '<label class="casilla-check"><input type="checkbox" id="cOk"' + (F.acepto ? ' checked' : '') + '><span>Acepto que Villa Azul me escriba por WhatsApp para enviarme la cotización y coordinar el viaje.</span></label>' +
+    '<input class="trampa" id="cWeb" tabindex="-1" autocomplete="off" aria-hidden="true">' +
+    '<p class="error" id="e3" role="alert"></p>' +
+    '<div class="acciones"><button type="button" class="btn sec" id="atras3">Atrás</button><button type="submit" class="btn ancho" id="enviar">Enviar solicitud</button></div>' +
+    '<p class="ayuda">Enviar la solicitud no te compromete a nada: primero recibes los precios.</p></form>';
+  const v = (id, k) => { $(id).oninput = function(){ F[k] = this.value; guardar(); }; };
+  v('cNom','cliente'); v('cTel','celular'); v('cMail','email');
+  $('cOk').onchange = function(){ F.acepto = this.checked; guardar(); };
+  $('atras3').onclick = () => { F.paso = 2; guardar(); pintar(); };
+  $('f3').onsubmit = (e) => { e.preventDefault();
+    const d = F.celular.replace(/\D/g, '');
+    const err = F.cliente.trim().length < 3 ? ['Escribe tu nombre y apellido.', 'cNom'] : d.length < 9 ? ['Escribe tu WhatsApp de 9 dígitos.', 'cTel'] : !F.acepto ? ['Marca la casilla para poder escribirte.', 'cOk'] : null;
+    if (err) { $('e3').textContent = err[0]; $(err[1]).focus(); return; }
+    $('enviar').disabled = true; $('enviar').textContent = 'Enviando…'; $('e3').textContent = '';
+    const body = Object.assign({}, F, {canal: canal, web: $('cWeb').value}); delete body.paso;
+    fetch('/api/publico/viaja', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)}).then(r => r.json()).then(r => {
+      if (!r.ok) { $('e3').textContent = r.error; $('enviar').disabled = false; $('enviar').textContent = 'Enviar solicitud'; return; }
+      const mis = (ls('va_mis_sol') || []).filter(x => x.token !== r.data.token); mis.unshift({token: r.data.token, codigo: r.data.codigo, t: Date.now()}); ls('va_mis_sol', mis.slice(0, 10));
+      const enviado = Object.assign({}, F); ls('va_viaja', null);
+      history.replaceState(null, '', '/viaja?s=' + r.data.token);
+      confirmacion(r.data, enviado);
+    }).catch(() => { $('e3').textContent = 'Sin conexión. Revisa tu señal: lo que escribiste sigue guardado.'; $('enviar').disabled = false; $('enviar').textContent = 'Enviar solicitud'; });
+  };
+}
+
+/* ─── Pase de abordar ─── */
+function qrSvg(texto){ try { const q = qrcode(0, 'M'); q.addData(texto); q.make(); return q.createSvgTag({cellSize: 4, margin: 0, scalable: true}); } catch (e) { return ''; } }
+function pase(d, estadoTxt){
+  const url = location.origin + '/viaja?s=' + d.token;
+  return '<article class="pase entra" aria-label="Solicitud ' + esc(d.codigo) + '"><div class="pase-top"><div class="marca"><svg viewBox="0 0 40 40" width="32" height="32" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#1E4FD1"/><path d="M7 26c4-7 7-10 10-10 4 0 4 6 8 6 2.6 0 4.6-2 8-6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 31h26" stroke="#9DB7FF" stroke-width="2.2" stroke-linecap="round"/></svg><span>Villa Azul<small>' + esc(d.tipo) + '</small></span></div>' +
+    '<p class="estado-txt">' + estadoTxt + '</p></div>' +
+    '<div class="ruta"><div><span class="cod">' + esc(codigo3(d.origen)) + '</span><span class="lug">' + esc(d.origen) + '</span></div><div class="medio">' + (d.ida_vuelta ? ICO.rutaIV + 'ida y vuelta' : ICO.ruta + 'solo ida') + '</div><div class="fin"><span class="cod">' + esc(codigo3(d.destino)) + '</span><span class="lug">' + esc(d.destino) + '</span></div></div>' +
+    '<div class="datos"><div><small>Ida</small><b>' + esc(corta(d.fecha_ida)) + (d.hora_salida ? '<br>' + esc(d.hora_salida) : '') + '</b></div>' + (d.ida_vuelta ? '<div><small>Vuelta</small><b>' + esc(corta(d.fecha_retorno)) + '</b></div>' : '') +
+      '<div><small>Viajeros</small><b>' + d.pasajeros + '</b></div><div><small>Servicio</small><b>' + esc(PREF[d.servicio_pref] === PREF.ambos ? 'Estándar y Premium' : PREF[d.servicio_pref]) + '</b></div>' + (d.recorrido_interno ? '<div><small>En la ciudad</small><b>Recorrido incluido</b></div>' : '') + '</div>' +
+    '<div class="corte" aria-hidden="true"></div><div class="talon"><div class="qr" aria-hidden="true">' + qrSvg(url) + '</div><div><small style="color:var(--gris);font-weight:700;font-size:12.5px">Tu código</small><div class="cs">' + esc(d.codigo) + '</div><p>Guarda este pase. Con él vuelves a ver tu solicitud y tu cotización.</p></div></div></article>';
+}
+function flujo(etapa){
+  const pasos = [['recibida','Recibimos tu solicitud','Te escribimos por WhatsApp si falta algún dato.'],['revisando','Preparamos tu cotización','Calculamos ruta, peajes y días, y validamos la fecha.'],['enviada','Te enviamos los precios','Llega por WhatsApp con el enlace para elegir.'],['aceptada','Eliges Estándar o Premium','Coordinamos el adelanto y confirmamos tu viaje.']];
+  const pos = {nueva:1, revisando:1, enviada:2, vencida:2, rechazada:2, aceptada:4}[etapa] || 0;
+  return '<ol class="flujo">' + pasos.map((p, i) => '<li data-n="' + (i + 1) + '" class="' + (i < pos ? 'hecho' : i === pos ? 'ahora' : '') + '"><div><b>' + p[1] + '</b><small>' + p[2] + '</small></div></li>').join('') + '</ol>';
+}
+function mensajeWa(d){
+  const l = ['Hola Villa Azul, envié la solicitud ' + d.codigo + ':', d.tipo + ': ' + d.origen + (d.ida_vuelta ? ' ⇄ ' : ' → ') + d.destino, 'Ida: ' + corta(d.fecha_ida) + (d.hora_salida ? ' ' + d.hora_salida : '') + (d.ida_vuelta ? ' · Vuelta: ' + corta(d.fecha_retorno) : ''), 'Viajeros: ' + d.pasajeros];
+  if (d.recorrido_interno) l.push('Con recorrido dentro de la ciudad');
+  l.push('Prefiero: ' + PREF[d.servicio_pref], '', 'Mi solicitud: ' + location.origin + '/viaja?s=' + d.token);
+  return l.join('\n');
+}
+function vistaPase(d, primera){
+  $('extras').classList.add('oculto'); $('titular').classList.add('oculto');
+  const txt = primera ? '¡Listo, ' + esc(String(d.cliente || '').split(' ')[0]) + '! Recibimos tu solicitud.'
+    : {nueva:'Recibimos tu solicitud', revisando:'Estamos preparando tu cotización', enviada:'Tu cotización está lista', vencida:'Tu cotización venció', rechazada:'Solicitud cerrada', aceptada:'Elegiste tu servicio', descartada:'Solicitud cerrada'}[d.etapa] || 'Tu solicitud';
+  let h = pase(d, txt);
+  if (d.etapa === 'descartada') h += '<div class="aviso-c mal">No pudimos atender esta solicitud con esos datos. Escríbenos y buscamos otra opción.</div>';
+  else h += flujo(d.etapa);
+  h += '<div class="botones-pase">';
+  if (d.cotizacion) h += '<a class="btn ancho" href="/cotizacion?c=' + esc(d.cotizacion.token) + '">' + (d.cotizacion.plan_elegido ? 'Ver mi cotización' : 'Ver precios y elegir servicio') + '</a>';
+  if (primera) h += '<a class="btn wa ancho" target="_blank" rel="noopener" href="https://wa.me/' + waNum() + '?text=' + encodeURIComponent(mensajeWa(d)) + '">' + ICO.wa + 'Avisar por WhatsApp</a>';
+  else h += '<a class="btn ' + (d.cotizacion ? 'sec' : 'wa') + ' ancho" target="_blank" rel="noopener" href="https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, consulto por mi solicitud ' + d.codigo + '.') + '">' + ICO.wa + 'Escribir por WhatsApp</a>';
+  h += '<button type="button" class="btn sec ancho" id="copiar">Copiar enlace</button><a class="btn sec ancho" href="/viaja" id="otra">Pedir otro viaje</a></div>';
+  if (primera) h += '<p class="ayuda" style="text-align:center;max-width:640px;margin:14px auto 0">Toca «Avisar por WhatsApp»: así te atendemos más rápido.</p>';
+  zona.innerHTML = h;
+  $('copiar').onclick = () => { const u = location.origin + '/viaja?s=' + d.token; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(() => { $('copiar').textContent = 'Enlace copiado'; }, () => prompt('Copia tu enlace:', u)); };
+  $('otra').onclick = (e) => { e.preventDefault(); history.replaceState(null, '', '/viaja'); F = Object.assign({}, BASE, {origen: d.origen}); $('titular').classList.remove('oculto'); pintar(); window.scrollTo(0, 0); };
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+function confirmacion(r, f){
+  const d = Object.assign({}, f, {codigo: r.codigo, token: r.token, tipo: TIPO[f.tipo], pasajeros: f.adultos + f.ninos, etapa: 'nueva'});
+  conQR(() => vistaPase(d, true));
+}
+/* Espera el generador de QR hasta 3 s; si no carga (señal mala), muestra el pase igual, sin el QR. */
+function conQR(fn){ let n = 0; const t = () => (typeof qrcode === 'function' || n++ > 25) ? fn() : setTimeout(t, 120); t(); }
+function seguimiento(tok){
+  zona.innerHTML = '<p class="cargando">Buscando tu solicitud…</p>'; $('extras').classList.add('oculto');
+  conTiempo('/api/publico/viaja/' + tok, 15000).then(r => r.json()).then(r => {
+    if (!r.ok) { zona.innerHTML = '<div class="buscador"><p>' + esc(r.error) + '</p><a class="btn" href="/viaja">Pedir un viaje</a></div>'; return; }
+    conQR(() => vistaPase(Object.assign(r.data, {token: tok}), false));
+  }).catch(() => { zona.innerHTML = '<div class="buscador"><p>Sin conexión. Vuelve a abrir tu enlace cuando tengas señal.</p></div>'; });
+}
+
+/* ─── Ventanas ─── */
+let abierta = null, scrollGuardado = 0, focoPrevio = null;
+function abrirCapa(id){
+  if (abierta) cerrarCapa(true);
+  const c = $(id); focoPrevio = document.activeElement; scrollGuardado = window.pageYOffset || 0;
+  // Fija el fondo: en iPhone «overflow:hidden» no basta para que la página no se mueva detrás.
+  document.body.style.top = (-scrollGuardado) + 'px'; document.body.classList.add('bloq');
+  c.hidden = false; abierta = c;
+  const x = c.querySelector('.cerrar'); if (x) { try { x.focus({preventScroll: true}); } catch (e) { x.focus(); } }
+}
+function cerrarCapa(silencio){
+  if (!abierta) return; const c = abierta; abierta = null; c.hidden = true;
+  document.body.classList.remove('bloq'); document.body.style.top = ''; window.scrollTo(0, scrollGuardado);
+  if (!silencio) { let ev; try { ev = new Event('cerrado'); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('cerrado', false, false); } c.dispatchEvent(ev); }
+  if (focoPrevio && focoPrevio.focus && document.body.contains(focoPrevio)) { try { focoPrevio.focus({preventScroll: true}); } catch (e) {} }
+}
+document.querySelectorAll('.capa').forEach(c => c.addEventListener('click', (e) => { if (e.target === c || (e.target.closest && e.target.closest('[data-cerrar]'))) cerrarCapa(); }));
+document.addEventListener('keydown', (e) => { if (abierta && (e.key === 'Escape' || e.key === 'Esc')) cerrarCapa(); });
+
+/* ─── Calendario ─── */
+let modoCal = 'ida', tmp = {ida:'', vue:''};
+function abrirCal(modo){
+  tmp = {ida: F.fecha_ida, vue: F.fecha_retorno}; modoCal = modo;
+  $('selF').classList.toggle('una', !F.ida_vuelta); $('sfVue').classList.toggle('oculto', !F.ida_vuelta);
+  $('dCalT').textContent = F.ida_vuelta ? 'Elige tus fechas' : 'Elige el día del viaje';
+  pintarMeses(); abrirCapa('dCal');
+  const ancla = $('meses').querySelector('[data-d="' + (modo === 'vuelta' && tmp.vue ? tmp.vue : tmp.ida || P.hoy) + '"]');
+  $('meses').scrollTop = ancla ? ancla.closest('.mes').offsetTop - 4 : 0;
+}
+function pintarMeses(){
+  const hoy = P.hoy || iso(new Date()), base = deIso(hoy); let h = '';
+  for (let k = 0; k < 13; k++) {
+    const m = new Date(base.getFullYear(), base.getMonth() + k, 1), dias = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate(), off = (m.getDay() + 6) % 7;
+    h += '<div class="mes"><h3>' + MESES[m.getMonth()] + ' ' + m.getFullYear() + '</h3><div class="sem-m" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div><div class="dias">' + '<span></span>'.repeat(off);
+    for (let d = 1; d <= dias; d++) {
+      const s = iso(new Date(m.getFullYear(), m.getMonth(), d)), fer = feriado(s), oc = ocup.has(s), pasado = s < hoy;
+      const enRango = tmp.ida && tmp.vue && s > tmp.ida && s < tmp.vue, ini = s === tmp.ida, fin = F.ida_vuelta ? s === tmp.vue : s === tmp.ida;
+      const cls = ['dia', s === hoy ? 'hoy' : '', enRango ? 'rango' : '', ini ? 'ini' : '', fin ? 'fin' : '', fer ? 'fer' : '', oc ? 'ocup' : ''].filter(Boolean).join(' ');
+      const lbl = corta(s) + (fer ? ', feriado: ' + fer : '') + (oc ? ', la van tiene otro viaje' : '') + (ini ? ', ida' : '') + (fin && F.ida_vuelta && !ini ? ', vuelta' : '');
+      h += '<button type="button" class="' + cls + '" data-d="' + s + '"' + (pasado ? ' disabled' : '') + ' aria-label="' + esc(lbl) + '"' + (ini || fin ? ' aria-pressed="true"' : '') + '><span>' + d + '</span><i></i></button>';
+    }
+    h += '</div></div>';
+  }
+  $('meses').innerHTML = h; resumenCal();
+}
+function resumenCal(){
+  $('sfIdaV').textContent = tmp.ida ? corta(tmp.ida) : 'Elige un día'; $('sfVueV').textContent = tmp.vue ? corta(tmp.vue) : 'Elige un día';
+  $('sfIda').setAttribute('aria-pressed', modoCal === 'ida'); $('sfVue').setAttribute('aria-pressed', modoCal === 'vuelta');
+  const n = tmp.ida && tmp.vue ? diasEntre(tmp.ida, tmp.vue) : null;
+  $('resF').innerHTML = !tmp.ida ? 'Elige el día de ida' : !F.ida_vuelta ? '<b>' + esc(corta(tmp.ida)) + '</b>Solo ida' : !tmp.vue ? '<b>' + esc(corta(tmp.ida)) + '</b>Ahora elige la vuelta' : '<b>' + esc(corta(tmp.ida)) + ' – ' + esc(corta(tmp.vue)) + '</b>' + (n + 1) + ' día(s), ' + n + ' noche(s)';
+  const elegidos = [];
+  if (tmp.ida) { const fin = F.ida_vuelta && tmp.vue ? tmp.vue : tmp.ida; for (let d = deIso(tmp.ida); iso(d) <= fin; d.setDate(d.getDate() + 1)) elegidos.push(iso(d)); }
+  const oc = elegidos.filter(s => ocup.has(s)), fe = elegidos.filter(s => feriado(s));
+  const avisos = [];
+  if (oc.length) avisos.push((oc.length === 1 ? 'El ' + corta(oc[0]) : oc.length + ' de tus días') + ' la van ya tiene otro viaje. Igual puedes pedirlo: te confirmamos disponibilidad.');
+  if (fe.length) avisos.push(fe.map(s => feriado(s)).filter((v, i, a) => a.indexOf(v) === i).join(' y ') + ': feriado de alta demanda, mejor pedir con anticipación.');
+  $('notaDia').textContent = avisos.join(' '); $('notaDia').classList.toggle('oculto', !avisos.length);
+  $('calOk').disabled = !tmp.ida || (F.ida_vuelta && !tmp.vue);
+}
+$('meses').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-d]'); if (!b || b.disabled) return; const s = b.dataset.d;
+  if (!F.ida_vuelta) { tmp.ida = s; tmp.vue = ''; }
+  else if (modoCal === 'ida' || !tmp.ida || s < tmp.ida) { tmp.ida = s; if (tmp.vue && tmp.vue < s) tmp.vue = ''; modoCal = 'vuelta'; }
+  else { tmp.vue = s; }
+  const top = $('meses').scrollTop; pintarMeses(); $('meses').scrollTop = top;
+  if (!F.ida_vuelta || (tmp.ida && tmp.vue)) $('calOk').focus({preventScroll:true});
+});
+$('sfIda').onclick = () => { modoCal = 'ida'; resumenCal(); };
+$('sfVue').onclick = () => { if (tmp.ida) { modoCal = 'vuelta'; resumenCal(); } };
+$('calOk').onclick = () => { F.fecha_ida = tmp.ida; F.fecha_retorno = F.ida_vuelta ? tmp.vue : ''; guardar(); cerrarCapa(true); paso1(); try { $('fPax').focus({preventScroll: true}); } catch (e) {} };
+
+/* ─── Viajeros: máximo 15 con asiento (capacidad de la van). Los bebés van en brazos y no ocupan asiento. ─── */
+const MAX_PAX = 15;
+const TIPOS_PAX = [['adultos','Adultos','12 años o más',1],['ninos','Niños','De 2 a 11 años, con asiento',0],['bebes','Bebés','Menores de 2, en brazos',0]];
+function ajustarPax(){ F.adultos = Math.max(1, Math.min(MAX_PAX, F.adultos|0)); F.ninos = Math.max(0, Math.min(MAX_PAX - F.adultos, F.ninos|0)); F.bebes = Math.max(0, Math.min(F.adultos, F.bebes|0)); }
+function abrirPax(){ pintarPax(); abrirCapa('dPax'); }
+function pintarPax(){
+  ajustarPax();
+  const n = viajeros(), lleno = n >= MAX_PAX;
+  const puede = (k) => k === 'bebes' ? F.bebes < F.adultos : !lleno;
+  $('paxL').innerHTML = TIPOS_PAX.map(t => '<div class="pasajero"><div><b>' + t[1] + '</b><small>' + t[2] + '</small></div><div class="cont">' +
+    '<button type="button" data-p="' + t[0] + '" data-d="-1" aria-label="Quitar ' + t[1].toLowerCase() + '"' + (F[t[0]] <= t[3] ? ' disabled' : '') + '>−</button>' +
+    '<output aria-live="polite">' + F[t[0]] + '</output>' +
+    '<button type="button" data-p="' + t[0] + '" data-d="1" aria-label="Agregar ' + t[1].toLowerCase() + '"' + (puede(t[0]) ? '' : ' disabled') + '>+</button></div></div>').join('');
+  const nv = $('notaVan');
+  nv.className = 'nota-van' + (lleno ? ' tope' : '');
+  nv.innerHTML = lleno ? 'Llegaste al máximo: <b>15 viajeros con asiento</b> por van. ¿Son más? <a href="https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, somos un grupo de más de 15 personas y queremos cotizar un viaje.') + '" target="_blank" rel="noopener">Escríbenos por WhatsApp</a> y coordinamos otra unidad.'
+    : 'Máximo 15 viajeros con asiento por van. Te quedan ' + (MAX_PAX - n) + (MAX_PAX - n === 1 ? ' asiento.' : ' asientos.');
+  $('resP').innerHTML = '<b>' + n + (n === 1 ? ' viajero' : ' viajeros') + '</b>' + esc(textoViajeros());
+}
+// Un solo manejador para los botones + y −: sigue funcionando aunque la lista se vuelva a dibujar.
+$('paxL').addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-p]'); if (!b || b.disabled) return;
+  const k = b.dataset.p, d = Number(b.dataset.d);
+  if (d > 0 && k !== 'bebes' && viajeros() >= MAX_PAX) return;
+  F[k] = Math.max(k === 'adultos' ? 1 : 0, F[k] + d); ajustarPax(); guardar(); pintarPax();
+  const igual = $('paxL').querySelector('[data-p="' + k + '"][data-d="' + d + '"]'); if (igual && !igual.disabled) { try { igual.focus({preventScroll: true}); } catch (x) {} }
+});
+$('dPax').addEventListener('cerrado', () => { if (F.paso === 1 && $('fPax')) paso1(); });
+
+/* ─── Arranque ─── */
+const mis = ls('va_mis_sol') || [];
+if (mis.length) { $('miSol').classList.remove('oculto'); $('miSol').href = '/viaja?s=' + mis[0].token; $('miSol').textContent = 'Mi solicitud'; $('miSol').title = mis[0].codigo; }
+const tok = (params.get('s') || '').toLowerCase().replace(/[^a-f0-9]/g, '');
+ajustarPax();
+if (tok.length === 20) seguimiento(tok); else pintar();
+cargarPortal();
+})();
+</script>
+</body>
+</html>
