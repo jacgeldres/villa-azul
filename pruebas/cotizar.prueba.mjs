@@ -30,3 +30,8 @@ if (sinHoras.join(' ') !== 'Le esperamos hasta 30 minutos sin costo. Si necesita
 if (conHoras[0] !== 'Incluye hasta 3 horas de espera.') { console.error('FALLA: regla con horas', conHoras); process.exit(1); }
 if (politicaEspera({}, { tipo: 'excursion' }).length) { console.error('FALLA: excursión sin regla'); process.exit(1); }
 console.log('OK regla de espera');
+// Espera larga: 12 h = 4 h × S/ 10 + 8 h × S/ 5 = S/ 80
+const pj = calcular(P, { tipo: 'privado', modalidad: 'ida_vuelta', km_ida: 61.2, pasajeros: 12, horas_espera: 12 });
+const espL = pj.estandar.lineas.find(l => l.clave === 'espera').monto;
+if (espL !== 80) { console.error('FALLA: espera larga', espL); process.exit(1); }
+console.log('OK espera larga', pj.estandar.costo, JSON.stringify(pj.estandar.precios));

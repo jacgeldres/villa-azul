@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0B1B33">
 <title>Arma tu viaje · Villa Azul Turismo &amp; Excursiones</title>
-<meta name="description" content="Excursiones y transporte privado en van desde Angasmarca. Elige fechas y viajeros, y recibe tu cotización Estándar y Premium por WhatsApp.">
+<meta name="description" content="Excursiones y transporte privado en van desde Angasmarca. Elige fechas y viajeros, y recibe tu cotización por WhatsApp.">
 <meta property="og:title" content="Arma tu viaje con Villa Azul">
 <meta property="og:description" content="Excursiones y transporte privado. Elige fechas y viajeros; te cotizamos por WhatsApp.">
 <meta property="og:type" content="website">
@@ -305,7 +305,7 @@ body.bloq{position:fixed;left:0;right:0;overflow:hidden}
   </div>
   <div class="titular" id="titular">
     <h1>¿A dónde vamos?</h1>
-    <p>Excursiones y transporte privado en van desde Angasmarca. Elige tus fechas y cuántos viajan: te enviamos por WhatsApp dos precios, Estándar y Premium, para que escojas.</p>
+    <p>Excursiones y transporte privado en van desde Angasmarca. Elige tus fechas y cuántos viajan: te enviamos tu cotización por WhatsApp, con el precio por pasajero.</p>
   </div>
   <svg class="sierra" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
     <path class="r1" d="M0 170 L110 90 L190 150 L300 60 L410 160 L520 80 L640 170 L760 70 L880 150 L990 90 L1100 160 L1200 110 V300 H0Z"/>
@@ -327,12 +327,12 @@ body.bloq{position:fixed;left:0;right:0;overflow:hidden}
       <div class="destinos" id="destinos"></div>
     </section>
     <section class="bloque" aria-labelledby="t-serv">
-      <h2 id="t-serv">Dos formas de viajar</h2>
-      <p class="intro">En cada cotización ves ambos precios y eliges desde tu celular.</p>
+      <h2 id="t-serv">Nuestro servicio</h2>
+      <p class="intro" id="servIntro">Viaja cómodo y seguro, con conductor profesional.</p>
       <div class="comparar">
         <div class="foto" style="background-image:url('/hiace-interior.jpg')" role="img" aria-label="Interior de la van con asientos acolchados"><span>Nuestra van por dentro</span></div>
         <div class="serv"><h3>Estándar</h3><span class="tag">Cómodo y directo</span><ul><li>Asientos acolchados para viaje</li><li>Asientos reclinables</li><li>Paradas para fotos</li><li class="no">Refrigerio diario</li><li class="no">WiFi a bordo</li></ul></div>
-        <div class="serv prem"><h3>Premium</h3><span class="tag">Todo el Estándar, y además</span><ul><li>Asientos acolchados para viaje</li><li>Asientos reclinables</li><li>Paradas para fotos</li><li>Refrigerio, uno por día</li><li>WiFi a bordo con Starlink</li></ul></div>
+        <div class="serv prem oculto" id="servPrem"><h3>Premium</h3><span class="tag">Todo el Estándar, y además</span><ul><li>Asientos acolchados para viaje</li><li>Asientos reclinables</li><li>Paradas para fotos</li><li>Refrigerio, uno por día</li><li>WiFi a bordo con Starlink</li></ul></div>
       </div>
     </section>
     <section class="bloque" aria-labelledby="t-como">
@@ -340,8 +340,8 @@ body.bloq{position:fixed;left:0;right:0;overflow:hidden}
       <ol class="como">
         <li><b>Arma tu viaje</b><span>Fechas, viajeros, punto de recojo y si quieres recorrido por la ciudad.</span></li>
         <li><b>Revisamos tu pedido</b><span>Calculamos la ruta real, peajes y días, y validamos la fecha con la van.</span></li>
-        <li><b>Te llega por WhatsApp</b><span>Un enlace con tu cotización en servicio Estándar y Premium.</span></li>
-        <li><b>Eliges y confirmamos</b><span>Tocas el servicio que prefieres y coordinamos el adelanto.</span></li>
+        <li><b>Te llega por WhatsApp</b><span>Un enlace con tu cotización y el precio por pasajero.</span></li>
+        <li><b>Confirmas y separamos</b><span>Aceptas desde tu celular y coordinamos el adelanto.</span></li>
       </ol>
     </section>
   </div>
@@ -423,6 +423,10 @@ function conTiempo(url, ms){
 }
 function cargarPortal(){
   return conTiempo('/api/publico/viaja', 12000).then(r => r.json()).then(r => { if (r.ok) { P = r.data; ocup = new Set(P.ocupados); } }).catch(() => {}).then(() => {
+    // Premium solo cuando la empresa lo activa; mientras tanto se cotiza Estándar.
+    const prem = !!(P && P.premium);
+    if (prem) { $('servPrem').classList.remove('oculto'); $('t-serv').textContent = 'Dos formas de viajar'; $('servIntro').textContent = 'En cada cotización ves ambos precios y eliges desde tu celular.'; }
+    else F.servicio_pref = 'estandar';
     ['waTop','waPie'].forEach(id => { $(id).href = 'https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, quiero cotizar un viaje.'); });
     $('destinos').innerHTML = (P.lugares.length ? P.lugares : ['Trujillo','Huamachuco','Cajabamba','Santiago de Chuco','Huanchaco','Cajamarca']).filter(l => l.toLowerCase() !== 'angasmarca').slice(0, 12)
       .map(l => '<button type="button" data-dest="' + esc(l) + '">' + esc(l) + '</button>').join('');
@@ -480,8 +484,8 @@ function paso2(){
     '<div class="interno' + (F.recorrido_interno ? '' : ' oculto') + '" id="dIntB"><div class="dos"><label class="campo"><span class="etq">¿En qué ciudad?</span><input id="dCiu" value="' + esc(F.recorrido_ciudad || F.destino) + '" maxlength="60"></label>' +
       '<div class="campo"><span class="etq">Horas aproximadas</span><div class="cont"><button type="button" id="hMenos" aria-label="Menos horas">−</button><output id="hVal">' + F.recorrido_horas + ' h</output><button type="button" id="hMas" aria-label="Más horas">+</button></div></div></div>' +
       '<label class="campo"><span class="etq">¿Qué lugares quieren visitar?</span><textarea id="dIntD" maxlength="300" placeholder="Ej.: centro histórico, miradores, mercado, restaurante para almorzar">' + esc(F.recorrido_detalle) + '</textarea></label></div>' +
-    '<div class="campo"><span class="etq" id="tPref">Servicio que prefieres</span><div class="planes" role="radiogroup" aria-labelledby="tPref">' +
-      [['estandar','Estándar','Asientos reclinables y paradas para fotos'],['premium','Premium','Además: refrigerio diario y WiFi a bordo'],['ambos','Cotícenme ambos','Decido cuando vea los dos precios']].map(p => '<button type="button" class="plan" role="radio" data-pref="' + p[0] + '" aria-checked="' + (F.servicio_pref === p[0]) + '"><b>' + p[1] + '</b><small>' + p[2] + '</small></button>').join('') + '</div></div>' +
+    (P && P.premium ? '<div class="campo"><span class="etq" id="tPref">Servicio que prefieres</span><div class="planes" role="radiogroup" aria-labelledby="tPref">' +
+      [['estandar','Estándar','Asientos reclinables y paradas para fotos'],['premium','Premium','Además: refrigerio diario y WiFi a bordo'],['ambos','Cotícenme ambos','Decido cuando vea los dos precios']].map(p => '<button type="button" class="plan" role="radio" data-pref="' + p[0] + '" aria-checked="' + (F.servicio_pref === p[0]) + '"><b>' + p[1] + '</b><small>' + p[2] + '</small></button>').join('') + '</div></div>' : '') +
     '<label class="campo"><span class="etq">Detalles del viaje <small class="n">(opcional)</small></span><textarea id="dDet" maxlength="600" placeholder="Motivo del viaje, equipaje grande, paradas que necesitan, si llevan mascota…">' + esc(F.detalles) + '</textarea></label>' +
     '<div class="acciones"><button type="button" class="btn sec" id="atras2">Atrás</button><button type="submit" class="btn ancho">Continuar</button></div></form>';
   const v = (id, k) => { $(id).oninput = function(){ F[k] = this.value; guardar(); }; };
@@ -499,7 +503,7 @@ function resumenFilas(){
   f.push(['Viajeros', textoViajeros()]);
   if (F.lugar_recojo) f.push(['Recojo', F.lugar_recojo]);
   if (F.recorrido_interno) f.push(['En la ciudad', (F.recorrido_ciudad || F.destino) + ', ' + F.recorrido_horas + ' h']);
-  f.push(['Prefieres', PREF[F.servicio_pref]]);
+  if (P && P.premium) f.push(['Prefieres', PREF[F.servicio_pref]]);
   return f;
 }
 function paso3(){

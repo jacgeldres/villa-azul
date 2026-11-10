@@ -1,5 +1,5 @@
 /**
- * Villa Azul · Fórmula del cotizador (v5.3.0).
+ * Villa Azul · Fórmula del cotizador (v5.4.0).
  * Un solo archivo para la app (vista previa al instante) y para el servidor (cifra oficial al guardar).
  * Calcula dos servicios: Estándar y Premium (Estándar + snacks y WiFi).
  * v5.2: los km que la van hace vacía (volver a la base o ir a recoger) cuestan igual que los km con pasajeros.
@@ -24,6 +24,8 @@ export const PARAMETROS_BASE = {
   cochera_noche: 10,           // cochera de la van por noche fuera
   emergencia: 25,              // fondo de emergencia por servicio (parchado de llanta)
   espera_hora: 10,             // costo de cada hora de espera INCLUIDA en el precio (lleva margen; el cliente no la ve aparte)
+  espera_larga_desde_h: 4,     // desde esta hora la espera es «larga»: la van está parada, solo cuenta el tiempo del conductor
+  espera_larga_hora: 5,        // costo de cada hora de espera larga
   tolerancia_min: 30,          // minutos que se espera sin costo cuando no hay horas incluidas
   espera_extra_hora: 10,       // S/ que paga el cliente por hora adicional, pasada la tolerancia (sin margen)
   espera_tope_h: 2,            // horas adicionales máximas antes de coordinar otro horario (0 = sin tope)
@@ -32,6 +34,8 @@ export const PARAMETROS_BASE = {
   wifi_pax_viaje: 10,          // Premium: WiFi por pasajero por viaje (igual si dura 1 o 4 días). Precio fijo: no lleva margen encima
   bono_desde_km: 0,            // bono automático del conductor desde estos km recorridos (0 = apagado)
   bono_por_dia: 0,             // S/ de bono por día de servicio en viajes largos
+  premium_activo: 0,           // 1 = se ofrece el servicio Premium; 0 = solo Estándar
+  adelanto_pct: 50,            // % de adelanto para separar el viaje (se muestra al cliente)
   margen_minimo: 30,           // % de margen mínimo (sobre el precio)
   margen_objetivo: 40,         // % de margen recomendado
   margen_premium: 50,          // % de margen alto
@@ -45,6 +49,12 @@ const n = (v) => { const x = Number(String(v ?? '').replace(',', '.')); return i
 const r2 = (x) => Math.round(x * 100) / 100;
 const arriba10 = (x) => Math.ceil(r2(x) / 10) * 10;
 const dado = (v) => v !== undefined && v !== null && v !== '';
+
+/** Costo de las horas de espera incluidas: las primeras a tarifa normal y, en esperas largas (van parada todo el día), el resto a tarifa reducida. */
+function costoEspera(p, h) { const corte = Math.max(0, n(p.espera_larga_desde_h)), larga = n(p.espera_larga_hora) || n(p.espera_hora);
+  return corte && h > corte ? corte * n(p.espera_hora) + (h - corte) * larga : h * n(p.espera_hora); }
+function txtEspera(p, h) { const corte = Math.max(0, n(p.espera_larga_desde_h)), larga = n(p.espera_larga_hora) || n(p.espera_hora);
+  return (corte && h > corte ? `${corte} h × S/ ${n(p.espera_hora)} + ${r2(h - corte)} h × S/ ${larga} (espera larga)` : `${h} h × S/ ${n(p.espera_hora)}`) + ' · el cliente no la ve aparte'; }
 
 /** Regla de espera que ve el cliente (taxi y transporte privado). Pocas líneas, sin desglose de costos. */
 export function politicaEspera(parametros, d) {
@@ -98,7 +108,7 @@ export function calcular(parametros, d) {
     ['viaticos', 'Alimentación del conductor', r2(n(p.viatico_dia) * dias), `${dias} día(s) × S/ ${n(p.viatico_dia)}`],
     ['hospedaje', 'Hospedaje del conductor', r2(n(p.hospedaje_noche) * noches), `${noches} noche(s) × S/ ${n(p.hospedaje_noche)}`],
     ['cochera', 'Cochera', r2(n(p.cochera_noche) * noches), `${noches} noche(s) × S/ ${n(p.cochera_noche)}`],
-    ['espera', 'Espera incluida en el precio', r2(n(p.espera_hora) * horas), `${horas} h × S/ ${n(p.espera_hora)} · el cliente no la ve aparte`],
+    ['espera', 'Espera incluida en el precio', r2(costoEspera(p, horas)), txtEspera(p, horas)],
     ['desgaste', 'Desgaste de la van', r2(n(p.desgaste_km) * km), `${txtKm} × S/ ${n(p.desgaste_km)}`],
     ['emergencia', 'Fondo de emergencia', r2(n(p.emergencia) * salidas), salidas > 1 ? `${salidas} salidas × S/ ${n(p.emergencia)} · parchado de llanta u otro imprevisto` : 'Parchado de llanta u otro imprevisto'],
   ];

@@ -1,4 +1,4 @@
-# Villa Azul · v5.3.0 — Guía de despliegue
+# Villa Azul · v5.4.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,17 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.4 · Precios para Jorge, volver atrás, WhatsApp al cliente y Premium apagable
+
+Sube a GitHub `src/` y `public/`. No cambia la base de datos (sigue en la **versión 14**). Comprueba en Mi perfil: **Villa Azul v5.4.0 · base de datos v14**.
+
+- **Jorge cotiza con dos precios del Estándar:** «Recomendado» y «Alto». Toca el que va a enviar. No ve costos ni porcentajes, y no puede escribir otro precio.
+- **Volver atrás:** flecha ‹ en la cabecera, botón «atrás» del celular y, en la app instalada, deslizar el dedo desde el borde izquierdo. Si hay una ventana abierta, primero la cierra.
+- **WhatsApp al cliente:** el botón arma un mensaje con títulos, negritas y emoticones. Primero el precio por pasajero (y por tramo); el total del grupo va después. Incluye lo que trae el servicio, la regla de espera, el adelanto y el enlace.
+- **Premium apagado:** en Cotizador → Parámetros → Servicio y reserva. Apagado, la cotización, el enlace del cliente y el portal del QR muestran solo Estándar («Tu cotización» → «Aceptar la cotización»). Al encenderlo vuelve todo como antes.
+- **Adelanto para separar:** 50 % por defecto (Parámetros → Servicio y reserva). Se muestra en el enlace y en el mensaje.
+- **Espera larga:** las primeras 4 horas incluidas cuestan S/ 10 cada una y, desde la quinta, S/ 5 (la van está parada; solo cuenta el tiempo de Jorge). Se ajusta en Parámetros → Espera.
 
 ## Actualizar a la v5.3 · Regla de espera para el cliente
 
@@ -285,4 +296,3 @@ Las fotos de las boletas se guardan en la misma base de datos: no hay que config
 
 Excursiones ya se puede usar con clientes reales. Registrar, Caja y Cuentas siguen siendo de prueba: la caja diaria se sigue cerrando en la app actual hasta la fase 3.
 Lo que se registre aquí durante las pruebas se limpia antes del corte definitivo.
- 

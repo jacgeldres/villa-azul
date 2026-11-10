@@ -47,9 +47,10 @@ export function crearCotizador(h) {
   const paraOperador = (c) => c && ({ id: c.id, token: c.token, codigo: c.codigo, numero: c.numero, tipo: c.tipo, cliente: c.cliente, cliente_tel: c.cliente_tel, origen: c.origen, destino: c.destino,
     fecha_servicio: c.fecha_servicio, precio_final: c.precio_final, precio_final_premium: c.precio_final_premium, precio_acordado: c.precio_acordado, plan_elegido: c.plan_elegido, estado: c.estado,
     valida_hasta: c.valida_hasta, vencida: c.vencida, notas: c.notas, excursion_id: c.excursion_id, creado_por: c.creado_por, creado_por_id: c.creado_por_id, creado_en: c.creado_en,
-    datos: (({ bono, otros, ...resto }) => resto)(c.datos || {}), politica_espera: c.politica_espera,
+    datos: (({ bono, otros, ...resto }) => resto)(c.datos || {}), politica_espera: c.politica_espera, adelanto_pct: c.adelanto_pct, incluye: c.incluye,
     resultado: { km: c.resultado.km, km_vacios: c.resultado.km_vacios || 0, salidas: c.resultado.salidas || 1, dias: c.resultado.dias, noches: c.resultado.noches, horas_manejo: c.resultado.horas_manejo, pasajeros: c.resultado.pasajeros } });
   const num = (v) => { const x = Number(String(v ?? '').replace(',', '.')); return isFinite(x) ? x : 0; };
+  const adelantoDe = (c) => { const p = JSON.parse(c.parametros || '{}'); return p.adelanto_pct !== undefined ? num(p.adelanto_pct) : PARAMETROS_BASE.adelanto_pct; };
   const texto = (v, max = 100) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
   const tel = (t) => { let d = String(t || '').replace(/\D/g, ''); if (d.length === 9 && d[0] === '9') d = '51' + d; return d; };
   const claveRuta = (o, d) => (String(o).trim().toLowerCase() + '|' + String(d).trim().toLowerCase());
@@ -110,7 +111,8 @@ export function crearCotizador(h) {
     const op = !esMando(yo);
     if (op) {
       // El operador cotiza con el margen recomendado: no escribe precios ni bono (el bono automático de viaje largo sí se aplica).
-      delete b.precio_final; delete b.precio_final_premium; delete b.nivel; delete b.bono;
+      // Puede elegir entre el precio recomendado y el alto del Estándar; nunca escribir un precio a mano.
+      delete b.precio_final; delete b.precio_final_premium; delete b.bono; if (b.nivel !== 'alto') b.nivel = 'recomendado';
       if (id) { const prev = await env.DB.prepare('SELECT creado_por_id, excursion_id, estado FROM cotizaciones WHERE id=?').bind(id).first();
         if (!prev || prev.creado_por_id !== yo.id) throw new ErrorApi('Solo puedes editar tus propias cotizaciones.', 'SIN_PERMISO', 403);
         if (prev.estado === 'aceptada') throw new ErrorApi('El cliente ya eligió: pide a un administrador cualquier cambio.'); }
@@ -119,12 +121,15 @@ export function crearCotizador(h) {
     if (!origen || !destino) throw new ErrorApi('Escribe origen y destino.');
     if (!(d.km_ida > 0)) throw new ErrorApi('Escribe los kilómetros de ida.');
     const par = await parametros(env), res = calcular(par, d), nivel = ['minimo', 'recomendado', 'alto'].includes(b.nivel) ? b.nivel : 'recomendado';
+    d.nivel = nivel;
     const final = b.precio_final !== undefined && b.precio_final !== '' ? Math.round(num(b.precio_final) * 100) / 100 : res.estandar.precios[nivel];
-    let finalP = b.precio_final_premium !== undefined && b.precio_final_premium !== '' ? Math.round(num(b.precio_final_premium) * 100) / 100 : res.premium.precios[nivel];
+    // Mientras el Premium no esté activo (Parámetros → Precios), la cotización solo lleva Estándar.
+    const conPremium = num(par.premium_activo) === 1;
+    let finalP = !conPremium ? null : b.precio_final_premium !== undefined && b.precio_final_premium !== '' ? Math.round(num(b.precio_final_premium) * 100) / 100 : res.premium.precios[nivel];
     // Si subiste a mano el Estándar y no tocaste el Premium, el Premium sube igual: Estándar + lo que cuestan los extras.
-    if ((b.precio_final_premium === undefined || b.precio_final_premium === '') && finalP < final) finalP = Math.ceil((final + res.premium.costo - res.estandar.costo) / 10) * 10;
-    if (!(final > 0) || !(finalP > 0)) throw new ErrorApi('Precio final no válido.');
-    if (finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
+    if (conPremium && (b.precio_final_premium === undefined || b.precio_final_premium === '') && finalP < final) finalP = Math.ceil((final + res.premium.costo - res.estandar.costo) / 10) * 10;
+    if (!(final > 0) || (conPremium && !(finalP > 0))) throw new ErrorApi('Precio final no válido.');
+    if (conPremium && finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
     const ahora = ahoraLima(), valida = new Date(Date.now() - 5 * 3600000 + num(par.validez_dias) * 864e5).toISOString().slice(0, 10);
     const PARA_CLIENTE = { combustible: 'Combustible', peajes: 'Peajes', conductor: 'Conductor profesional', viaticos: 'Alimentación del conductor', hospedaje: 'Hospedaje del conductor', cochera: 'Cochera de la van' };
     const incluye = res.lineas.filter(l => PARA_CLIENTE[l.clave] || /^otro/.test(l.clave)).map(l => PARA_CLIENTE[l.clave] || l.concepto);
@@ -163,7 +168,7 @@ export function crearCotizador(h) {
   }
   const precioPlan = (c) => c.plan_elegido === 'premium' && c.precio_final_premium ? c.precio_final_premium : c.precio_final;
   const salida = (c) => c && ({ ...c, precio_acordado: precioPlan(c), datos: JSON.parse(c.datos || '{}'), resultado: JSON.parse(c.resultado || '{}'), incluye: JSON.parse(c.incluye || '[]'), parametros: undefined,
-    politica_espera: politicaEspera(JSON.parse(c.parametros || '{}'), JSON.parse(c.datos || '{}')),
+    politica_espera: politicaEspera(JSON.parse(c.parametros || '{}'), JSON.parse(c.datos || '{}')), adelanto_pct: adelantoDe(c),
     codigo: 'COT-' + String(c.numero).padStart(4, '0'), vencida: c.estado !== 'aceptada' && c.valida_hasta && c.valida_hasta < ahoraLima().slice(0, 10) });
   async function detalle(env, id) {
     const c = await env.DB.prepare('SELECT * FROM cotizaciones WHERE id=?').bind(id).first(); if (!c) throw new ErrorApi('Cotización no encontrada', 'NO_EXISTE', 404);
@@ -223,7 +228,7 @@ export function crearCotizador(h) {
     if (s.precio_final_premium) planes.push({ clave: 'premium', nombre: SERVICIOS.premium.nombre, precio: s.precio_final_premium, por_pasajero: pp(s.precio_final_premium), incluye: SERVICIOS.premium.incluye });
     return { codigo: s.codigo, tipo: TIPOS[s.tipo], cliente: s.cliente, origen: s.origen, destino: s.destino, fecha_servicio: s.fecha_servicio, ida_vuelta: s.datos.ida_vuelta, modalidad: s.datos.modalidad || null, horas_tramo: s.resultado.horas_tramo || null,
       dias: s.datos.dias, noches: s.datos.noches, pasajeros: pax, horas_espera: s.datos.horas_espera, horas_manejo: s.resultado.horas_manejo || null, precio: s.precio_final,
-      por_pasajero: pp(s.precio_final), incluye: s.incluye, planes, todos: SERVICIOS.premium.incluye, plan_elegido: s.plan_elegido || null, notas: s.notas, valida_hasta: s.valida_hasta,
+      por_pasajero: pp(s.precio_final), incluye: s.incluye, planes, todos: planes.length > 1 ? SERVICIOS.premium.incluye : SERVICIOS.estandar.incluye, adelanto_pct: s.adelanto_pct, plan_elegido: s.plan_elegido || null, notas: s.notas, valida_hasta: s.valida_hasta,
       vencida: s.vencida, estado: s.estado, politica_espera: s.politica_espera, whatsapp: wa ? tel(wa.valor) : '', preferido: sol ? await sol.preferenciaDe(env, c.id) : null };
   }
 
@@ -285,17 +290,20 @@ export function crearCotizador(h) {
   async function calcularOperador(env, b) {
     const d = datosDe(b); delete d.bono;
     if (!(d.km_ida > 0)) return { km: 0 };
-    const r = calcular(await parametros(env), d);
-    const plan = (pl) => ({ precio: pl.precios.recomendado, por_pasajero: pl.por_pasajero ? pl.por_pasajero.recomendado : null, por_tramo: pl.por_tramo ? pl.por_tramo.recomendado : null });
+    const par = await parametros(env), r = calcular(par, d);
+    const plan = (pl, nv) => ({ precio: pl.precios[nv], por_pasajero: pl.por_pasajero ? pl.por_pasajero[nv] : null, por_tramo: pl.por_tramo ? pl.por_tramo[nv] : null });
+    // El operador ve dos precios del Estándar (recomendado y alto) y elige cuál enviar. Sin costos ni porcentajes.
     return { km: r.km, km_vacios: r.km_vacios, pct_vacios: r.pct_vacios, salidas: r.salidas, tramos: r.tramos, dias: r.dias, noches: r.noches, horas_manejo: r.horas_manejo,
-      pasajeros: r.pasajeros, precio_galon: r.precio_galon, planes: { estandar: plan(r.estandar), premium: plan(r.premium) } };
+      pasajeros: r.pasajeros, precio_galon: r.precio_galon, opciones: { recomendado: plan(r.estandar, 'recomendado'), alto: plan(r.estandar, 'alto') },
+      premium: num(par.premium_activo) === 1 ? plan(r.premium, 'recomendado') : null };
   }
   async function verOperador(env) {
     const v = await verParametros(env);
     // Solo lo necesario para cotizar: lugares, rutas conocidas y el precio del diésel para verificarlo.
     return { operador: true, lugares: v.lugares, rutas: v.rutas.map(r => ({ origen: r.origen, destino: r.destino, km: r.km, peajes_ida: r.peajes_ida, peajes_vuelta: r.peajes_vuelta })),
       tarifas: v.tarifas, precio_galon: v.parametros.precio_galon, velocidad_promedio: v.parametros.velocidad_promedio,
-      espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora, espera_tope_h: v.parametros.espera_tope_h } };
+      espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora, espera_tope_h: v.parametros.espera_tope_h },
+      premium_activo: v.parametros.premium_activo };
   }
   async function rutas(env, yo, req, url, crearExcursion) {
     const p = url.pathname, m = req.method, cuerpo = () => req.json().catch(() => ({}));

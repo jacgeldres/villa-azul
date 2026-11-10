@@ -89,7 +89,9 @@ export function crearSolicitudes(h) {
     const vistos = new Set(), lugares = [];
     pedidos.concat(conocidos, ['Trujillo', 'Huamachuco', 'Cajabamba', 'Santiago de Chuco', 'Huanchaco', 'Cajamarca']).forEach(l => {
       const k = String(l || '').trim(); if (k && !vistos.has(k.toLowerCase())) { vistos.add(k.toLowerCase()); lugares.push(k); } });
-    return { whatsapp: await whatsapp(env), hoy, ocupados: [...ocupados].sort(), lugares: lugares.slice(0, 24), capacidad: CAPACIDAD_VAN, base: 'Angasmarca' };
+    // Mientras el Premium no esté activo, el portal solo ofrece el servicio Estándar.
+    const pr = await env.DB.prepare("SELECT valor FROM config WHERE clave='cot_premium_activo'").first();
+    return { whatsapp: await whatsapp(env), hoy, ocupados: [...ocupados].sort(), lugares: lugares.slice(0, 24), capacidad: CAPACIDAD_VAN, base: 'Angasmarca', premium: !!pr && Number(pr.valor) === 1 };
   }
 
   async function crear(env, req, b) {

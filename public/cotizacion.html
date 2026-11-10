@@ -29,7 +29,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:500 16px/1.45 var(--fon
 main{max-width:900px;margin:-52px auto 0;padding:0 14px 40px;position:relative}
 h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF0FB}
 .planes{display:grid;grid-template-columns:1fr;gap:22px;max-width:760px;margin:0 auto}
-@media (min-width:680px){.planes{grid-template-columns:1fr 1fr}}
+@media (min-width:680px){.planes{grid-template-columns:1fr 1fr}.planes.uno{grid-template-columns:1fr;max-width:440px}}
 .plan{position:relative;background:var(--surface);border-radius:26px;box-shadow:0 18px 40px rgba(12,26,46,.16);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s ease,box-shadow .2s ease}
 .plan.elegido{box-shadow:0 0 0 3px var(--c2),0 18px 40px rgba(12,26,46,.2)}
 .plan-top{position:relative;color:#fff;text-align:center;padding:26px 18px 46px;clip-path:polygon(0 0,100% 0,100% 80%,0 100%);background:linear-gradient(135deg,var(--c1),var(--c2))}
@@ -95,27 +95,29 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
     if(hT) chips.push(d.ida_vuelta ? '≈ '+Math.round(hT)+' h por tramo' : '≈ '+Math.round(hT)+' h de viaje');
     var h = '<header class="cab"><div class="marca">'+LOGO+'<span>Villa Azul<small>Turismo &amp; Excursiones</small></span></div><h1>'+esc(d.origen)+' '+(d.ida_vuelta?'⇄':'→')+' '+esc(d.destino)+'</h1>'+
       '<p class="sub">Cotización '+esc(d.codigo)+(d.cliente?' para '+esc(d.cliente):'')+' · '+esc(d.tipo)+'</p><div class="chips">'+chips.map(function(c){ return '<span>'+esc(c)+'</span>'; }).join('')+'</div></header><main>';
-    h += '<h2 class="t">Elige tu servicio</h2><div class="planes">';
+    var uno = d.planes.length === 1;
+    h += '<h2 class="t">'+(uno?'Tu cotización':'Elige tu servicio')+'</h2><div class="planes'+(uno?' uno':'')+'">';
     d.planes.forEach(function(p){
       var mio = d.plan_elegido===p.clave;
       h += '<article class="plan '+p.clave+(mio?' elegido':'')+'" aria-label="Servicio '+esc(p.nombre)+'">'+
-        '<div class="plan-top">'+(d.preferido===p.clave?'<span class="cinta">LO QUE PEDISTE</span>':p.clave==='premium'?'<span class="cinta">MÁS COMPLETO</span>':'')+'<h3>'+esc(p.nombre)+'</h3><div class="precio">'+precioHtml(p.precio)+'</div>'+(p.por_pasajero?'<div class="pp">'+soles(p.por_pasajero)+' por pasajero</div>':'')+'</div>'+
+        '<div class="plan-top">'+(uno?'':d.preferido===p.clave?'<span class="cinta">LO QUE PEDISTE</span>':p.clave==='premium'?'<span class="cinta">MÁS COMPLETO</span>':'')+'<h3>'+esc(p.nombre)+'</h3><div class="precio">'+precioHtml(p.precio)+'</div>'+(p.por_pasajero?'<div class="pp">'+soles(p.por_pasajero)+' por pasajero</div>':'')+'</div>'+
         '<ul class="lista">'+d.todos.map(function(f){ var si = p.incluye.indexOf(f)>=0; return '<li class="'+(si?'':'no')+'"><span class="ic '+(si?'si':'x')+'" aria-hidden="true">'+(si?'✓':'✕')+'</span><span>'+esc(f)+'<span class="oculto-lector">'+(si?' (incluido)':' (no incluido)')+'</span></span></li>'; }).join('')+'</ul>'+
-        '<div class="plan-pie">'+(abierta?'<button type="button" class="elegir" data-plan="'+p.clave+'"'+(mio?' disabled':'')+'>'+(mio?'Elegido ✓':(d.plan_elegido?'Cambiar a '+esc(p.nombre):'Elegir '+esc(p.nombre)))+'</button>':(mio?'<span class="tuyo">Tu elección</span>':''))+'</div></article>';
+        '<div class="plan-pie">'+(abierta?'<button type="button" class="elegir" data-plan="'+p.clave+'"'+(mio?' disabled':'')+'>'+(mio?(uno?'Aceptada ✓':'Elegido ✓'):uno?'Aceptar la cotización':(d.plan_elegido?'Cambiar a '+esc(p.nombre):'Elegir '+esc(p.nombre)))+'</button>':(mio?'<span class="tuyo">Tu elección</span>':''))+'</div></article>';
     });
     h += '</div>';
     if(d.plan_elegido){ var pe = d.planes.filter(function(p){ return p.clave===d.plan_elegido; })[0];
-      h += '<div class="estado ok">Elegiste el servicio <b>'+esc(pe.nombre)+'</b> por '+soles(pe.precio)+'. Villa Azul te confirmará la reserva.'+
+      h += '<div class="estado ok">'+(uno?'Aceptaste la cotización':'Elegiste el servicio <b>'+esc(pe.nombre)+'</b>')+' por '+soles(pe.precio)+'. Villa Azul te confirmará la reserva.'+
         (d.whatsapp?'<br><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, elegí el servicio '+pe.nombre+' de la cotización '+d.codigo+' ('+d.origen+' → '+d.destino+') por '+soles(pe.precio)+'.')+'">Avisar por WhatsApp</a>':'')+'</div>'; }
     else if(d.vencida) h += '<div class="estado mal">Esta cotización venció el '+esc(d.valida_hasta)+'. Pide una actualizada a Villa Azul.</div>';
     h += '<section class="card"><h3>Incluido en ambos servicios</h3><div class="inc">'+d.incluye.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div>'+(d.notas?'<p class="notas">'+esc(d.notas)+'</p>':'')+'</section>';
+    if(d.adelanto_pct) h += '<section class="card espera"><h3>Para separar tu viaje</h3><ul><li>Adelanto del '+d.adelanto_pct+' % ('+soles(d.precio*d.adelanto_pct/100)+') al confirmar.</li><li>El saldo, antes de salir.</li></ul></section>';
     if((d.politica_espera||[]).length) h += '<section class="card espera"><h3>Tiempo de espera</h3><ul>'+d.politica_espera.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></section>';
     if(d.whatsapp) h += '<p style="text-align:center"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, tengo una consulta sobre la cotización '+d.codigo+'.')+'">Hacer una consulta</a></p>';
     h += '<p class="pie">'+(d.vencida?'':'Válida hasta el '+esc(d.valida_hasta)+'. ')+'Precios en soles, sujetos a disponibilidad en la fecha del servicio.</p></main>';
     root.innerHTML = h;
     root.querySelectorAll('[data-plan]').forEach(function(b){ b.onclick = function(){
       var p = D.planes.filter(function(x){ return x.clave===b.dataset.plan; })[0];
-      if(!confirm('¿Eliges el servicio '+p.nombre+' por '+soles(p.precio)+'?')) return;
+      if(!confirm(D.planes.length===1 ? '¿Aceptas la cotización por '+soles(p.precio)+'?' : '¿Eliges el servicio '+p.nombre+' por '+soles(p.precio)+'?')) return;
       b.disabled = true; b.textContent = 'Guardando…';
       fetch('/api/publico/cotizacion/'+tok+'/elegir',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({plan:p.clave})}).then(function(r){ return r.json(); }).then(function(r){
         if(!r.ok){ alert(r.error); cargar(); return; } D = r.data; pintar(); window.scrollTo({top:0, behavior:'smooth'}); });

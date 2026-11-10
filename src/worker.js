@@ -13,7 +13,7 @@ import { crearPanel } from './panel.js';
 import { SQL_SOL_V10, WHATSAPP_EMPRESA, crearSolicitudes } from './solicitudes.js';
 import { SQL_FLOTA_V11, SQL_FLOTA_V12, crearFlota } from './flota.js';
 
-const VERSION = '5.3.0';
+const VERSION = '5.4.0';
 const SCHEMA = 12;
 const PBKDF2_ITER = 10000;          // el plan gratuito da 10 ms de CPU por petición: más vueltas no caben
 const SESION_DIAS = 30;
