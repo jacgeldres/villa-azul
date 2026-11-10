@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.6.2';
+var VERSION = '5.6.3';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -755,13 +755,16 @@ function cotForm(c, pre){
     if(c.datos && c.datos.precio_manual) return c.datos.precio_manual[k]===true;
     var nv0 = (c.datos && c.datos.nivel) || 'recomendado', calc = c.resultado && c.resultado[k] && c.resultado[k].precios ? c.resultado[k].precios[nv0] : null;
     return calc==null || Number(calc) !== Number(k==='premium' ? c.precio_final_premium : c.precio_final); };
-  var manual = {estandar:aMano('estandar'), premium:aMano('premium')};
+  var escrito = {estandar:aMano('estandar'), premium:aMano('premium')};
+  var manual = {estandar:!!c, premium:!!(c && c.precio_final_premium)};
+  var soltar = function(){ ['estandar','premium'].forEach(function(k){ if(!escrito[k]) manual[k] = false; }); };
   var extra = function(){ if(c) return; var b=ls('va_borradores')||{}, k=claveBorr(); b[k]=b[k]||{t:Date.now(),v:{}}; b[k].extra={tipo:tipo, modalidad:md, otros:otros, nivel:nivel}; b[k].t=Date.now(); ls('va_borradores',b); };
   var pintarOtros = function(){ $('qot').innerHTML = otros.map(function(o,i){ return '<div class="dos" style="align-items:end"><div class="campo"><label for="qoc'+i+'">Concepto</label><input id="qoc'+i+'" value="'+esc(o.concepto)+'"></div><div class="campo"><label for="qom'+i+'">Monto S/</label><input id="qom'+i+'" inputmode="decimal" class="num" value="'+esc(o.monto)+'"></div></div>'; }).join('');
     otros.forEach(function(o,i){ $('qoc'+i).oninput=function(){ o.concepto=this.value; extra(); recalcular(); }; $('qom'+i).oninput=function(){ o.monto=this.value; extra(); recalcular(); }; }); };
   var sinDias = function(){ return tipo==='taxi' || md==='dos_dias'; };
   // La espera se calcula sola: regreso − salida − un tramo de manejo. Si alguien escribe las horas a mano, se respeta.
-  var espMan = x.horas_espera!=null && x.horas_espera!=='' && !x.fecha_retorno;
+  // Al editar se respetan las horas guardadas; se recalculan solo si cambias la salida o el regreso (o tocas «Usar»).
+  var espMan = x.horas_espera!=null && x.horas_espera!=='' && (!!c || !x.fecha_retorno);
   var autoEspera = function(){
     var vel = Number(OP ? P.velocidad_promedio : P.parametros.velocidad_promedio)||0, k = Number(String($('qkm').value).replace(',','.'))||0;
     var a = fechaDe($('qfe').value), b = fechaDe($('qfr').value), hT = vel && k ? k/vel : 0;
@@ -773,9 +776,10 @@ function cotForm(c, pre){
     if(md==='ida_vuelta' && tipo!=='excursion' && hT){
       var llega = new Date(a.getTime() + hT*3600e3), h = Math.max(0, Math.round(((b - a)/3600e3 - hT)*2)/2);
       if(!espMan){ $('qho').value = h; pintarEspera(); }
-      txt += ' Llegan a destino ≈ '+llega.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'})+' → '+(espMan?'tú pusiste '+$('qho').value+' h de espera; el cálculo da '+h+' h.':'<b>'+h+' h de espera</b>, calculadas solas.');
+      txt += ' Llegan a destino ≈ '+llega.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'})+' → '+(espMan ? (Number($('qho').value)===h ? '<b>'+h+' h de espera</b>.' : 'están puestas <b>'+($('qho').value||0)+' h</b> de espera; el cálculo da '+h+' h. <button type="button" class="btn-mini" id="qusarh" data-h="'+h+'">Usar '+h+' h</button>') : '<b>'+h+' h de espera</b>, calculadas solas.');
     }
     $('qfrh').innerHTML = txt;
+    if($('qusarh')) $('qusarh').onclick = function(){ espMan = false; soltar(); $('qho').value = this.dataset.h; pintarEspera(); recalcular(); };
   };
   var visibles = function(){ $('bno').classList.toggle('oculto', sinDias()); $('bdi').classList.toggle('oculto', sinDias()); $('bho').classList.toggle('oculto', tipo==='excursion');
     $('qpvl').textContent = md==='solo_ida' ? 'Peajes del regreso vacío S/' : 'Peajes de vuelta S/';
@@ -827,7 +831,7 @@ function cotForm(c, pre){
     var tar = P.tarifas.filter(function(t){ return t.origen.toLowerCase()===$('qor').value.trim().toLowerCase() && t.destino.toLowerCase()===$('qde').value.trim().toLowerCase(); })[0];
     // Si el precio está escrito a mano y no coincide con el nivel elegido, se avisa y se ofrece usar el calculado (nada cambia solo).
     var avisoManual = function(k, pr){ var calc = r[k].precios[nivel]; if(!manual[k] || !pr || pr===calc) return '';
-      return '<p class="aviso-precio">Precio escrito a mano. Con los datos de hoy, el nivel <b>'+NIVEL_TXT[nivel]+'</b> da <b>'+soles0(calc)+'</b>. <button type="button" class="btn-mini" data-usar="'+k+'">Usar '+soles0(calc)+'</button></p>'; };
+      return '<p class="aviso-precio">'+(escrito[k] || !c ? 'Precio escrito a mano.' : 'Es el precio guardado de la cotización.')+' Con los datos de hoy, el nivel <b>'+NIVEL_TXT[nivel]+'</b> da <b>'+soles0(calc)+'</b>. <button type="button" class="btn-mini" data-usar="'+k+'">Usar '+soles0(calc)+'</button></p>'; };
     var card = function(k){ var pl = r[k], pr = Number(String(precios[k]).replace(',','.'))||0;
       return '<div class="plan-c plan-'+k+'"><div class="plan-h"><b>'+PLAN_TXT[k]+'</b><small>Costo '+soles0(pl.costo)+'</small></div><div class="campo" style="margin-top:8px"><label for="qp_'+k+'">Precio al cliente</label><input id="qp_'+k+'" inputmode="decimal" class="num" value="'+esc(precios[k])+'"></div>'+
         '<p class="ayuda">'+ayudaPlan(pr, pl)+'</p>'+avisoManual(k, pr)+'</div>'; };
@@ -848,9 +852,9 @@ function cotForm(c, pre){
       (tar && Number(dd.pasajeros)?'<p class="ayuda">Referencia: como pasajes de ruta ('+soles(tar.tarifa)+' × '+dd.pasajeros+') serían '+soles(tar.tarifa*Number(dd.pasajeros)*r.tramos)+'.</p>':'')+
       '<details style="margin-top:10px"><summary>Desglose de costos</summary><table class="tabla"><tbody>'+r.premium.lineas.map(function(l){ var soloP = l.clave==='snacks'||l.clave==='wifi'; return '<tr><td>'+esc(l.concepto)+(soloP?' <span class="chip-est abierta">solo Premium</span>':'')+'<br><small class="ayuda">'+esc(l.detalle)+'</small></td><td class="n">'+soles(l.monto)+'</td></tr>'; }).join('')+
       '<tr><td><b>Total Estándar</b></td><td class="n"><b>'+soles(r.estandar.costo)+'</b></td></tr><tr><td><b>Total Premium</b></td><td class="n"><b>'+soles(r.premium.costo)+'</b></td></tr></tbody></table></details>';
-    $('qres').querySelectorAll('[data-nv]').forEach(function(b){ b.onclick=function(){ nivel=b.dataset.nv; manual={estandar:false, premium:false}; extra(); recalcular(); }; });
-    $('qres').querySelectorAll('[data-usar]').forEach(function(b){ b.onclick = function(){ manual[b.dataset.usar] = false; recalcular(); }; });
-    ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; precios[k]=this.value; var pr = Number(String(this.value).replace(',','.'))||0; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(pr, r[k]); if(k==='estandar') $('qind').innerHTML = indicadores(pr); }; });
+    $('qres').querySelectorAll('[data-nv]').forEach(function(b){ b.onclick=function(){ nivel=b.dataset.nv; manual={estandar:false, premium:false}; escrito={estandar:false, premium:false}; extra(); recalcular(); }; });
+    $('qres').querySelectorAll('[data-usar]').forEach(function(b){ b.onclick = function(){ manual[b.dataset.usar] = false; escrito[b.dataset.usar] = false; recalcular(); }; });
+    ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; escrito[k]=true; precios[k]=this.value; var pr = Number(String(this.value).replace(',','.'))||0; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(pr, r[k]); if(k==='estandar') $('qind').innerHTML = indicadores(pr); }; });
   }); };
   pintarOtros(); visibles(); linkMaps();
   restaurarBorrador(); recalcular();
@@ -859,7 +863,11 @@ function cotForm(c, pre){
   ['qb1','qb2'].forEach(function(id){ $(id).addEventListener('input', function(){ vacMan[id] = $(id).value.trim()!==''; }); });
   ['qkm','qpe','qpv','qdi','qno','qho','qpa','qkx','qdg','qb1','qb2'].concat($('qbo')?['qbo']:[]).forEach(function(id){ $(id).addEventListener('input', recalcular); });
   $('qho').addEventListener('input', function(){ espMan = $('qho').value.trim()!==''; autoEspera(); pintarEspera(); });
-  ['qfe','qfr'].forEach(function(id){ $(id).addEventListener('input', function(){ autoEspera(); recalcular(); }); $(id).addEventListener('change', function(){ autoEspera(); recalcular(); }); });
+  ['qfe','qfr'].forEach(function(id){ var f = function(){ espMan = false; autoEspera(); recalcular(); }; $(id).addEventListener('input', f); $(id).addEventListener('change', f); });
+  // Si cambias algún dato que mueve el costo, el precio vuelve a seguir al nivel elegido (salvo que lo hayas escrito a mano).
+  var CAMPOS_COSTO = ['qkm','qkx','qpe','qpv','qdi','qno','qho','qpa','qdg','qb1','qb2','qbo','qfe','qfr','qor','qde'];
+  $('vista').addEventListener('input', function(e){ if(CAMPOS_COSTO.indexOf(e.target.id)>=0) soltar(); }, true);
+  $('vista').addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-ct],[data-md]')) soltar(); }, true);
   $('qor').addEventListener('input', function(){ visibles(); recalcular(); }); $('qde').addEventListener('input', recalcular);
   $('qdg').addEventListener('input', function(){ $('qdg').classList.toggle('cambiado', Number(String($('qdg').value).replace(',','.')) !== Number(galonParam)); });
   $('qor').addEventListener('change', conocida); $('qde').addEventListener('change', conocida); $('qor').addEventListener('input', linkMaps); $('qde').addEventListener('input', linkMaps);

@@ -1,4 +1,4 @@
-# Villa Azul · v5.6.2 — Guía de despliegue
+# Villa Azul · v5.6.3 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,15 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.6.3 · Mismo precio en la lista y al editar
+
+Sube a GitHub `public/` y `src/`. La base de datos no cambia (sigue en la **versión 15**). Comprueba en Mi perfil: **Villa Azul v5.6.3 · base de datos v15**.
+
+- Al editar, la cotización abre con lo que tiene guardado: el mismo precio de la lista y las mismas horas de espera. Abrirla ya no cambia nada.
+- Si las horas guardadas no coinciden con la salida y el regreso, aparece «están puestas 12 h; el cálculo da 14 h» con el botón **Usar 14 h**.
+- Si con los datos de hoy el nivel daría otro precio, aparece «Es el precio guardado de la cotización. Con los datos de hoy, el nivel Alto da S/ X» con el botón **Usar S/ X**.
+- En cuanto cambias un dato que mueve el costo (km, pasajeros, horas, fechas, diésel…) o tocas un nivel, el precio vuelve a seguir al nivel elegido. Un precio escrito a mano se respeta siempre.
 
 ## Actualizar a la v5.6.2 · El precio no salta al editar
 
