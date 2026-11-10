@@ -1,4 +1,4 @@
-# Villa Azul · v5.4.0 — Guía de despliegue
+# Villa Azul · v5.6.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,25 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.6 · Precio por tramo para el cliente y precio de lista con rebaja
+
+Sube a GitHub `src/` y `public/`. Al primer uso la base pasa sola a la **versión 15**. Comprueba en Mi perfil: **Villa Azul v5.6.0 · base de datos v15**.
+
+- **Sin el tope de espera:** el cliente ya no lee «Si la espera pasa de 2 horas adicionales, coordinamos un nuevo horario». Solo ve la espera incluida y el cobro por hora adicional.
+- **Margen alto 45 %:** pasa de 50 % a 45 % (solo si seguía en 50 %). Es el «precio de lista»: queda unos 7-9 % sobre el recomendado, y la rebaja al recomendado es creíble. Jorge ve la sugerencia «Ofrece primero el Alto; si piden rebaja, baja al Recomendado (S/ X menos por pasajero)».
+- **Precio por pasajero y tramo:** se redondea a S/ 0.50 por pasajero y por tramo (Parámetros → Servicio y reserva). La tarjeta del cliente muestra en grande **IDA S/ 20.50 + RETORNO S/ 20.50 por pasajero**; debajo, el ida y vuelta y el total del grupo. El mensaje de WhatsApp empieza igual.
+
+## Actualizar a la v5.5 · Regreso, espera automática, emoticones en WhatsApp y precio por pasajero redondo
+
+Sube a GitHub `src/` y `public/`. No cambia la base de datos (sigue en la **versión 14**). Comprueba en Mi perfil: **Villa Azul v5.5.0 · base de datos v14**. En la computadora, recarga con **Ctrl + Shift + R** la primera vez.
+
+- **Salida y regreso:** el formulario pide la hora de salida y la hora en que la van sale de regreso desde el destino (en «Dejar y recoger», el día y hora del recojo). Medianoche = el día siguiente a las 00:00.
+- **Espera automática:** con la salida, el regreso y los km, la app calcula sola las horas de espera (regreso − salida − un tramo de manejo). Si alguien escribe las horas a mano, se respetan y se muestra lo que daría el cálculo.
+- **Cliente:** ve «Salida: sáb 21 nov · 9:00 a. m.» y «Regreso: medianoche del sáb 21 al dom 22». La regla de espera dice «La van los espera hasta la hora de regreso».
+- **Emoticones en WhatsApp:** los enlaces usan `api.whatsapp.com/send` en vez de `wa.me` (el atajo `wa.me` cambiaba los emoticones por �). Además hay un botón **Copiar mensaje** para pegarlo donde quieras.
+- **Precio por pasajero redondo:** el precio por pasajero sube al sol entero y el total es pasajeros × ese precio (S/ 41 × 14 = S/ 574). Se cambia en Parámetros → Servicio y reserva (0 = redondear el total a S/ 10, como antes).
+- **Vista web:** el detalle muestra cuatro indicadores (precio, por pasajero, utilidad y precio por km), la salida, el regreso, la espera incluida y qué precio eligió quien cotizó. El formulario suma utilidad, precio por km, grupo mínimo sin pérdida y adelanto.
 
 ## Actualizar a la v5.4 · Precios para Jorge, volver atrás, WhatsApp al cliente y Premium apagable
 

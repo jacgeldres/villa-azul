@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.4.0';
+var VERSION = '5.6.0';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -406,7 +406,7 @@ function pintarApp(){
   var activo = S.vista, items = nav().map(function(n){ var on = n[0]===activo || (n[0]==='modulos' && VISTAS_EXTRA_MANDO.indexOf(activo)>=0) || (n[0]==='viajes' && activo==='cotizador' && !esMando(S.yo)); return '<button type="button" data-ir="'+n[0]+'"'+(on?' aria-current="page"':'')+'>'+ico(n[2])+'<span>'+n[1]+'</span></button>'; }).join('');
   app.className = 'app';
   app.innerHTML = '<nav class="nav-lat" aria-label="Secciones"><div class="marca">'+LOGO+'<div><b>Villa Azul</b><span>Turismo & Excursiones</span></div></div>'+items+'</nav>'+
-    '<div><header class="barra-sup" id="barraSup"><button type="button" class="h-atras" id="hatras" aria-label="Volver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'+LOGO+'<h1>'+(activo==='unidad' && !esMando(S.yo) ? 'Checklist' : TITULOS[activo])+'</h1><button type="button" class="campana" id="campana" aria-label="Avisos">'+ico('campana')+'<span class="punto oculto" id="campN">0</span></button><button type="button" class="senal" id="senal"></button>'+
+    '<div><header class="barra-sup" id="barraSup"><button type="button" class="h-atras" id="hatras" aria-label="Volver" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>'+LOGO+'<h1>'+(activo==='unidad' && !esMando(S.yo) ? 'Checklist' : TITULOS[activo])+'</h1><button type="button" class="campana" id="campana" aria-label="Avisos">'+ico('campana')+'<span class="punto oculto" id="campN">0</span></button><button type="button" class="senal" id="senal"></button>'+
     '<button type="button" class="btn-avatar" id="perfil" aria-label="Mi perfil"><span class="avatar '+claseAv(S.yo)+'">'+esc(iniciales(S.yo.nombre))+'</span></button></header><main id="vista"></main></div>'+
     '<nav class="nav-inf'+(nav().length>5?' n6':'')+'" aria-label="Secciones">'+items+'</nav>';
   app.querySelectorAll('[data-ir]').forEach(function(b){ b.onclick=function(){ ir(b.dataset.ir); }; });
@@ -705,7 +705,9 @@ function cotForm(c, pre){
     '<div class="dos"><div class="campo" id="bdi"><label for="qdi">Días de servicio</label><input id="qdi" inputmode="numeric" class="num" value="'+v('dias')+'"></div><div class="campo" id="bno"><label for="qno">Noches fuera</label><input id="qno" inputmode="numeric" class="num" value="'+v('noches')+'"></div></div>'+
     '<div class="dos"><div class="campo" id="bho"><label for="qho">Horas de espera incluidas</label><input id="qho" inputmode="decimal" class="num" value="'+v('horas_espera')+'" placeholder="0"></div><div class="campo"><label for="qpa">Pasajeros</label><input id="qpa" inputmode="numeric" class="num" value="'+v('pasajeros')+'"></div></div>'+
     '<div class="regla-esp" id="qesp"></div>'+
-    '<div class="campo"><label for="qfe">Fecha del servicio</label><input id="qfe" type="datetime-local" value="'+v('fecha_servicio')+'"></div>'+
+    '<div class="dos"><div class="campo"><label for="qfe">Salida</label><input id="qfe" type="datetime-local" value="'+v('fecha_servicio')+'"></div>'+
+    '<div class="campo" id="bfr"><label for="qfr" id="qfrl">Regreso desde el destino</label><input id="qfr" type="datetime-local" value="'+v('fecha_retorno')+'"></div></div>'+
+    '<p class="ayuda" id="qfrh"></p>'+
     '<div class="campo"><label for="qdg">Precio del diésel hoy <small style="font-weight:500;color:var(--muted)">(S/ por galón)</small></label><input id="qdg" inputmode="decimal" class="num" value="'+esc(x.precio_galon||galonParam)+'"><p class="ayuda aviso-diesel">Verifica el precio de hoy en el grifo antes de cotizar. Si cambió, corrígelo aquí: solo afecta a esta cotización.</p></div>'+
     (OP?'':'<div class="campo"><label for="qbo">Bono del conductor para este viaje <small style="font-weight:500;color:var(--muted)">(S/, opcional)</small></label><input id="qbo" inputmode="decimal" class="num" value="'+esc(x.bono==null?'':x.bono)+'" placeholder="Automático"><p class="ayuda" id="qbs"></p></div>')+
     '<span class="etq">'+(OP?'Gastos extra del viaje':'Otros costos de este viaje')+' <small>(entradas, guía…)</small></span><div id="qot"></div><button type="button" class="btn-mini" id="qadd">'+ico('mas')+(OP?' Agregar gasto':' Agregar costo')+'</button>'+
@@ -752,16 +754,34 @@ function cotForm(c, pre){
   var pintarOtros = function(){ $('qot').innerHTML = otros.map(function(o,i){ return '<div class="dos" style="align-items:end"><div class="campo"><label for="qoc'+i+'">Concepto</label><input id="qoc'+i+'" value="'+esc(o.concepto)+'"></div><div class="campo"><label for="qom'+i+'">Monto S/</label><input id="qom'+i+'" inputmode="decimal" class="num" value="'+esc(o.monto)+'"></div></div>'; }).join('');
     otros.forEach(function(o,i){ $('qoc'+i).oninput=function(){ o.concepto=this.value; extra(); recalcular(); }; $('qom'+i).oninput=function(){ o.monto=this.value; extra(); recalcular(); }; }); };
   var sinDias = function(){ return tipo==='taxi' || md==='dos_dias'; };
+  // La espera se calcula sola: regreso − salida − un tramo de manejo. Si alguien escribe las horas a mano, se respeta.
+  var espMan = x.horas_espera!=null && x.horas_espera!=='' && !x.fecha_retorno;
+  var autoEspera = function(){
+    var vel = Number(OP ? P.velocidad_promedio : P.parametros.velocidad_promedio)||0, k = Number(String($('qkm').value).replace(',','.'))||0;
+    var a = fechaDe($('qfe').value), b = fechaDe($('qfr').value), hT = vel && k ? k/vel : 0;
+    $('qfrl').textContent = md==='dos_dias' ? 'Día y hora del recojo' : 'Regreso desde el destino';
+    if(md==='solo_ida'){ $('qfrh').textContent = ''; return; }
+    if(a && b && b <= a){ $('qfrh').innerHTML = '<span class="warn">El regreso debe ser después de la salida. Si es a medianoche, elige el día siguiente a las 00:00.</span>'; return; }
+    if(!(a && b)){ $('qfrh').textContent = 'Medianoche = el día siguiente a las 00:00.'; return; }
+    var txt = 'Regreso: '+horaHumana($('qfr').value)+'.';
+    if(md==='ida_vuelta' && tipo!=='excursion' && hT){
+      var llega = new Date(a.getTime() + hT*3600e3), h = Math.max(0, Math.round(((b - a)/3600e3 - hT)*2)/2);
+      if(!espMan){ $('qho').value = h; pintarEspera(); }
+      txt += ' Llegan a destino ≈ '+llega.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'})+' → '+(espMan?'tú pusiste '+$('qho').value+' h de espera; el cálculo da '+h+' h.':'<b>'+h+' h de espera</b>, calculadas solas.');
+    }
+    $('qfrh').innerHTML = txt;
+  };
   var visibles = function(){ $('bno').classList.toggle('oculto', sinDias()); $('bdi').classList.toggle('oculto', sinDias()); $('bho').classList.toggle('oculto', tipo==='excursion');
     $('qpvl').textContent = md==='solo_ida' ? 'Peajes del regreso vacío S/' : 'Peajes de vuelta S/';
+    $('bfr').classList.toggle('oculto', md==='solo_ida');
     $('bvac').classList.toggle('oculto', desdeBase());
     $('qmdh').textContent = COT_MOD[md][1] + (md==='dos_dias' ? ' Cuenta 2 jornadas del conductor.' : ''); pintarEspera(); };
   /** Lo que verá el cliente sobre la espera. Las horas incluidas van dentro del precio; lo adicional se cobra aparte a S/ fijo. */
   var pintarEspera = function(){ formula().then(function(F){ if(!$('qesp')) return;
-    var L = F.politicaEspera(OP ? P.espera : P.parametros, {tipo:tipo, horas_espera:$('qho').value});
+    var L = F.politicaEspera(OP ? P.espera : P.parametros, {tipo:tipo, horas_espera:$('qho').value, fecha_retorno:md!=='solo_ida'?$('qfr').value:''});
     $('qesp').innerHTML = L.length ? '<b>Así lo verá el cliente</b><ul>'+L.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul>'+(OP?'':'<small>Las horas incluidas se suman al costo con el margen elegido. La tolerancia, el cobro por hora adicional y el tope se cambian en Parámetros → Espera.</small>') : ''; }); };
   var datos = function(){ return {tipo:tipo, modalidad:md, ida_vuelta:md!=='solo_ida', km_ida:$('qkm').value, km_base_origen:desdeBase()?0:$('qb1').value, km_destino_base:desdeBase()?'':$('qb2').value, km_extra:$('qkx').value,
-    origen:$('qor').value, destino:$('qde').value,
+    origen:$('qor').value, destino:$('qde').value, fecha_retorno:md!=='solo_ida'?$('qfr').value:'', fecha_servicio:$('qfe').value,
     dias:sinDias()?1:$('qdi').value, noches:sinDias()?0:$('qno').value, horas_espera:tipo==='excursion'?0:$('qho').value, pasajeros:$('qpa').value, peajes_ida:$('qpe').value, peajes_vuelta:$('qpv').value, otros:otros,
     precio_galon:$('qdg').value, bono:$('qbo')?$('qbo').value:undefined}; };
   var linkMaps = function(){ var o=$('qor').value.trim(), d=$('qde').value.trim(); $('qmaps').href = (o&&d) ? 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent(o+', Perú')+'&destination='+encodeURIComponent(d+', Perú') : '#'; };
@@ -780,7 +800,7 @@ function cotForm(c, pre){
   };
   var tCalc = null;
   var recalcularOp = function(){
-    autoVacios(); var dd = datos(); if(!(Number(String(dd.km_ida).replace(',','.'))>0)){ $('qres').innerHTML='<p class="vacio">Escribe los km de ida o pulsa «Calcular km».</p>'; return; }
+    autoVacios(); autoEspera(); var dd = datos(); if(!(Number(String(dd.km_ida).replace(',','.'))>0)){ $('qres').innerHTML='<p class="vacio">Escribe los km de ida o pulsa «Calcular km».</p>'; return; }
     clearTimeout(tCalc); tCalc = setTimeout(function(){ api('/api/cotizador/calcular',{method:'POST',body:dd}).then(function(r){
       if(!r.ok || !$('qres')) return; var z = r.data; pintarTramos(z.km, z.km_vacios);
       var pie = function(pl){ return pl.por_pasajero ? soles(pl.por_pasajero)+' por pasajero'+(z.tramos>1&&pl.por_tramo?' · '+soles(pl.por_tramo)+' por tramo':'') : ''; };
@@ -788,11 +808,11 @@ function cotForm(c, pre){
       var premCard = z.premium ? '<div class="plan-c plan-premium"><div class="plan-h"><b>Premium</b></div><p style="padding:10px 12px 0;margin:0"><b class="num" style="font-size:24px">'+soles0(z.premium.precio)+'</b></p><p class="ayuda">'+pie(z.premium)+'</p></div>' : '';
       $('qres').innerHTML = '<div class="kpis" style="margin-bottom:10px"><div class="kpi"><small>Recorrido</small><b class="num">'+z.km+' km</b><span class="d">≈ '+z.horas_manejo+' h de manejo'+(z.salidas>1?' · '+z.salidas+' salidas':'')+'</span></div><div class="kpi"><small>Km vacíos</small><b class="num">'+z.km_vacios+' km</b><span class="d">'+(z.km_vacios?z.pct_vacios+' % del recorrido':'Siempre con pasajeros')+'</span></div></div>'+
         '<span class="etq">Precio que enviarás al cliente</span><div class="planes2" role="radiogroup" aria-label="Precio que enviarás">'+opcion('recomendado')+opcion('alto')+'</div>'+(premCard?'<div class="planes2 uno" style="margin-top:10px">'+premCard+'</div>':'')+
-        '<p class="ayuda" style="margin-top:8px">Toca el precio que vas a enviar. Si el cliente pide menos que el recomendado, avisa a un administrador.</p>';
+        '<p class="ayuda" style="margin-top:8px">'+(z.opciones.alto.por_pasajero&&z.opciones.recomendado.por_pasajero?'Ofrece primero el <b>Alto</b>; si piden rebaja, baja al <b>Recomendado</b> (S/ '+(Math.round((z.opciones.alto.por_pasajero-z.opciones.recomendado.por_pasajero)*100)/100)+' menos por pasajero). ':'')+'Por debajo del recomendado, avisa a un administrador.</p>';
       $('qres').querySelectorAll('[data-opn]').forEach(function(b){ b.onclick = function(){ nivel = b.dataset.opn; extra(); $('qres').querySelectorAll('[data-opn]').forEach(function(z2){ z2.setAttribute('aria-checked', z2===b); }); }; }); }); }, 450);
   };
   var recalcular = function(){ if(OP) return recalcularOp(); formula().then(function(F){
-    autoVacios(); var dd = datos(); if(!(Number(String(dd.km_ida).replace(',','.'))>0)){ $('qres').innerHTML='<p class="vacio">Escribe los km de ida o pulsa «Calcular km».</p>'; return; }
+    autoVacios(); autoEspera(); var dd = datos(); if(!(Number(String(dd.km_ida).replace(',','.'))>0)){ $('qres').innerHTML='<p class="vacio">Escribe los km de ida o pulsa «Calcular km».</p>'; return; }
     var r = F.calcular(P.parametros, dd); S.cot.res = r; pintarTramos(r.km, r.km_vacios);
     var monto = function(cl){ return (r.estandar.lineas.filter(function(l){ return l.clave===cl; })[0]||{}).monto||0; };
     var ayudaPlan = function(pr, pl){ return (r.pasajeros?soles(pr/r.pasajeros)+' por pasajero'+(r.tramos>1?' ('+soles(pr/r.pasajeros/r.tramos)+' por tramo)':'')+' · ':'')+'margen '+(pr?Math.round((pr-pl.costo)/pr*100):0)+' %'; };
@@ -803,18 +823,24 @@ function cotForm(c, pre){
       return '<div class="plan-c plan-'+k+'"><div class="plan-h"><b>'+PLAN_TXT[k]+'</b><small>Costo '+soles0(pl.costo)+'</small></div><div class="campo" style="margin-top:8px"><label for="qp_'+k+'">Precio al cliente</label><input id="qp_'+k+'" inputmode="decimal" class="num" value="'+esc(precios[k])+'"></div>'+
         '<p class="ayuda">'+ayudaPlan(pr, pl)+'</p></div>'; };
     var prE = Number(String(precios.estandar).replace(',','.'))||0;
+    // Indicadores del precio Estándar: se recalculan al escribir otro precio.
+    var indicadores = function(pr){ var c0 = r.estandar.costo, pp = r.pasajeros ? pr/r.pasajeros : 0, minG = pp ? Math.ceil(c0/pp) : 0;
+      return '<div class="kpi"><small>Utilidad</small><b class="num">'+soles0(pr-c0)+'</b><span class="d">margen '+(pr?Math.round((pr-c0)/pr*100):0)+' %</span></div>'+
+        '<div class="kpi"><small>Precio por km</small><b class="num">'+soles(r.km?pr/r.km:0)+'</b><span class="d">costo '+soles(r.costo_km)+' por km</span></div>'+
+        '<div class="kpi'+(minG>r.pasajeros?' alerta':'')+'"><small>Grupo mínimo sin pérdida</small><b class="num">'+(minG||'—')+' pas.</b><span class="d">'+(pp?'a '+soles(pp)+' por pasajero':'')+'</span></div>'+
+        '<div class="kpi"><small>Adelanto para separar</small><b class="num">'+soles0(pr*(Number(P.parametros.adelanto_pct)||0)/100)+'</b><span class="d">'+(Number(P.parametros.adelanto_pct)||0)+' % · el saldo antes de salir</span></div>'; };
     $('qres').innerHTML = '<div class="kpis k4" style="margin-bottom:10px"><div class="kpi"><small>Recorrido</small><b class="num">'+r.km+' km</b><span class="d">≈ '+r.horas_manejo+' h de manejo'+(r.salidas>1?' · '+r.salidas+' salidas':'')+'</span></div>'+
       '<div class="kpi"><small>Km vacíos</small><b class="num">'+r.km_vacios+' km</b><span class="d">'+(r.km_vacios?r.pct_vacios+' % del recorrido':'Siempre con pasajeros')+'</span></div>'+
       '<div class="kpi"><small>Diésel</small><b class="num">'+r.galones+' gal</b><span class="d">'+soles0(monto('combustible'))+' en total</span></div>'+
       '<div class="kpi"><small>Conductor</small><b class="num">'+soles0(monto('conductor'))+'</b><span class="d">S/ '+(Number(P.parametros.conductor_km)||0).toFixed(2)+' por km recorrido</span></div></div>'+
       '<span class="etq">Margen sobre el precio</span><div class="seg seg-nivel" role="group" aria-label="Margen">'+['minimo','recomendado','alto'].map(function(n){ return '<button type="button" data-nv="'+n+'" aria-pressed="'+(nivel===n)+'" aria-label="'+NIVEL_TXT[n]+' '+r.margenes[n]+' %"><span>'+lc(NIVEL_TXT[n], NIVEL_CORTO[n])+'</span><small>'+r.margenes[n]+' %</small></button>'; }).join('')+'</div>'+
-      '<div class="planes2'+(premOn()?'':' uno')+'" style="margin-top:12px">'+card('estandar')+(premOn()?card('premium'):'')+'</div>'+(premOn()?'':'<p class="ayuda" style="margin-top:6px">El servicio Premium está apagado: se cotiza solo Estándar. Se activa en Parámetros → Precios.</p>')+
-      (prE && r.km ? '<p class="ayuda" style="margin-top:8px">Estándar: '+soles(prE/r.km)+' por km recorrido · costo '+soles(r.costo_km)+' por km'+(r.km_vacios?' · el '+r.pct_vacios+' % del recorrido va vacío y ya está en el costo':'')+'.</p>' : '')+
+      '<div class="planes2'+(premOn()?'':' uno')+'" style="margin-top:12px">'+card('estandar')+(premOn()?card('premium'):'')+'</div>'+(premOn()?'':'<p class="ayuda" style="margin-top:6px">El servicio Premium está apagado: se cotiza solo Estándar. Se activa en Parámetros → Servicio y reserva.</p>')+
+      '<div class="kpis k4" id="qind" style="margin-top:10px">'+indicadores(prE)+'</div>'+
       (tar && Number(dd.pasajeros)?'<p class="ayuda">Referencia: como pasajes de ruta ('+soles(tar.tarifa)+' × '+dd.pasajeros+') serían '+soles(tar.tarifa*Number(dd.pasajeros)*r.tramos)+'.</p>':'')+
       '<details style="margin-top:10px"><summary>Desglose de costos</summary><table class="tabla"><tbody>'+r.premium.lineas.map(function(l){ var soloP = l.clave==='snacks'||l.clave==='wifi'; return '<tr><td>'+esc(l.concepto)+(soloP?' <span class="chip-est abierta">solo Premium</span>':'')+'<br><small class="ayuda">'+esc(l.detalle)+'</small></td><td class="n">'+soles(l.monto)+'</td></tr>'; }).join('')+
       '<tr><td><b>Total Estándar</b></td><td class="n"><b>'+soles(r.estandar.costo)+'</b></td></tr><tr><td><b>Total Premium</b></td><td class="n"><b>'+soles(r.premium.costo)+'</b></td></tr></tbody></table></details>';
     $('qres').querySelectorAll('[data-nv]').forEach(function(b){ b.onclick=function(){ nivel=b.dataset.nv; manual={estandar:false, premium:false}; extra(); recalcular(); }; });
-    ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; precios[k]=this.value; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(Number(String(this.value).replace(',','.'))||0, r[k]); }; });
+    ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; precios[k]=this.value; var pr = Number(String(this.value).replace(',','.'))||0; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(pr, r[k]); if(k==='estandar') $('qind').innerHTML = indicadores(pr); }; });
   }); };
   pintarOtros(); visibles(); linkMaps();
   restaurarBorrador(); recalcular();
@@ -822,7 +848,8 @@ function cotForm(c, pre){
   $('vista').querySelectorAll('[data-md]').forEach(function(b){ b.onclick=function(){ md=b.dataset.md; $('vista').querySelectorAll('[data-md]').forEach(function(z){ z.setAttribute('aria-pressed', z===b); }); visibles(); extra(); recalcular(); }; });
   ['qb1','qb2'].forEach(function(id){ $(id).addEventListener('input', function(){ vacMan[id] = $(id).value.trim()!==''; }); });
   ['qkm','qpe','qpv','qdi','qno','qho','qpa','qkx','qdg','qb1','qb2'].concat($('qbo')?['qbo']:[]).forEach(function(id){ $(id).addEventListener('input', recalcular); });
-  $('qho').addEventListener('input', pintarEspera);
+  $('qho').addEventListener('input', function(){ espMan = $('qho').value.trim()!==''; autoEspera(); pintarEspera(); });
+  ['qfe','qfr'].forEach(function(id){ $(id).addEventListener('input', function(){ autoEspera(); recalcular(); }); $(id).addEventListener('change', function(){ autoEspera(); recalcular(); }); });
   $('qor').addEventListener('input', function(){ visibles(); recalcular(); }); $('qde').addEventListener('input', recalcular);
   $('qdg').addEventListener('input', function(){ $('qdg').classList.toggle('cambiado', Number(String($('qdg').value).replace(',','.')) !== Number(galonParam)); });
   $('qor').addEventListener('change', conocida); $('qde').addEventListener('change', conocida); $('qor').addEventListener('input', linkMaps); $('qde').addEventListener('input', linkMaps);
@@ -856,9 +883,17 @@ function cotDetalle(id){
     var cP = !OP && c.resultado.premium ? c.resultado.premium.costo : c.costo;
     if(!OP && c.creado_por) h += '<p class="ayuda" style="margin:-6px 0 10px">Cotizó '+esc(c.creado_por)+(d.precio_galon && S.cotP && S.cotP.parametros && Number(S.cotP.parametros.precio_galon) !== Number(d.precio_galon) ? ' · usó diésel a S/ '+d.precio_galon+' (parámetro S/ '+S.cotP.parametros.precio_galon+')' : '')+(c.resultado.bono?' · bono del conductor '+soles(c.resultado.bono):'')+'</p>';
     if(!OP && c.solicitud_id) h += '<p class="ayuda" style="margin:-6px 0 10px">Viene de una solicitud del QR. <a href="#" id="csol">Ver la solicitud</a></p>';
-    h += '<div class="kpis">'+tarj('estandar', c.precio_final, c.costo)+(c.precio_final_premium?tarj('premium', c.precio_final_premium, cP):'')+'</div>';
-    h += '<div class="card" style="margin-top:12px"><dl class="ficha"><dt>Fecha</dt><dd>'+esc(c.fecha_servicio?fechaExc(c.fecha_servicio,true):'Por definir')+'</dd><dt>Recorrido</dt><dd>'+c.resultado.km+' km'+(c.resultado.km_vacios?' ('+c.resultado.km_vacios+' vacíos)':'')+(c.resultado.salidas>1?' · '+c.resultado.salidas+' salidas':'')+(c.resultado.horas_manejo?' · ≈ '+c.resultado.horas_manejo+' h de manejo':'')+' · '+c.resultado.dias+' día(s) · '+c.resultado.noches+' noche(s)</dd><dt>Pasajeros</dt><dd>'+(pax||'—')+'</dd><dt>Válida hasta</dt><dd>'+esc(c.valida_hasta)+'</dd>'+(c.notas?'<dt>Notas</dt><dd>'+esc(c.notas)+'</dd>':'')+'</dl></div>';
-    h += '<div class="compartir"><b>Enlace para el cliente</b><p class="ayuda">'+(c.precio_final_premium?'El cliente ve los dos servicios con sus precios y elige uno.':'El cliente ve su precio por pasajero y acepta desde su celular.')+' Nunca ve tus costos ni tu margen.</p><code>'+esc(url)+'</code><div class="botones">'+(c.cliente_tel?'<a class="btn" id="cwa" target="_blank" rel="noopener" href="https://wa.me/'+esc(c.cliente_tel)+'?text='+encodeURIComponent('Hola'+(c.cliente?' '+c.cliente:'')+', le envío su cotización '+c.codigo+' de Villa Azul: '+url)+'">Enviar por WhatsApp</a>':'')+'<button type="button" class="btn sec" id="ccp">Copiar enlace</button><a class="btn sec" target="_blank" rel="noopener" href="'+esc(url)+'">Ver como cliente</a></div></div>';
+    // Indicadores: precio, por pasajero, utilidad y precio por km (el operador solo ve los dos primeros).
+    var md0 = cotModalidad(d), tr0 = md0==='solo_ida' ? 1 : 2, nv = d.nivel && NIVEL_TXT[d.nivel];
+    var ind = '<div class="kpi"><small>Estándar'+(nv?' · '+nv:'')+(c.plan_elegido==='estandar'?' · elegido':'')+'</small><b class="num">'+soles(c.precio_final)+'</b><span class="d">'+(c.plan_elegido==='premium'?'el cliente eligió Premium':'precio total del grupo')+'</span></div>'+
+      (pax?'<div class="kpi"><small>Por pasajero</small><b class="num">'+soles(c.precio_final/pax)+'</b><span class="d">'+(tr0>1?soles(c.precio_final/pax/tr0)+' por tramo · ':'')+pax+' pasajeros</span></div>':'');
+    if(!OP) ind += '<div class="kpi"><small>Utilidad</small><b class="num">'+soles0(c.precio_final-c.costo)+'</b><span class="d">margen '+(c.precio_final?Math.round((c.precio_final-c.costo)/c.precio_final*100):0)+' % · costo '+soles0(c.costo)+'</span></div>'+
+      '<div class="kpi"><small>Precio por km</small><b class="num">'+soles(c.resultado.km?c.precio_final/c.resultado.km:0)+'</b><span class="d">'+c.resultado.km+' km'+(c.resultado.km_vacios?' · '+c.resultado.km_vacios+' vacíos':'')+'</span></div>';
+    h += '<div class="kpis '+(OP?'':'k4')+'">'+ind+'</div>'+(c.precio_final_premium?'<div class="kpis" style="margin-top:10px">'+tarj('premium', c.precio_final_premium, cP)+'</div>':'');
+    h += '<div class="card" style="margin-top:12px"><dl class="ficha"><dt>Salida</dt><dd>'+esc(c.fecha_servicio?horaHumana(c.fecha_servicio):'Por definir')+'</dd>'+
+      (d.fecha_retorno?'<dt>'+(md0==='dos_dias'?'Recojo':'Regreso')+'</dt><dd>'+esc(horaHumana(d.fecha_retorno))+'</dd>':'')+
+      (Number(d.horas_espera)?'<dt>Espera incluida</dt><dd>'+d.horas_espera+' h</dd>':'')+'<dt>Recorrido</dt><dd>'+c.resultado.km+' km'+(c.resultado.km_vacios?' ('+c.resultado.km_vacios+' vacíos)':'')+(c.resultado.salidas>1?' · '+c.resultado.salidas+' salidas':'')+(c.resultado.horas_manejo?' · ≈ '+c.resultado.horas_manejo+' h de manejo':'')+' · '+c.resultado.dias+' día(s) · '+c.resultado.noches+' noche(s)</dd><dt>Pasajeros</dt><dd>'+(pax||'—')+'</dd><dt>Válida hasta</dt><dd>'+esc(fechaExc(c.valida_hasta, true))+(c.vencida?' · vencida':'')+'</dd>'+(c.notas?'<dt>Notas</dt><dd>'+esc(c.notas)+'</dd>':'')+'</dl></div>';
+    h += '<div class="compartir"><b>Enlace para el cliente</b><p class="ayuda">'+(c.precio_final_premium?'El cliente ve los dos servicios con sus precios y elige uno.':'El cliente ve su precio por pasajero y acepta desde su celular.')+' Nunca ve tus costos ni tu margen.</p><code>'+esc(url)+'</code><div class="botones">'+(c.cliente_tel?'<a class="btn" id="cwa" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(c.cliente_tel)+'&text='+encodeURIComponent('Hola'+(c.cliente?' '+c.cliente:'')+', le envío su cotización '+c.codigo+' de Villa Azul: '+url)+'">Enviar por WhatsApp</a>':'')+'<button type="button" class="btn sec" id="cmsg">Copiar mensaje</button><button type="button" class="btn sec" id="ccp">Copiar enlace</button><a class="btn sec" target="_blank" rel="noopener" href="'+esc(url)+'">Ver como cliente</a></div></div>';
     h += '<div class="acciones">';
     if(OP){
       if(c.estado!=='aceptada' && !c.excursion_id) h += '<button type="button" class="btn sec ancho" id="cedi">'+ico('lapiz')+'Editar</button>'+(c.estado!=='rechazada'?'<button type="button" class="btn sec ancho" id="crec">Marcar rechazada</button>':'');
@@ -875,9 +910,10 @@ function cotDetalle(id){
     $('vista').innerHTML = h;
     $('cvol').onclick = function(){ S.cot={vista:'lista'}; vCotizador(); };
     if($('csol')) $('csol').onclick = function(e){ e.preventDefault(); S.sol = {vista:'detalle', id:c.solicitud_id, filtro:'activas'}; ir('solicitudes', true); };
+    if($('cmsg')) $('cmsg').onclick = function(){ formula().then(function(F){ var t = mensajeCliente(c, url, F); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('Mensaje copiado: pégalo en WhatsApp'); }, function(){ prompt('Copia el mensaje:', t); }); }); };
     $('ccp').onclick = function(){ (navigator.clipboard?navigator.clipboard.writeText(url):Promise.reject()).then(function(){ toast('Enlace copiado'); }, function(){ prompt('Copia el enlace:', url); }); };
     // El mensaje de WhatsApp se arma con la lista de lo que incluye el servicio (en la fórmula).
-    if($('cwa')) formula().then(function(F){ $('cwa').href = 'https://wa.me/'+c.cliente_tel+'?text='+encodeURIComponent(mensajeCliente(c, url, F)); });
+    if($('cwa')) formula().then(function(F){ $('cwa').href = 'https://api.whatsapp.com/send?phone='+c.cliente_tel+'&text='+encodeURIComponent(mensajeCliente(c, url, F)); });
     if($('cwa')) $('cwa').addEventListener('click', function(){ if(c.estado==='borrador') api('/api/cotizaciones/'+c.id+'/estado',{method:'POST',body:{estado:'enviada'}}); });
     if($('cexc')) $('cexc').onclick = function(){ S.excId = c.excursion_id; S.excTab='resumen'; S.vista='excursiones'; pintarApp(); };
     $('vista').querySelectorAll('[data-conv]').forEach(function(b){ b.onclick = function(){ var plan=b.dataset.conv, mt = plan==='premium'?c.precio_final_premium:c.precio_final;
@@ -892,11 +928,11 @@ var COT_PAR = [
   ['Combustible', [['precio_galon','Precio del diésel','S/ por galón · cámbialo cuando suba o baje'],['rendimiento_km_gal','Rendimiento de la Hiace','km por galón']]],
   ['Conductor', [['conductor_km','Pago al conductor','S/ por km · hoy S/ 120 ÷ 372 km = 0.3226'],['viatico_dia','Alimentación','S/ por día'],['hospedaje_noche','Hospedaje','S/ por noche fuera']]],
   ['Van', [['cochera_noche','Cochera','S/ por noche fuera'],['desgaste_km','Desgaste (llantas, aceite)','S/ por km'],['emergencia','Fondo de emergencia','S/ por viaje · parchado de llanta'],['velocidad_promedio','Velocidad real promedio','km/h · 186 km en 6 h = 31']]],
-  ['Espera (taxi y transporte privado)', [['espera_hora','Costo por hora incluida','S/ · va dentro del precio con margen; el cliente no la ve aparte'],['espera_larga_desde_h','Espera larga desde','horas · desde ahí la van está parada'],['espera_larga_hora','Costo por hora de espera larga','S/ · 0 = igual a la tarifa normal'],['tolerancia_min','Tolerancia sin costo','minutos · si no hay horas incluidas'],['espera_extra_hora','Hora adicional','S/ que paga el cliente, sin margen · hoy 10'],['espera_tope_h','Tope de espera adicional','horas · luego se coordina otro horario · 0 = sin tope']]],
+  ['Espera (taxi y transporte privado)', [['espera_hora','Costo por hora incluida','S/ · va dentro del precio con margen; el cliente no la ve aparte'],['espera_larga_desde_h','Espera larga desde','horas · desde ahí la van está parada'],['espera_larga_hora','Costo por hora de espera larga','S/ · 0 = igual a la tarifa normal'],['tolerancia_min','Tolerancia sin costo','minutos · si no hay horas incluidas'],['espera_extra_hora','Hora adicional','S/ que paga el cliente, sin margen · hoy 10']]],
   ['Bono del conductor (viajes largos)', [['bono_desde_km','Desde cuántos km recorridos','km ida + vuelta · 0 = sin bono automático'],['bono_por_dia','Bono por día de servicio','S/ · se suma solo en viajes largos']]],
   ['Servicio Premium', [['snack_pax_dia','Refrigerio','S/ por pasajero por día'],['wifi_pax_viaje','WiFi a bordo','S/ por pasajero por viaje · igual si dura 1 o 4 días · sin margen encima']]],
-  ['Servicio y reserva', [['premium_activo','Servicio Premium','switch'],['adelanto_pct','Adelanto para separar','% del precio · lo ve el cliente']]],
-  ['Precios · margen sobre el precio', [['margen_minimo','Margen mínimo','% · hoy 30'],['margen_objetivo','Margen recomendado','% · hoy 40'],['margen_premium','Margen alto','% · hoy 50'],['validez_dias','Validez de la cotización','días']]]
+  ['Servicio y reserva', [['premium_activo','Servicio Premium','switch'],['adelanto_pct','Adelanto para separar','% del precio · lo ve el cliente'],['redondeo_tramo','Redondeo del precio por pasajero y tramo','S/ · 0.5 = S/ 20.50 de ida + S/ 20.50 de retorno · 0 = redondear el total a S/ 10']]],
+  ['Precios · margen sobre el precio', [['margen_minimo','Margen mínimo','% · hoy 30'],['margen_objetivo','Margen recomendado','% · hoy 40'],['margen_premium','Margen alto (precio de lista)','% · hoy 45 · deja espacio para rebajar al recomendado'],['validez_dias','Validez de la cotización','días']]]
 ];
 function cotParametros(){
   var P = S.cotP, h = '<h2 id="hoja-t">Parámetros del cotizador</h2><p class="desc">Costos fijos que casi no cambian. Modifícalos solo cuando la situación lo amerite: alza del combustible, nuevo pago al conductor, etc. Cada cambio queda registrado.</p>';
@@ -913,19 +949,28 @@ function cotParametros(){
 
 /* ════════════ Mensaje de WhatsApp para el cliente ════════════
    Primero el precio por pasajero: el total del grupo va después, en pequeño. Trato de «usted». */
+function fechaDe(t){ var m = String(t||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? new Date(+m[1], m[2]-1, +m[3], +m[4], +m[5]) : null; }
+/** «sábado 21 de noviembre · 9:00 a. m.»; las 00:00 se dicen «medianoche del sábado 21 al domingo 22 de noviembre» para que nadie se confunda con el mediodía. */
+function horaHumana(t){ var d = fechaDe(t); if(!d) return fechaExc(t, true);
+  var dia = function(x, mes){ return x.toLocaleDateString('es-PE', mes ? {weekday:'long', day:'numeric', month:'long'} : {weekday:'long', day:'numeric'}).replace(',', ''); };
+  if(d.getHours()===0 && d.getMinutes()===0){ var antes = new Date(d.getTime() - 864e5); return 'medianoche del '+dia(antes)+' al '+dia(d, true); }
+  if(d.getHours()===12 && d.getMinutes()===0) return dia(d, true)+' al mediodía';
+  return dia(d, true)+' · '+d.toLocaleTimeString('es-PE', {hour:'numeric', minute:'2-digit'}); }
 function solesCorto(n){ var v = Math.round(Number(n||0)*100)/100; return 'S/ '+v.toLocaleString('es-PE',{minimumFractionDigits:v%1?2:0, maximumFractionDigits:2}); }
 function mensajeCliente(c, url, F){
   var d = c.datos||{}, pax = Number(d.pasajeros)||0, md = cotModalidad(d), tramos = md==='solo_ida' ? 1 : 2, pp = function(v){ return pax ? v/pax : 0; };
   var SERV = {ida_vuelta:'ida y vuelta, la van los espera', solo_ida:'solo ida', dos_dias:'los dejamos y los recogemos el día del retorno'};
   var L = ['🚐 *Villa Azul · Turismo & Excursiones*', '', 'Hola'+(c.cliente?' *'+c.cliente+'*':'')+' 👋, gracias por escribirnos. Aquí tiene su cotización *'+c.codigo+'*:', '',
     '📍 *Ruta:* '+c.origen+(tramos>1?' ⇄ ':' → ')+c.destino];
-  if(c.fecha_servicio) L.push('🗓️ *Salida:* '+fechaExc(c.fecha_servicio, true));
+  if(c.fecha_servicio) L.push('🗓️ *Salida:* '+horaHumana(c.fecha_servicio));
+  if(d.fecha_retorno) L.push((md==='dos_dias'?'🔙 *Recojo:* ':'🌙 *Regreso desde '+c.destino+':* ')+horaHumana(d.fecha_retorno));
   L.push('🔁 *Servicio:* '+SERV[md]);
   if(pax) L.push('👥 *Pasajeros:* '+pax);
   L.push('');
-  if(pax){ L.push('💰 *Precio por pasajero: '+solesCorto(pp(c.precio_final))+'*'+(tramos>1?' (ida y vuelta)':''));
-    if(tramos>1) L.push('     Equivale a '+solesCorto(pp(c.precio_final)/2)+' por tramo');
-    L.push('     Total del grupo: '+solesCorto(c.precio_final)); }
+  if(pax && tramos>1){ var t1 = solesCorto(pp(c.precio_final)/2);
+    L.push('💰 *Por pasajero:* *'+t1+'* de ida y *'+t1+'* de retorno');
+    L.push('     ('+solesCorto(pp(c.precio_final))+' ida y vuelta · total del grupo '+solesCorto(c.precio_final)+')'); }
+  else if(pax){ L.push('💰 *Por pasajero: '+solesCorto(pp(c.precio_final))+'*'); L.push('     (total del grupo '+solesCorto(c.precio_final)+')'); }
   else L.push('💰 *Precio del servicio: '+solesCorto(c.precio_final)+'*');
   if(c.precio_final_premium) L.push('⭐ *Premium* (con refrigerio y WiFi): '+(pax?solesCorto(pp(c.precio_final_premium))+' por pasajero':solesCorto(c.precio_final_premium)));
   var inc = (c.incluye||[]).concat(F && F.SERVICIOS ? F.SERVICIOS.estandar.incluye : []);
@@ -949,7 +994,7 @@ function atras(){
   var p = padreDe(S.vista); if(p){ ir(p); return true; }
   return false;
 }
-function marcarAtras(){ var bar = $('barraSup'); if(bar) bar.classList.toggle('con-atras', !!(enlaceAtras() || padreDe(S.vista))); }
+function marcarAtras(){ var bar = $('barraSup'), si = !!(enlaceAtras() || padreDe(S.vista)); if(bar) bar.classList.toggle('con-atras', si); if($('hatras')) $('hatras').hidden = !si; }
 (function(){
   try { history.replaceState({va:'base'}, ''); history.pushState({va:'app'}, ''); } catch(e){}
   window.addEventListener('popstate', function(){ if(atras()) { try { history.pushState({va:'app'}, ''); } catch(e){} } });
@@ -980,7 +1025,7 @@ function barraCompartir(){
 }
 function activarCompartir(){
   if(!$('cpWa')) return;
-  var pinta = function(){ $('cpWa').href = 'https://wa.me/?text='+encodeURIComponent(msjPortal()+urlPortal('wa'));
+  var pinta = function(){ $('cpWa').href = 'https://api.whatsapp.com/send?text='+encodeURIComponent(msjPortal()+urlPortal('wa'));
     $('cpFb').href = 'https://www.facebook.com/sharer/sharer.php?u='+encodeURIComponent(urlPortal('fb')); };
   pinta();
   $('cpIg').onclick = function(){ var t = msjPortal()+urlPortal('ig'); (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){ toast('Copiado: pégalo en tu biografía, historia o descripción'); }, function(){ prompt('Copia el texto:', t); }); };
@@ -1070,7 +1115,7 @@ function solDetalle(id){
       ['WhatsApp', celVer], s.email?['Correo', s.email]:null].filter(Boolean);
     h += '<div class="card"><dl class="ficha">'+fichas.map(function(x){ return '<dt>'+esc(x[0])+'</dt><dd style="white-space:pre-wrap">'+esc(x[1])+'</dd>'; }).join('')+'</dl>';
     var saludo = 'Hola '+String(s.cliente).split(' ')[0]+', te saluda Villa Azul · Turismo & Excursiones. Recibimos tu solicitud '+s.codigo+' ('+s.origen+' → '+s.destino+', '+solDia(s.fecha_ida)+'). Estamos preparando tu cotización y te la enviamos por aquí en breve.';
-    h += '<div class="botones"><a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/'+esc(cel)+'?text='+encodeURIComponent(saludo)+'">Escribir por WhatsApp</a><a class="btn sec" href="tel:+'+esc(cel)+'">Llamar</a></div></div>';
+    h += '<div class="botones"><a class="btn sec" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(cel)+'&text='+encodeURIComponent(saludo)+'">Escribir por WhatsApp</a><a class="btn sec" href="tel:+'+esc(cel)+'">Llamar</a></div></div>';
     h += '<div class="acciones">';
     if(c) h += '<button type="button" class="btn ancho" id="scot">'+ico('tarifa')+(c.estado==='borrador'?'Revisar y enviar '+esc(c.codigo):'Abrir '+esc(c.codigo))+'</button>';
     else if(s.etapa==='descartada') h += '<button type="button" class="btn sec ancho" id="sreab">Volver a abrir</button>';
@@ -1117,7 +1162,7 @@ function dibujarQR(canvas, texto){
 function hojaQR(){
   var wa = (S.solL && S.solL.whatsapp) || '51990587558', waVer = '+'+wa.replace(/^51(\d{3})(\d{3})(\d{3})$/,'51 $1 $2 $3');
   var Q = {portal:{url:location.origin+'/viaja?src=qr', t:'Arma tu viaje', s:'Escanea con la cámara de tu celular, elige fechas y viajeros, y recibe tu cotización por WhatsApp.', arch:'qr-villa-azul-viaja.png'},
-           wa:{url:'https://wa.me/'+wa+'?text='+encodeURIComponent('Hola Villa Azul, quiero cotizar un viaje.'), t:'Escríbenos por WhatsApp', s:'Escanea para abrir un chat con Villa Azul · '+waVer, arch:'qr-villa-azul-whatsapp.png'}}, modo = 'portal';
+           wa:{url:'https://api.whatsapp.com/send?phone='+wa+'&text='+encodeURIComponent('Hola Villa Azul, quiero cotizar un viaje.'), t:'Escríbenos por WhatsApp', s:'Escanea para abrir un chat con Villa Azul · '+waVer, arch:'qr-villa-azul-whatsapp.png'}}, modo = 'portal';
   abrirHoja('<h2 id="hoja-t">QR para clientes</h2><p class="desc">Ponlo en la van, en el paradero, en tus estados de WhatsApp o en un volante. Las solicitudes que llegan por este QR se cuentan aparte en «Por dónde llegan».</p>'+
     '<div class="seg" style="margin-top:14px" role="group" aria-label="Tipo de QR"><button type="button" data-qm="portal" aria-pressed="true">Portal de viajes</button><button type="button" data-qm="wa" aria-pressed="false">Chat de WhatsApp</button></div>'+
     '<div class="qr-caja"><canvas id="qrcv" width="900" height="900" aria-label="Código QR"></canvas></div><code class="qr-url" id="qru"></code>'+
@@ -1444,12 +1489,12 @@ function excResumen(){
   if(e.estado==='abierta' || e.estado==='borrador'){
     var url = enlaceExc(e.codigo);
     h += '<div class="compartir"><b>Enlace para tus clientes</b>'+(e.estado==='borrador'?'<small style="display:block;color:var(--muted)">Funcionará cuando abras las reservas.</small>':'')+'<code id="url">'+esc(url)+'</code><div class="botones"><button type="button" class="btn" id="copiar">Copiar enlace</button>'+
-      '<a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(textoWa(e,url))+'">Compartir por WhatsApp</a><a class="btn sec" target="_blank" rel="noopener" href="'+esc(url)+'">Ver como cliente</a></div></div>';
+      '<a class="btn sec" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text='+encodeURIComponent(textoWa(e,url))+'">Compartir por WhatsApp</a><a class="btn sec" target="_blank" rel="noopener" href="'+esc(url)+'">Ver como cliente</a></div></div>';
   }
   if(e.estado!=='anulada' && e.token_org){
     var uo = location.origin+'/organizador?t='+e.token_org;
     h += '<div class="compartir" style="border-color:var(--warn);background:var(--warn-soft)"><b>Enlace del organizador</b> <small style="color:var(--muted)">· privado</small><p class="ayuda" style="margin-top:4px">Para el líder o quien contrata: registra a todo su grupo sin límite, aparta asientos y completa nombres después, corrige datos hasta el cierre y envía un solo voucher.</p><code>'+esc(uo)+'</code><div class="botones">'+
-      '<button type="button" class="btn" id="cporg">Copiar enlace</button>'+(e.cliente_tel?'<a class="btn sec" target="_blank" rel="noopener" href="https://wa.me/'+esc(e.cliente_tel)+'?text='+encodeURIComponent('Hola'+(e.cliente?' '+e.cliente:'')+', te comparto tu panel de organizador para «'+e.titulo+'» ('+fechaExc(e.salida,true)+').\nDesde aquí registras a tu grupo, eliges sus asientos y envías los pagos:\n'+uo+'\n\nEs solo para ti; no lo reenvíes al grupo. Para ellos está el enlace de reserva.')+'">Enviar al organizador</a>':'')+
+      '<button type="button" class="btn" id="cporg">Copiar enlace</button>'+(e.cliente_tel?'<a class="btn sec" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(e.cliente_tel)+'&text='+encodeURIComponent('Hola'+(e.cliente?' '+e.cliente:'')+', te comparto tu panel de organizador para «'+e.titulo+'» ('+fechaExc(e.salida,true)+').\nDesde aquí registras a tu grupo, eliges sus asientos y envías los pagos:\n'+uo+'\n\nEs solo para ti; no lo reenvíes al grupo. Para ellos está el enlace de reserva.')+'">Enviar al organizador</a>':'')+
       '<button type="button" class="btn sec" id="rtorg">Cambiar enlace</button></div></div>';
   }
   h += '<div class="kpis k3" style="margin-top:14px">'+
@@ -1989,7 +2034,7 @@ function textoBoleto(viaje, pas){
 function botonesContacto(cel, texto){
   if(!cel) return '<p class="ayuda">Sin celular registrado.</p>';
   var c = String(cel).replace(/\D/g,''); if(c.length===9) c='51'+c;
-  return '<div class="botones"><a class="btn" style="flex:1" target="_blank" rel="noopener" href="https://wa.me/'+c+'?text='+encodeURIComponent(texto)+'">WhatsApp</a>'+
+  return '<div class="botones"><a class="btn" style="flex:1" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+c+'&text='+encodeURIComponent(texto)+'">WhatsApp</a>'+
     '<a class="btn sec" style="flex:1" href="sms:+'+c+'?&body='+encodeURIComponent(texto.replace(/\*/g,''))+'">SMS</a><a class="btn sec" style="flex:1" href="tel:+'+c+'">Llamar</a></div>';
 }
 function hojaContacto(viaje, pas, cel){
@@ -2035,7 +2080,7 @@ function vViajes(){
     h += L.map(function(v){ var url = enlaceExc(v.codigo);
       return '<div class="card" style="margin-top:10px"><b>'+esc(v.titulo)+'</b> <span class="chip-est '+esc(v.estado)+'">'+esc(EXC_EST[v.estado])+'</span><small style="display:block;color:var(--muted)">'+esc(v.origen)+' → '+esc(v.destino)+' · '+esc(fechaExc(v.salida))+'</small>'+
         '<div class="barra-ocup" style="margin-top:8px"><i style="width:'+Math.round(v.ocupados/Math.max(1,v.vendibles)*100)+'%"></i></div><small class="num">'+v.ocupados+' de '+v.vendibles+' asientos</small>'+
-        '<div class="botones" style="margin-top:10px">'+(v.estado==='abierta'?'<a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text='+encodeURIComponent(textoWa(v,url))+'">Compartir por WhatsApp</a><button type="button" class="btn sec" data-cp="'+esc(url)+'">Copiar enlace</button>':'')+
+        '<div class="botones" style="margin-top:10px">'+(v.estado==='abierta'?'<a class="btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text='+encodeURIComponent(textoWa(v,url))+'">Compartir por WhatsApp</a><button type="button" class="btn sec" data-cp="'+esc(url)+'">Copiar enlace</button>':'')+
         '<button type="button" class="btn sec" data-man="'+esc(v.id)+'">Pasajeros</button></div></div>'; }).join('');
     $('vista').innerHTML = h;
     $('vista').querySelectorAll('[data-cp]').forEach(function(b){ b.onclick=function(){ (navigator.clipboard?navigator.clipboard.writeText(b.dataset.cp):Promise.reject()).then(function(){ toast('Enlace copiado'); }, function(){ prompt('Copia el enlace:', b.dataset.cp); }); }; });

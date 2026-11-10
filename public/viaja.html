@@ -427,7 +427,7 @@ function cargarPortal(){
     const prem = !!(P && P.premium);
     if (prem) { $('servPrem').classList.remove('oculto'); $('t-serv').textContent = 'Dos formas de viajar'; $('servIntro').textContent = 'En cada cotización ves ambos precios y eliges desde tu celular.'; }
     else F.servicio_pref = 'estandar';
-    ['waTop','waPie'].forEach(id => { $(id).href = 'https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, quiero cotizar un viaje.'); });
+    ['waTop','waPie'].forEach(id => { $(id).href = 'https://api.whatsapp.com/send?phone=' + waNum() + '&text=' + encodeURIComponent('Hola Villa Azul, quiero cotizar un viaje.'); });
     $('destinos').innerHTML = (P.lugares.length ? P.lugares : ['Trujillo','Huamachuco','Cajabamba','Santiago de Chuco','Huanchaco','Cajamarca']).filter(l => l.toLowerCase() !== 'angasmarca').slice(0, 12)
       .map(l => '<button type="button" data-dest="' + esc(l) + '">' + esc(l) + '</button>').join('');
     const dl = $('lugL'); if (dl) dl.innerHTML = P.lugares.map(l => '<option value="' + esc(l) + '">').join('');
@@ -568,8 +568,8 @@ function vistaPase(d, primera){
   else h += flujo(d.etapa);
   h += '<div class="botones-pase">';
   if (d.cotizacion) h += '<a class="btn ancho" href="/cotizacion?c=' + esc(d.cotizacion.token) + '">' + (d.cotizacion.plan_elegido ? 'Ver mi cotización' : 'Ver precios y elegir servicio') + '</a>';
-  if (primera) h += '<a class="btn wa ancho" target="_blank" rel="noopener" href="https://wa.me/' + waNum() + '?text=' + encodeURIComponent(mensajeWa(d)) + '">' + ICO.wa + 'Avisar por WhatsApp</a>';
-  else h += '<a class="btn ' + (d.cotizacion ? 'sec' : 'wa') + ' ancho" target="_blank" rel="noopener" href="https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, consulto por mi solicitud ' + d.codigo + '.') + '">' + ICO.wa + 'Escribir por WhatsApp</a>';
+  if (primera) h += '<a class="btn wa ancho" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone=' + waNum() + '&text=' + encodeURIComponent(mensajeWa(d)) + '">' + ICO.wa + 'Avisar por WhatsApp</a>';
+  else h += '<a class="btn ' + (d.cotizacion ? 'sec' : 'wa') + ' ancho" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone=' + waNum() + '&text=' + encodeURIComponent('Hola Villa Azul, consulto por mi solicitud ' + d.codigo + '.') + '">' + ICO.wa + 'Escribir por WhatsApp</a>';
   h += '<button type="button" class="btn sec ancho" id="copiar">Copiar enlace</button><a class="btn sec ancho" href="/viaja" id="otra">Pedir otro viaje</a></div>';
   if (primera) h += '<p class="ayuda" style="text-align:center;max-width:640px;margin:14px auto 0">Toca «Avisar por WhatsApp»: así te atendemos más rápido.</p>';
   zona.innerHTML = h;
@@ -677,7 +677,7 @@ function pintarPax(){
     '<button type="button" data-p="' + t[0] + '" data-d="1" aria-label="Agregar ' + t[1].toLowerCase() + '"' + (puede(t[0]) ? '' : ' disabled') + '>+</button></div></div>').join('');
   const nv = $('notaVan');
   nv.className = 'nota-van' + (lleno ? ' tope' : '');
-  nv.innerHTML = lleno ? 'Llegaste al máximo: <b>15 viajeros con asiento</b> por van. ¿Son más? <a href="https://wa.me/' + waNum() + '?text=' + encodeURIComponent('Hola Villa Azul, somos un grupo de más de 15 personas y queremos cotizar un viaje.') + '" target="_blank" rel="noopener">Escríbenos por WhatsApp</a> y coordinamos otra unidad.'
+  nv.innerHTML = lleno ? 'Llegaste al máximo: <b>15 viajeros con asiento</b> por van. ¿Son más? <a href="https://api.whatsapp.com/send?phone=' + waNum() + '&text=' + encodeURIComponent('Hola Villa Azul, somos un grupo de más de 15 personas y queremos cotizar un viaje.') + '" target="_blank" rel="noopener">Escríbenos por WhatsApp</a> y coordinamos otra unidad.'
     : 'Máximo 15 viajeros con asiento por van. Te quedan ' + (MAX_PAX - n) + (MAX_PAX - n === 1 ? ' asiento.' : ' asientos.');
   $('resP').innerHTML = '<b>' + n + (n === 1 ? ' viajero' : ' viajeros') + '</b>' + esc(textoViajeros());
 }

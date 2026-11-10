@@ -63,6 +63,11 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 .inc span{display:inline-flex;align-items:center;gap:6px;background:var(--bg);border-radius:999px;padding:6px 12px;font-size:14px;font-weight:700}
 .inc span::before{content:"✓";color:var(--ok);font-weight:800}
 .notas{white-space:pre-wrap;color:var(--muted);margin:12px 0 0}
+.pp.total{opacity:.85;font-size:14px;margin-top:2px}
+.tramos2{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:6px;margin-top:6px}
+.tramos2::before{content:"+";grid-column:2;grid-row:1;align-self:center;font-size:26px;font-weight:700;opacity:.7}
+.tramos2>div:first-child{grid-column:1;grid-row:1} .tramos2>div:last-child{grid-column:3;grid-row:1}
+.tramos2 small{display:block;font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.85}
 .espera ul{margin:8px 0 0;padding-left:20px;color:var(--muted)} .espera li{margin:4px 0}
 .estado{text-align:center;margin:18px auto 0;max-width:760px;padding:14px;border-radius:16px;font-weight:700}
 .estado.ok{background:#DDF3EA;color:#0F7A55} .estado.mal{background:#FBE3E0;color:#C0392F}
@@ -81,12 +86,18 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
   var root = document.getElementById('root'), tok = (new URLSearchParams(location.search).get('c')||'').toLowerCase().replace(/[^a-f0-9]/g,''), D = null;
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x];});}
   function soles(n){ return 'S/ '+Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  // Las 00:00 se dicen «medianoche del sáb 21 al dom 22» para no confundirlas con el mediodía.
+  function horaHumana(s){ var m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); if(!m) return fecha(s);
+    var d=new Date(+m[1],m[2]-1,+m[3],+m[4],+m[5]), dia=function(x){ return x.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}).replace(',',''); };
+    if(+m[4]===0 && +m[5]===0) return 'medianoche del '+dia(new Date(d.getTime()-864e5))+' al '+dia(d);
+    return dia(d)+' · '+d.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'}); }
   function fecha(s){ var m=String(s||'').match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/); if(!m) return ''; var d=new Date(+m[1],m[2]-1,+m[3],+(m[4]||0),+(m[5]||0)); var t=d.toLocaleDateString('es-PE',{weekday:'short',day:'numeric',month:'short'}); if(m[4]) t+=' · '+d.toLocaleTimeString('es-PE',{hour:'numeric',minute:'2-digit'}); return t.charAt(0).toUpperCase()+t.slice(1); }
   function precioHtml(n){ var p = Number(n||0).toFixed(2).split('.'); return '<span class="s">S/</span><span class="e">'+Number(p[0]).toLocaleString('es-PE')+'</span><span class="c">.'+p[1]+'</span>'; }
   function pintar(){
     var d = D, abierta = !d.vencida && d.estado!=='rechazada';
     var chips = [];
-    if(d.fecha_servicio) chips.push(fecha(d.fecha_servicio));
+    if(d.fecha_servicio) chips.push('Salida: '+horaHumana(d.fecha_servicio));
+    if(d.fecha_retorno) chips.push((d.modalidad==='dos_dias'?'Recojo: ':'Regreso: ')+horaHumana(d.fecha_retorno));
     chips.push(d.modalidad==='dos_dias'?'Ida y retorno en días distintos':d.ida_vuelta?'Ida y vuelta':'Solo ida');
     if(d.dias>1 || d.noches) chips.push(d.dias+' día(s)'+(d.noches?' · '+d.noches+' noche(s)':''));
     if(d.pasajeros) chips.push(d.pasajeros+' pasajeros');
@@ -100,19 +111,23 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
     d.planes.forEach(function(p){
       var mio = d.plan_elegido===p.clave;
       h += '<article class="plan '+p.clave+(mio?' elegido':'')+'" aria-label="Servicio '+esc(p.nombre)+'">'+
-        '<div class="plan-top">'+(uno?'':d.preferido===p.clave?'<span class="cinta">LO QUE PEDISTE</span>':p.clave==='premium'?'<span class="cinta">MÁS COMPLETO</span>':'')+'<h3>'+esc(p.nombre)+'</h3><div class="precio">'+precioHtml(p.precio)+'</div>'+(p.por_pasajero?'<div class="pp">'+soles(p.por_pasajero)+' por pasajero</div>':'')+'</div>'+
+        '<div class="plan-top">'+(uno?'':d.preferido===p.clave?'<span class="cinta">LO QUE PEDISTE</span>':p.clave==='premium'?'<span class="cinta">MÁS COMPLETO</span>':'')+'<h3>'+esc(p.nombre)+'</h3>'+(p.por_tramo && d.tramos>1
+          // En la sierra se compara con el pasaje: lo grande es lo que paga cada pasajero por la ida y por el retorno.
+          ? '<div class="tramos2"><div><small>Ida</small><div class="precio">'+precioHtml(p.por_tramo)+'</div></div><div><small>Retorno</small><div class="precio">'+precioHtml(p.por_tramo)+'</div></div></div><div class="pp">por pasajero</div><div class="pp total">'+soles(p.por_pasajero)+' ida y vuelta</div><div class="pp total">Total del grupo: '+soles(p.precio)+'</div>'
+          : p.por_pasajero ? '<div class="precio">'+precioHtml(p.por_pasajero)+'</div><div class="pp">por pasajero</div><div class="pp total">Total del grupo: '+soles(p.precio)+'</div>'
+          : '<div class="precio">'+precioHtml(p.precio)+'</div>')+'</div>'+
         '<ul class="lista">'+d.todos.map(function(f){ var si = p.incluye.indexOf(f)>=0; return '<li class="'+(si?'':'no')+'"><span class="ic '+(si?'si':'x')+'" aria-hidden="true">'+(si?'✓':'✕')+'</span><span>'+esc(f)+'<span class="oculto-lector">'+(si?' (incluido)':' (no incluido)')+'</span></span></li>'; }).join('')+'</ul>'+
         '<div class="plan-pie">'+(abierta?'<button type="button" class="elegir" data-plan="'+p.clave+'"'+(mio?' disabled':'')+'>'+(mio?(uno?'Aceptada ✓':'Elegido ✓'):uno?'Aceptar la cotización':(d.plan_elegido?'Cambiar a '+esc(p.nombre):'Elegir '+esc(p.nombre)))+'</button>':(mio?'<span class="tuyo">Tu elección</span>':''))+'</div></article>';
     });
     h += '</div>';
     if(d.plan_elegido){ var pe = d.planes.filter(function(p){ return p.clave===d.plan_elegido; })[0];
       h += '<div class="estado ok">'+(uno?'Aceptaste la cotización':'Elegiste el servicio <b>'+esc(pe.nombre)+'</b>')+' por '+soles(pe.precio)+'. Villa Azul te confirmará la reserva.'+
-        (d.whatsapp?'<br><a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, elegí el servicio '+pe.nombre+' de la cotización '+d.codigo+' ('+d.origen+' → '+d.destino+') por '+soles(pe.precio)+'.')+'">Avisar por WhatsApp</a>':'')+'</div>'; }
+        (d.whatsapp?'<br><a class="btn wa" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, elegí el servicio '+pe.nombre+' de la cotización '+d.codigo+' ('+d.origen+' → '+d.destino+') por '+soles(pe.precio)+'.')+'">Avisar por WhatsApp</a>':'')+'</div>'; }
     else if(d.vencida) h += '<div class="estado mal">Esta cotización venció el '+esc(d.valida_hasta)+'. Pide una actualizada a Villa Azul.</div>';
     h += '<section class="card"><h3>Incluido en ambos servicios</h3><div class="inc">'+d.incluye.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div>'+(d.notas?'<p class="notas">'+esc(d.notas)+'</p>':'')+'</section>';
     if(d.adelanto_pct) h += '<section class="card espera"><h3>Para separar tu viaje</h3><ul><li>Adelanto del '+d.adelanto_pct+' % ('+soles(d.precio*d.adelanto_pct/100)+') al confirmar.</li><li>El saldo, antes de salir.</li></ul></section>';
     if((d.politica_espera||[]).length) h += '<section class="card espera"><h3>Tiempo de espera</h3><ul>'+d.politica_espera.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></section>';
-    if(d.whatsapp) h += '<p style="text-align:center"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, tengo una consulta sobre la cotización '+d.codigo+'.')+'">Hacer una consulta</a></p>';
+    if(d.whatsapp) h += '<p style="text-align:center"><a class="btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, tengo una consulta sobre la cotización '+d.codigo+'.')+'">Hacer una consulta</a></p>';
     h += '<p class="pie">'+(d.vencida?'':'Válida hasta el '+esc(d.valida_hasta)+'. ')+'Precios en soles, sujetos a disponibilidad en la fecha del servicio.</p></main>';
     root.innerHTML = h;
     root.querySelectorAll('[data-plan]').forEach(function(b){ b.onclick = function(){

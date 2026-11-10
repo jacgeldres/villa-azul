@@ -1,5 +1,5 @@
 /**
- * Villa Azul · Fórmula del cotizador (v5.4.0).
+ * Villa Azul · Fórmula del cotizador (v5.6.0).
  * Un solo archivo para la app (vista previa al instante) y para el servidor (cifra oficial al guardar).
  * Calcula dos servicios: Estándar y Premium (Estándar + snacks y WiFi).
  * v5.2: los km que la van hace vacía (volver a la base o ir a recoger) cuestan igual que los km con pasajeros.
@@ -28,7 +28,6 @@ export const PARAMETROS_BASE = {
   espera_larga_hora: 5,        // costo de cada hora de espera larga
   tolerancia_min: 30,          // minutos que se espera sin costo cuando no hay horas incluidas
   espera_extra_hora: 10,       // S/ que paga el cliente por hora adicional, pasada la tolerancia (sin margen)
-  espera_tope_h: 2,            // horas adicionales máximas antes de coordinar otro horario (0 = sin tope)
   desgaste_km: 0.35,           // llantas, aceite y mantenimiento por km
   snack_pax_dia: 6,            // Premium: 1 refrigerio por pasajero por día
   wifi_pax_viaje: 10,          // Premium: WiFi por pasajero por viaje (igual si dura 1 o 4 días). Precio fijo: no lleva margen encima
@@ -36,9 +35,10 @@ export const PARAMETROS_BASE = {
   bono_por_dia: 0,             // S/ de bono por día de servicio en viajes largos
   premium_activo: 0,           // 1 = se ofrece el servicio Premium; 0 = solo Estándar
   adelanto_pct: 50,            // % de adelanto para separar el viaje (se muestra al cliente)
+  redondeo_tramo: 0.5,         // el precio por pasajero y por tramo sube a S/ 0.50 (S/ 20.50 de ida + S/ 20.50 de retorno); 0 = redondear el total a S/ 10
   margen_minimo: 30,           // % de margen mínimo (sobre el precio)
   margen_objetivo: 40,         // % de margen recomendado
-  margen_premium: 50,          // % de margen alto
+  margen_premium: 45,          // % de margen alto: el «precio de lista» que deja espacio para una rebaja al recomendado
   validez_dias: 7,
 };
 export const SERVICIOS = {
@@ -60,12 +60,12 @@ function txtEspera(p, h) { const corte = Math.max(0, n(p.espera_larga_desde_h)),
 export function politicaEspera(parametros, d) {
   const p = { ...PARAMETROS_BASE, ...(parametros || {}) };
   if (!d || !['taxi', 'privado'].includes(d.tipo)) return [];
-  const h = n(d.horas_espera), tol = Math.round(n(p.tolerancia_min)), extra = n(p.espera_extra_hora), tope = n(p.espera_tope_h);
+  const h = n(d.horas_espera), tol = Math.round(n(p.tolerancia_min)), extra = n(p.espera_extra_hora);
   const L = [];
-  if (h) L.push(`Incluye hasta ${h} ${h === 1 ? 'hora' : 'horas'} de espera.`);
+  if (h && d.fecha_retorno) L.push('La van los espera en destino hasta la hora de regreso, sin costo adicional.');
+  else if (h) L.push(`Incluye hasta ${h} ${h === 1 ? 'hora' : 'horas'} de espera.`);
   else if (tol) L.push(`Le esperamos hasta ${tol} minutos sin costo.`);
-  if (extra) L.push(`${h || tol ? 'Si necesita más tiempo, cada' : 'Cada'} hora adicional de espera es S/ ${extra}.`);
-  if (tope) L.push(`Si la espera pasa de ${tope} ${tope === 1 ? 'hora adicional' : 'horas adicionales'}, coordinamos un nuevo horario.`);
+  if (extra) L.push(h && d.fecha_retorno ? `Si el regreso se retrasa, cada hora adicional de espera es S/ ${extra}.` : `${h || tol ? 'Si necesita más tiempo, cada' : 'Cada'} hora adicional de espera es S/ ${extra}.`);
   return L;
 }
 
@@ -121,11 +121,14 @@ export function calcular(parametros, d) {
   // Márgenes sobre el precio: precio = costo ÷ (1 − margen). 40 % → el costo es el 60 % del precio.
   const mn = Math.min(90, n(p.margen_minimo)) / 100, mo = Math.min(90, n(p.margen_objetivo)) / 100, mp = Math.min(95, n(p.margen_premium)) / 100;
   const pasajes = pax * M.tramos;
+  // El cliente mira el precio por pasajero: se redondea hacia arriba ese número y el total es por pasajero × pasajeros.
+  // Se redondea el precio por pasajero y por tramo (lo que el cliente compara con un pasaje); el total es ese precio × tramos × pasajeros.
+  const paso = n(p.redondeo_tramo), redondear = (x) => pasajes && paso > 0 ? r2(Math.ceil(r2(r2(x) / pasajes) / paso) * paso * pasajes) : arriba10(x);
   const plan = (lineas) => {
     const costo = r2(lineas.reduce((s, l) => s + l.monto, 0));
     // El WiFi se cobra tal cual (S/ por pasajero por viaje): el margen se aplica solo al resto de costos.
     const fijo = r2(lineas.filter(l => l.clave === 'wifi').reduce((s, l) => s + l.monto, 0)), resto = costo - fijo;
-    const precios = { minimo: arriba10(resto / (1 - mn) + fijo), recomendado: arriba10(resto / (1 - mo) + fijo), alto: arriba10(resto / (1 - mp) + fijo) };
+    const precios = { minimo: redondear(resto / (1 - mn) + fijo), recomendado: redondear(resto / (1 - mo) + fijo), alto: redondear(resto / (1 - mp) + fijo) };
     const cada = (div) => div ? { minimo: r2(precios.minimo / div), recomendado: r2(precios.recomendado / div), alto: r2(precios.alto / div) } : null;
     return { lineas, costo, precios, por_pasajero: cada(pax), por_tramo: cada(pasajes) };
   };

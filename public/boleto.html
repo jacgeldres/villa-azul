@@ -77,7 +77,7 @@ html,body{overflow-x:hidden}
       '<span class="estado '+est[0]+'">'+esc(est[1])+'</span>'+
       (d.valido?'<div class="qr"><div id="qr" role="img" aria-label="Código QR del boleto"></div><code>'+esc(d.boleto.toUpperCase())+'</code></div>':'')+
       '<div class="acciones"><button type="button" class="btn pri" id="comp">Compartir</button><button type="button" class="btn" id="imp">Imprimir</button></div>'+
-      (d.whatsapp?'<div class="acciones"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, consulto por mi boleto '+d.boleto.toUpperCase()+' (asiento '+d.asiento+', '+d.titulo+').')+'">Escribir a Villa Azul</a></div>':'')+
+      (d.whatsapp?'<div class="acciones"><a class="btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, consulto por mi boleto '+d.boleto.toUpperCase()+' (asiento '+d.asiento+', '+d.titulo+').')+'">Escribir a Villa Azul</a></div>':'')+
       '</div></article><p class="nota">Presenta este boleto al subir. Constancia de reserva y pase de abordar; no es un comprobante de pago SUNAT.</p>';
     root.innerHTML = h;
     if(d.valido){ try{ var q = qrcode(0,'M'); q.addData(location.href); q.make(); document.getElementById('qr').innerHTML = q.createSvgTag({cellSize:5, margin:0, scalable:true}); }catch(e){ document.getElementById('qr').style.display='none'; } }

@@ -1,5 +1,5 @@
 /* Villa Azul · service worker: la app abre sin señal. La API nunca se guarda en caché. */
-const CACHE = 'villa-azul-v5.4.0';
+const CACHE = 'villa-azul-v5.6.0';
 const BASE = ['/', '/index.html', '/app.js', '/manifest.webmanifest', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/hiace-interior.jpg', '/js/unidad.js', '/js/plantilla-checklist.json', '/hiace-lateral.jpg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(BASE)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(n => n !== CACHE).map(n => caches.delete(n)))).then(() => self.clients.claim())); });

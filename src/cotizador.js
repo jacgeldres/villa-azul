@@ -27,6 +27,8 @@ export const SQL_COT_V13 = [
   "INSERT OR REPLACE INTO config (clave, valor, seq) VALUES ('cot_margen_objetivo','40',?)",
   "INSERT OR REPLACE INTO config (clave, valor, seq) VALUES ('cot_margen_premium','50',?)",
 ];
+// v5.6: el margen alto baja de 50 % a 45 % (precio de lista con espacio para una rebaja), salvo que ya lo hayas cambiado.
+export const SQL_COT_V15 = ["UPDATE config SET valor='45', seq=? WHERE clave='cot_margen_premium' AND valor='50'"];
 // v5.2.1: hora de espera a S/ 10.
 export const SQL_COT_V14 = ["INSERT OR REPLACE INTO config (clave, valor, seq) VALUES ('cot_espera_hora','10',?)"];
 export const SQL_COT_V9 = [
@@ -100,7 +102,9 @@ export function crearCotizador(h) {
     const km = (v) => v !== undefined && v !== null && v !== '' ? Math.max(0, num(v)) : null;
     // Si el grupo sale de la base, los tramos vacíos ya los cuenta la modalidad: no se suma nada aparte (evita contarlos dos veces).
     const b1 = esBase(b.origen) ? 0 : km(b.km_base_origen), b2 = esBase(b.origen) ? null : esBase(b.destino) ? 0 : km(b.km_destino_base);
-    return { tipo, modalidad, km_ida: num(b.km_ida), ida_vuelta: modalidad !== 'solo_ida', km_base_origen: b1, km_destino_base: b2,
+    // Hora en que la van sale de regreso desde el destino (o el día del recojo, en «dejar y recoger»).
+    const fr = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(b.fecha_retorno || '')) && modalidad !== 'solo_ida' ? String(b.fecha_retorno) : null;
+    return { tipo, modalidad, km_ida: num(b.km_ida), ida_vuelta: modalidad !== 'solo_ida', km_base_origen: b1, km_destino_base: b2, fecha_retorno: fr,
       km_extra: num(b.km_extra), dias: num(b.dias) || 1, noches: num(b.noches),
       horas_espera: num(b.horas_espera), pasajeros: num(b.pasajeros), peajes_ida: num(b.peajes_ida), peajes_vuelta: num(b.peajes_vuelta),
       precio_galon: num(b.precio_galon) > 0 ? Math.round(num(b.precio_galon) * 100) / 100 : null,
@@ -120,6 +124,7 @@ export function crearCotizador(h) {
     const d = datosDe(b), origen = texto(b.origen, 60), destino = texto(b.destino, 60);
     if (!origen || !destino) throw new ErrorApi('Escribe origen y destino.');
     if (!(d.km_ida > 0)) throw new ErrorApi('Escribe los kilómetros de ida.');
+    if (d.fecha_retorno && b.fecha_servicio && d.fecha_retorno <= String(b.fecha_servicio)) throw new ErrorApi('El regreso debe ser después de la salida. Si es a medianoche, elige el día siguiente a las 00:00.');
     const par = await parametros(env), res = calcular(par, d), nivel = ['minimo', 'recomendado', 'alto'].includes(b.nivel) ? b.nivel : 'recomendado';
     d.nivel = nivel;
     const final = b.precio_final !== undefined && b.precio_final !== '' ? Math.round(num(b.precio_final) * 100) / 100 : res.estandar.precios[nivel];
@@ -201,7 +206,7 @@ export function crearCotizador(h) {
     const d = c.datos, f = c.fecha_servicio || ahoraLima().slice(0, 10) + 'T05:00';
     const r = await crearExcursion(env, yo, {
       titulo: `${TIPOS[c.tipo]} ${SERVICIOS[plan].nombre} ${c.origen} → ${c.destino}${c.cliente ? ' · ' + c.cliente : ''}`.slice(0, 80), tipo: 'contrato', cliente: c.cliente, cliente_tel: c.cliente_tel,
-      origen: c.origen, destino: c.destino, salida: f.length === 10 ? f + 'T05:00' : f, monto_contrato: c.precio_acordado,
+      origen: c.origen, destino: c.destino, salida: f.length === 10 ? f + 'T05:00' : f, retorno: d.fecha_retorno || undefined, monto_contrato: c.precio_acordado,
       notas: `Desde ${c.codigo} · Servicio ${SERVICIOS[plan].nombre}: ${SERVICIOS[plan].incluye.join(', ')}. ${c.notas || ''}`.trim(),
       asientos_total: 15, estado: 'borrador',
     });
@@ -223,12 +228,13 @@ export function crearCotizador(h) {
     if (!c) throw new ErrorApi('Cotización no encontrada.', 'NO_EXISTE', 404);
     const s = salida(c), wa = await env.DB.prepare("SELECT valor FROM config WHERE clave='whatsapp_empresa'").first();
     // Al cliente solo el precio y lo que incluye: nunca el desglose de costos ni el margen.
-    const pax = s.datos.pasajeros, pp = (v) => pax ? Math.round(v / pax * 100) / 100 : null;
-    const planes = [{ clave: 'estandar', nombre: SERVICIOS.estandar.nombre, precio: s.precio_final, por_pasajero: pp(s.precio_final), incluye: SERVICIOS.estandar.incluye }];
-    if (s.precio_final_premium) planes.push({ clave: 'premium', nombre: SERVICIOS.premium.nombre, precio: s.precio_final_premium, por_pasajero: pp(s.precio_final_premium), incluye: SERVICIOS.premium.incluye });
-    return { codigo: s.codigo, tipo: TIPOS[s.tipo], cliente: s.cliente, origen: s.origen, destino: s.destino, fecha_servicio: s.fecha_servicio, ida_vuelta: s.datos.ida_vuelta, modalidad: s.datos.modalidad || null, horas_tramo: s.resultado.horas_tramo || null,
+    const pax = s.datos.pasajeros, pp = (v) => pax ? Math.round(v / pax * 100) / 100 : null, tramos = s.datos.modalidad === 'solo_ida' || s.datos.ida_vuelta === false ? 1 : 2;
+    const pt = (v) => pax ? Math.round(v / pax / tramos * 100) / 100 : null;
+    const planes = [{ clave: 'estandar', nombre: SERVICIOS.estandar.nombre, precio: s.precio_final, por_pasajero: pp(s.precio_final), por_tramo: pt(s.precio_final), incluye: SERVICIOS.estandar.incluye }];
+    if (s.precio_final_premium) planes.push({ clave: 'premium', nombre: SERVICIOS.premium.nombre, precio: s.precio_final_premium, por_pasajero: pp(s.precio_final_premium), por_tramo: pt(s.precio_final_premium), incluye: SERVICIOS.premium.incluye });
+    return { codigo: s.codigo, tipo: TIPOS[s.tipo], cliente: s.cliente, origen: s.origen, destino: s.destino, fecha_servicio: s.fecha_servicio, fecha_retorno: s.datos.fecha_retorno || null, ida_vuelta: s.datos.ida_vuelta, modalidad: s.datos.modalidad || null, horas_tramo: s.resultado.horas_tramo || null,
       dias: s.datos.dias, noches: s.datos.noches, pasajeros: pax, horas_espera: s.datos.horas_espera, horas_manejo: s.resultado.horas_manejo || null, precio: s.precio_final,
-      por_pasajero: pp(s.precio_final), incluye: s.incluye, planes, todos: planes.length > 1 ? SERVICIOS.premium.incluye : SERVICIOS.estandar.incluye, adelanto_pct: s.adelanto_pct, plan_elegido: s.plan_elegido || null, notas: s.notas, valida_hasta: s.valida_hasta,
+      por_pasajero: pp(s.precio_final), tramos, incluye: s.incluye, planes, todos: planes.length > 1 ? SERVICIOS.premium.incluye : SERVICIOS.estandar.incluye, adelanto_pct: s.adelanto_pct, plan_elegido: s.plan_elegido || null, notas: s.notas, valida_hasta: s.valida_hasta,
       vencida: s.vencida, estado: s.estado, politica_espera: s.politica_espera, whatsapp: wa ? tel(wa.valor) : '', preferido: sol ? await sol.preferenciaDe(env, c.id) : null };
   }
 
@@ -302,7 +308,7 @@ export function crearCotizador(h) {
     // Solo lo necesario para cotizar: lugares, rutas conocidas y el precio del diésel para verificarlo.
     return { operador: true, lugares: v.lugares, rutas: v.rutas.map(r => ({ origen: r.origen, destino: r.destino, km: r.km, peajes_ida: r.peajes_ida, peajes_vuelta: r.peajes_vuelta })),
       tarifas: v.tarifas, precio_galon: v.parametros.precio_galon, velocidad_promedio: v.parametros.velocidad_promedio,
-      espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora, espera_tope_h: v.parametros.espera_tope_h },
+      espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora },
       premium_activo: v.parametros.premium_activo };
   }
   async function rutas(env, yo, req, url, crearExcursion) {

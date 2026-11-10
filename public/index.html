@@ -109,10 +109,11 @@ button{cursor:pointer}
 .barra-sup{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px;min-height:60px;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--line)}
 body.en-app::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .barra-sup .logo{width:30px;height:30px}
+.h-atras[hidden]{display:none!important}
 .h-atras{display:none;border:none;background:none;color:var(--ink);width:36px;height:36px;margin-left:-8px;border-radius:10px;padding:0;place-items:center}
 .h-atras svg{width:24px;height:24px}
 .barra-sup.con-atras .h-atras{display:grid} .barra-sup.con-atras .logo{display:none}
-@media (min-width:900px){.barra-sup.con-atras .h-atras{display:none} .barra-sup.con-atras .logo{display:block}}
+@media (min-width:900px){.barra-sup .h-atras{display:none!important} .barra-sup.con-atras .logo{display:block}}
 .gesto-atras{position:fixed;left:-6px;top:50%;z-index:90;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:30px;line-height:1;color:#fff;background:var(--muted);opacity:0;transform:translate(0,-50%);pointer-events:none;transition:background-color .15s}
 .gesto-atras.listo{background:var(--brand)}
 .planes2.uno{grid-template-columns:minmax(0,1fr)}

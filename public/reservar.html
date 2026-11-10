@@ -343,7 +343,7 @@ html,body{overflow-x:hidden}
     var miLink = location.origin+'/reservar?e='+codigo+'&g='+r.grupo+'&c='+r.cel4;
     h += '<p class="nota">Guarda este enlace para ver tu reserva, el estado de tu pago y tu boleto digital:<br><a href="'+esc(miLink)+'">'+esc(miLink)+'</a></p>';
     h += '<div class="acciones" style="margin-top:16px">';
-    if(r.whatsapp) h += '<a class="btn secundario" id="wa" target="_blank" rel="noopener" href="https://wa.me/'+esc(r.whatsapp)+'?text='+encodeURIComponent(mensajeWa()+'\nMi reserva: '+miLink)+'">Escribir por WhatsApp</a>';
+    if(r.whatsapp) h += '<a class="btn secundario" id="wa" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(r.whatsapp)+'&text='+encodeURIComponent(mensajeWa()+'\nMi reserva: '+miLink)+'">Escribir por WhatsApp</a>';
     h += '<button type="button" class="btn secundario" id="otra">Reservar otro asiento</button></div>';
     h += '<p class="nota">'+(r.tipo==='contrato'?'Tu asiento quedó registrado en el grupo. El organizador coordina el pago con Villa Azul.':'Tu asiento aparece como «Separado» y pasa a tu nombre cuando Villa Azul confirme tu pago.')+'</p></section>';
     return h;
@@ -408,7 +408,7 @@ html,body{overflow-x:hidden}
       if(v && v.estado==='pendiente') h += '<div class="pago"><span class="chipe pend">Voucher recibido · en revisión</span><p class="nota">Monto declarado '+soles(v.monto)+'. Te avisaremos al confirmarlo.</p></div>';
       if(v && v.estado==='rechazado') h += '<div class="pago"><span class="chipe mal">Voucher rechazado</span><p class="nota">'+esc(v.motivo||'')+'. Puedes subir otra captura.</p></div>';
       if(porPagar && d.tipo!=='contrato' && !(v && v.estado==='pendiente')){ if(d.instrucciones_pago) h += '<p class="nota" style="white-space:pre-wrap">'+esc(d.instrucciones_pago)+'</p>'; h += formVoucherHtml(d.total); }
-      if(d.whatsapp) h += '<div class="acciones" style="margin-top:14px"><a class="btn secundario" target="_blank" rel="noopener" href="https://wa.me/'+esc(d.whatsapp)+'?text='+encodeURIComponent('Hola, consulto por mi reserva '+d.grupo+' de «'+d.titulo+'».')+'">Escribir por WhatsApp</a></div>';
+      if(d.whatsapp) h += '<div class="acciones" style="margin-top:14px"><a class="btn secundario" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, consulto por mi reserva '+d.grupo+' de «'+d.titulo+'».')+'">Escribir por WhatsApp</a></div>';
       h += '</section>';
       root.innerHTML = h;
       enlazarVoucher(d.grupo, cel4, function(){ miReserva(grupo, cel4); });

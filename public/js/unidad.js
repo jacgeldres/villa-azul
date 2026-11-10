@@ -619,7 +619,7 @@ function pintarResultado() {
     ((r.razones || []).length ? '<ul class="u-razones">' + r.razones.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
     (r.km_alerta ? '<p class="u-nota">El kilometraje no cuadra con el último registrado: un administrador lo revisará.</p>' : '') +
     (r.resueltas ? '<p class="u-nota">' + plural(r.resueltas, 'novedad quedó cerrada', 'novedades quedaron cerradas') + ' porque ahora está bien.</p>' : '') +
-    '</section><div class="acciones"><a class="btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(textoWa(r)) + '">' + ic('compartir') + 'Compartir por WhatsApp</a><button type="button" class="btn sec" id="uok">Volver a la unidad</button></div>';
+    '</section><div class="acciones"><a class="btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text=' + encodeURIComponent(textoWa(r)) + '">' + ic('compartir') + 'Compartir por WhatsApp</a><button type="button" class="btn sec" id="uok">Volver a la unidad</button></div>';
   $('vista').innerHTML = h;
   $('uok').onclick = function () { U.modo = null; U.res = null; vista(); window.scrollTo(0, 0); };
 }
@@ -672,7 +672,7 @@ function hojaInspeccion(id) {
       if (!x.revisado_por) acc += '<button type="button" class="btn ancho" id="urev">' + V.ico('check') + 'Marcar como revisado</button>';
       acc += '<button type="button" class="btn sec ancho" id="uanu" style="color:var(--bad)">Anular este checklist</button>';
     }
-    x.items && (x.conformes !== undefined) && (acc += '<a class="btn sec ancho" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(textoWa(x)) + '">' + ic('compartir') + 'Compartir por WhatsApp</a>');
+    x.items && (x.conformes !== undefined) && (acc += '<a class="btn sec ancho" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?text=' + encodeURIComponent(textoWa(x)) + '">' + ic('compartir') + 'Compartir por WhatsApp</a>');
     el.innerHTML = h + '<p class="error" id="er" role="alert"></p><div class="acciones">' + acc + '<button type="button" class="btn sec ancho" data-cerrar>Cerrar</button></div>';
     var H = V.hoja();
     H.querySelectorAll('[data-cerrar]').forEach(function (b) { b.onclick = function () { H.close(); }; });
