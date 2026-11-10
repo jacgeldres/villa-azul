@@ -135,6 +135,7 @@ export function crearCotizador(h) {
     if (conPremium && (b.precio_final_premium === undefined || b.precio_final_premium === '') && finalP < final) finalP = Math.ceil((final + res.premium.costo - res.estandar.costo) / 10) * 10;
     if (!(final > 0) || (conPremium && !(finalP > 0))) throw new ErrorApi('Precio final no válido.');
     if (conPremium && finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
+    d.precio_manual = { estandar: final !== res.estandar.precios[nivel], premium: conPremium && finalP !== res.premium.precios[nivel] };
     const ahora = ahoraLima(), valida = new Date(Date.now() - 5 * 3600000 + num(par.validez_dias) * 864e5).toISOString().slice(0, 10);
     const PARA_CLIENTE = { combustible: 'Combustible', peajes: 'Peajes', conductor: 'Conductor profesional', viaticos: 'Alimentación del conductor', hospedaje: 'Hospedaje del conductor', cochera: 'Cochera de la van' };
     const incluye = res.lineas.filter(l => PARA_CLIENTE[l.clave] || /^otro/.test(l.clave)).map(l => PARA_CLIENTE[l.clave] || l.concepto);

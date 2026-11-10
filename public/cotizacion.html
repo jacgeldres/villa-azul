@@ -64,6 +64,8 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 .inc span::before{content:"✓";color:var(--ok);font-weight:800}
 .notas{white-space:pre-wrap;color:var(--muted);margin:12px 0 0}
 .pp.total{opacity:.85;font-size:14px;margin-top:2px}
+.previa{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:#FFF4D6;color:#5A4300;font-size:14px;border-bottom:1px solid #EBD38E}
+.previa a{font-weight:800;color:#1E4FD1;text-decoration:none;white-space:nowrap}
 .tramos2{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:6px;margin-top:6px}
 .tramos2::before{content:"+";grid-column:2;grid-row:1;align-self:center;font-size:26px;font-weight:700;opacity:.7}
 .tramos2>div:first-child{grid-column:1;grid-row:1} .tramos2>div:last-child{grid-column:3;grid-row:1}
@@ -83,7 +85,10 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 <script>
 (function(){
   var LOGO='<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="#1E4FD1"/><path d="M7 26c4-7 7-10 10-10 4 0 4 6 8 6 2.6 0 4.6-2 8-6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/><path d="M7 31h26" stroke="#9DB7FF" stroke-width="2.2" stroke-linecap="round"/></svg>';
-  var root = document.getElementById('root'), tok = (new URLSearchParams(location.search).get('c')||'').toLowerCase().replace(/[^a-f0-9]/g,''), D = null;
+  function $v(id){ return document.getElementById(id); }
+  var root = document.getElementById('root'), qs = new URLSearchParams(location.search), tok = (qs.get('c')||'').toLowerCase().replace(/[^a-f0-9]/g,''), D = null;
+  // ?previa=1: la abre alguien de Villa Azul desde la app. Se ve igual que el cliente, pero no acepta ni elige.
+  var PREVIA = qs.get('previa') === '1', DENTRO = window.top !== window;
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(x){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x];});}
   function soles(n){ return 'S/ '+Number(n||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
   // Las 00:00 se dicen «medianoche del sáb 21 al dom 22» para no confundirlas con el mediodía.
@@ -129,8 +134,11 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
     if((d.politica_espera||[]).length) h += '<section class="card espera"><h3>Tiempo de espera</h3><ul>'+d.politica_espera.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></section>';
     if(d.whatsapp) h += '<p style="text-align:center"><a class="btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, tengo una consulta sobre la cotización '+d.codigo+'.')+'">Hacer una consulta</a></p>';
     h += '<p class="pie">'+(d.vencida?'':'Válida hasta el '+esc(d.valida_hasta)+'. ')+'Precios en soles, sujetos a disponibilidad en la fecha del servicio.</p></main>';
+    if(PREVIA) h = '<div class="previa"><span>👁️ <b>Vista previa</b> · así ve el cliente su cotización. Aquí el botón de aceptar no hace nada.</span>'+(DENTRO?'':'<a href="/" id="volverApp">← Volver a la app</a>')+'</div>' + h;
     root.innerHTML = h;
+    if($v('volverApp')) $v('volverApp').onclick = function(e){ if(history.length > 1){ e.preventDefault(); history.back(); } };
     root.querySelectorAll('[data-plan]').forEach(function(b){ b.onclick = function(){
+      if(PREVIA){ alert('Es una vista previa: el cliente acepta desde su propio enlace.'); return; }
       var p = D.planes.filter(function(x){ return x.clave===b.dataset.plan; })[0];
       if(!confirm(D.planes.length===1 ? '¿Aceptas la cotización por '+soles(p.precio)+'?' : '¿Eliges el servicio '+p.nombre+' por '+soles(p.precio)+'?')) return;
       b.disabled = true; b.textContent = 'Guardando…';

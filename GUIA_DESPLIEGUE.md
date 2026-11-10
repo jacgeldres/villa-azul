@@ -1,4 +1,4 @@
-# Villa Azul · v5.6.0 — Guía de despliegue
+# Villa Azul · v5.6.2 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,20 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.6.2 · El precio no salta al editar
+
+Sube a GitHub `public/` y `src/`. La base de datos no cambia (sigue en la **versión 15**). Comprueba en Mi perfil: **Villa Azul v5.6.2 · base de datos v15**.
+
+- Al editar, si el precio guardado salió del nivel elegido (Recomendado, Alto…), se recalcula con los datos de hoy: lo que ves al abrir es lo mismo que verías al tocar el nivel.
+- Si el precio se escribió a mano, se respeta y aparece el aviso «Precio escrito a mano. Con los datos de hoy, el nivel Alto da S/ X» con el botón **Usar S/ X**. Nada cambia solo.
+
+## Actualizar a la v5.6.1 · «Ver como cliente» con salida
+
+Sube a GitHub `public/` y `src/`. La base de datos no cambia (sigue en la **versión 15**). Comprueba en Mi perfil: **Villa Azul v5.6.1 · base de datos v15**.
+
+- En el celular (y en la app instalada), **Ver como cliente** y los demás enlaces a páginas de Villa Azul (página de reserva, panel del organizador) se abren dentro de la app, con **‹ Volver** arriba. También se cierran deslizando el dedo desde el borde izquierdo o con «atrás» del celular. En la computadora siguen abriéndose en otra pestaña.
+- La vista previa del cliente lleva una franja amarilla «Vista previa» y su botón de aceptar no hace nada: así nadie de Villa Azul acepta por error en nombre del cliente. El cliente, desde su enlace, la ve normal.
 
 ## Actualizar a la v5.6 · Precio por tramo para el cliente y precio de lista con rebaja
 

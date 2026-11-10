@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.6.0';
+var VERSION = '5.6.2';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -749,7 +749,13 @@ function cotForm(c, pre){
       : md==='solo_ida' ? '<ul>'+ida+'</ul>' : '<ul>'+t(COT_BASE, o, b1, 1)+t(o, de, k)+t(de, o, k)+t(o, COT_BASE, b1, 1)+'</ul>';
     $('qtr').innerHTML = h + 'Total: <b>'+km+' km</b>'+(kv ? ', de ellos <b>'+kv+' vacíos</b>.' : ', siempre con pasajeros.');
   };
-  var precios = c ? {estandar:c.precio_final, premium:c.precio_final_premium||''} : {estandar:'', premium:''}, manual = {estandar:!!c, premium:!!(c&&c.precio_final_premium)};
+  var precios = c ? {estandar:c.precio_final, premium:c.precio_final_premium||''} : {estandar:'', premium:''};
+  // ¿El precio guardado se escribió a mano? Si salió tal cual del nivel elegido, al editar se recalcula con los datos de hoy.
+  var aMano = function(k){ if(!c || (k==='premium' && !c.precio_final_premium)) return false;
+    if(c.datos && c.datos.precio_manual) return c.datos.precio_manual[k]===true;
+    var nv0 = (c.datos && c.datos.nivel) || 'recomendado', calc = c.resultado && c.resultado[k] && c.resultado[k].precios ? c.resultado[k].precios[nv0] : null;
+    return calc==null || Number(calc) !== Number(k==='premium' ? c.precio_final_premium : c.precio_final); };
+  var manual = {estandar:aMano('estandar'), premium:aMano('premium')};
   var extra = function(){ if(c) return; var b=ls('va_borradores')||{}, k=claveBorr(); b[k]=b[k]||{t:Date.now(),v:{}}; b[k].extra={tipo:tipo, modalidad:md, otros:otros, nivel:nivel}; b[k].t=Date.now(); ls('va_borradores',b); };
   var pintarOtros = function(){ $('qot').innerHTML = otros.map(function(o,i){ return '<div class="dos" style="align-items:end"><div class="campo"><label for="qoc'+i+'">Concepto</label><input id="qoc'+i+'" value="'+esc(o.concepto)+'"></div><div class="campo"><label for="qom'+i+'">Monto S/</label><input id="qom'+i+'" inputmode="decimal" class="num" value="'+esc(o.monto)+'"></div></div>'; }).join('');
     otros.forEach(function(o,i){ $('qoc'+i).oninput=function(){ o.concepto=this.value; extra(); recalcular(); }; $('qom'+i).oninput=function(){ o.monto=this.value; extra(); recalcular(); }; }); };
@@ -819,9 +825,12 @@ function cotForm(c, pre){
     if($('qbs')) $('qbs').textContent = r.bono_sugerido ? 'Sugerido por ser viaje largo: S/ '+r.bono_sugerido+'. Déjalo vacío para usarlo, o escribe otro monto (0 = sin bono).' : 'Viaje corto: sin bono automático. Escribe un monto si este viaje lo amerita.';
     ['estandar','premium'].forEach(function(k){ if(!manual[k]) precios[k] = r[k].precios[nivel]; });
     var tar = P.tarifas.filter(function(t){ return t.origen.toLowerCase()===$('qor').value.trim().toLowerCase() && t.destino.toLowerCase()===$('qde').value.trim().toLowerCase(); })[0];
+    // Si el precio está escrito a mano y no coincide con el nivel elegido, se avisa y se ofrece usar el calculado (nada cambia solo).
+    var avisoManual = function(k, pr){ var calc = r[k].precios[nivel]; if(!manual[k] || !pr || pr===calc) return '';
+      return '<p class="aviso-precio">Precio escrito a mano. Con los datos de hoy, el nivel <b>'+NIVEL_TXT[nivel]+'</b> da <b>'+soles0(calc)+'</b>. <button type="button" class="btn-mini" data-usar="'+k+'">Usar '+soles0(calc)+'</button></p>'; };
     var card = function(k){ var pl = r[k], pr = Number(String(precios[k]).replace(',','.'))||0;
       return '<div class="plan-c plan-'+k+'"><div class="plan-h"><b>'+PLAN_TXT[k]+'</b><small>Costo '+soles0(pl.costo)+'</small></div><div class="campo" style="margin-top:8px"><label for="qp_'+k+'">Precio al cliente</label><input id="qp_'+k+'" inputmode="decimal" class="num" value="'+esc(precios[k])+'"></div>'+
-        '<p class="ayuda">'+ayudaPlan(pr, pl)+'</p></div>'; };
+        '<p class="ayuda">'+ayudaPlan(pr, pl)+'</p>'+avisoManual(k, pr)+'</div>'; };
     var prE = Number(String(precios.estandar).replace(',','.'))||0;
     // Indicadores del precio Estándar: se recalculan al escribir otro precio.
     var indicadores = function(pr){ var c0 = r.estandar.costo, pp = r.pasajeros ? pr/r.pasajeros : 0, minG = pp ? Math.ceil(c0/pp) : 0;
@@ -840,6 +849,7 @@ function cotForm(c, pre){
       '<details style="margin-top:10px"><summary>Desglose de costos</summary><table class="tabla"><tbody>'+r.premium.lineas.map(function(l){ var soloP = l.clave==='snacks'||l.clave==='wifi'; return '<tr><td>'+esc(l.concepto)+(soloP?' <span class="chip-est abierta">solo Premium</span>':'')+'<br><small class="ayuda">'+esc(l.detalle)+'</small></td><td class="n">'+soles(l.monto)+'</td></tr>'; }).join('')+
       '<tr><td><b>Total Estándar</b></td><td class="n"><b>'+soles(r.estandar.costo)+'</b></td></tr><tr><td><b>Total Premium</b></td><td class="n"><b>'+soles(r.premium.costo)+'</b></td></tr></tbody></table></details>';
     $('qres').querySelectorAll('[data-nv]').forEach(function(b){ b.onclick=function(){ nivel=b.dataset.nv; manual={estandar:false, premium:false}; extra(); recalcular(); }; });
+    $('qres').querySelectorAll('[data-usar]').forEach(function(b){ b.onclick = function(){ manual[b.dataset.usar] = false; recalcular(); }; });
     ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; precios[k]=this.value; var pr = Number(String(this.value).replace(',','.'))||0; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(pr, r[k]); if(k==='estandar') $('qind').innerHTML = indicadores(pr); }; });
   }); };
   pintarOtros(); visibles(); linkMaps();
@@ -989,6 +999,7 @@ function mensajeCliente(c, url, F){
 function enlaceAtras(){ var v = $('vista'); if(!v) return null; var bs = v.querySelectorAll('button.enlace'); for(var i=0;i<bs.length;i++){ if(/^\s*←/.test(bs[i].textContent)) return bs[i]; } return null; }
 function padreDe(v){ if(!S.yo || nav().some(function(n){ return n[0]===v; })) return null; return esMando(S.yo) ? 'modulos' : 'viajes'; }
 function atras(){
+  var vis = $('visor'); if(vis && vis.open){ vis.close(); return true; }
   if(hoja.open){ hoja.close(); return true; }
   var b = enlaceAtras(); if(b){ b.click(); window.scrollTo(0,0); return true; }
   var p = padreDe(S.vista); if(p){ ir(p); return true; }
@@ -1004,11 +1015,33 @@ function marcarAtras(){ var bar = $('barraSup'), si = !!(enlaceAtras() || padreD
   var x0 = null, y0 = 0, guia = document.createElement('div'); guia.className = 'gesto-atras'; guia.innerHTML = '‹'; document.body.appendChild(guia);
   var ver = function(dx){ guia.style.opacity = Math.min(1, dx/70); guia.style.transform = 'translate('+Math.min(dx, 70)+'px,-50%)'; guia.classList.toggle('listo', dx>70); };
   var fin = function(){ x0 = null; guia.style.opacity = 0; guia.style.transform = 'translate(0,-50%)'; guia.classList.remove('listo'); };
-  document.addEventListener('touchstart', function(e){ var t = e.touches[0]; if(e.touches.length!==1 || t.clientX > 24){ x0 = null; return; } x0 = t.clientX; y0 = t.clientY; guia.style.top = t.clientY+'px'; }, {passive:true});
+  document.addEventListener('touchstart', function(e){ var t = e.touches[0]; if(e.touches.length!==1 || t.clientX > 24){ x0 = null; return; } x0 = t.clientX; y0 = t.clientY; guia.style.top = t.clientY+'px';
+    var cont = $('visor') && $('visor').open ? $('visor') : hoja.open ? hoja : document.body; if(guia.parentNode !== cont) cont.appendChild(guia); }, {passive:true});
   document.addEventListener('touchmove', function(e){ if(x0===null) return; var t = e.touches[0], dx = t.clientX-x0, dy = Math.abs(t.clientY-y0); if(dy > 40 && dy > dx){ fin(); return; } if(dx > 0) ver(dx); }, {passive:true});
   document.addEventListener('touchend', function(e){ if(x0===null) return; var dx = e.changedTouches[0].clientX - x0; fin(); if(dx > 70) atras(); }, {passive:true});
   document.addEventListener('touchcancel', fin, {passive:true});
 })();
+
+/* ════════════ Visor de páginas propias ════════════
+   «Ver como cliente», la página de reserva, el panel del organizador… En la app instalada o en el celular se abren aquí dentro,
+   con «‹ Volver» arriba, deslizando desde el borde izquierdo o con «atrás» del celular. En la computadora se abren en otra pestaña. */
+function abrirVisor(url, titulo){
+  var v = $('visor'), previa = /\/cotizacion\?/.test(url) ? url + (url.indexOf('previa=')<0 ? '&previa=1' : '') : url;
+  v.innerHTML = '<div class="visor-bar"><button type="button" id="visorCerrar" aria-label="Volver a la app"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Volver</button><b>'+esc(titulo||'Vista previa')+'</b></div>'+
+    '<iframe src="'+esc(previa)+'" title="'+esc(titulo||'Vista previa')+'"></iframe><div class="visor-borde" aria-hidden="true"></div>';
+  $('visorCerrar').onclick = function(){ v.close(); };
+  v.onclose = function(){ v.innerHTML = ''; };
+  if(!v.open) v.showModal();
+}
+// Enlaces a páginas de la propia app que se abrirían «aparte»: en el celular van al visor para no quedar atrapados sin salida.
+document.addEventListener('click', function(e){
+  var a = e.target.closest && e.target.closest('a[target=_blank]'); if(!a) return;
+  var u; try { u = new URL(a.href, location.href); } catch(err){ return; }
+  if(u.origin !== location.origin) return;
+  var movil = window.navigator.standalone === true || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(max-width: 899px)').matches));
+  if(!movil) return;
+  e.preventDefault(); abrirVisor(u.href, (a.textContent||'').trim()==='Ver como cliente' ? 'Así lo ve el cliente' : (a.textContent||'').trim());
+}, true);
 
 /* ════════════ Compartir el portal con un toque ════════════
    Cada botón lleva su propia marca (?src=…) para saber en «Solicitudes» por dónde llegó cada cliente. */

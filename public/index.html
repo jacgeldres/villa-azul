@@ -110,6 +110,17 @@ button{cursor:pointer}
 body.en-app::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .barra-sup .logo{width:30px;height:30px}
 .h-atras[hidden]{display:none!important}
+.aviso-precio{margin:4px 12px 12px;padding:8px 10px;border-radius:10px;background:var(--warn-soft);color:var(--ink);font-size:13.5px;line-height:1.5}
+.aviso-precio .btn-mini{margin-left:4px}
+/* Visor: páginas de la app (vista del cliente, reserva…) dentro de la app, con salida clara. */
+dialog.visor{margin:0;width:100%;max-width:100%;height:100%;max-height:100%;border-radius:0;background:var(--bg);display:none;flex-direction:column}
+dialog.visor[open]{display:flex;animation:none}
+.visor-bar{display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) 12px 8px;border-bottom:1px solid var(--line);background:var(--surface)}
+.visor-bar button{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:700;padding:8px 14px;border-radius:12px}
+.visor-bar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.visor-bar a{font-weight:700;font-size:14px;color:var(--brand);white-space:nowrap}
+.visor iframe{flex:1;width:100%;border:0;background:#fff}
+.visor-borde{position:absolute;left:0;top:56px;bottom:0;width:22px;z-index:2}
 .h-atras{display:none;border:none;background:none;color:var(--ink);width:36px;height:36px;margin-left:-8px;border-radius:10px;padding:0;place-items:center}
 .h-atras svg{width:24px;height:24px}
 .barra-sup.con-atras .h-atras{display:grid} .barra-sup.con-atras .logo{display:none}
@@ -846,6 +857,7 @@ body.kb-abierto main{padding-bottom:24px}
 <body>
 <div id="app"><p class="vacio" style="padding-top:40vh">Cargando Villa Azul…</p></div>
 <dialog id="hoja" aria-labelledby="hoja-t"></dialog>
+<dialog id="visor" class="visor" aria-label="Vista previa"></dialog>
 <div class="toasts" id="toasts" role="status" aria-live="polite"></div>
 <div id="imprimir"></div>
 <script src="/js/unidad.js"></script>
