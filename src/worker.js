@@ -13,7 +13,7 @@ import { crearPanel } from './panel.js';
 import { SQL_SOL_V10, WHATSAPP_EMPRESA, crearSolicitudes } from './solicitudes.js';
 import { SQL_FLOTA_V11, SQL_FLOTA_V12, crearFlota } from './flota.js';
 
-const VERSION = '5.10.1';
+const VERSION = '5.11.0';
 const SCHEMA = 12;
 const PBKDF2_ITER = 10000;          // el plan gratuito da 10 ms de CPU por petición: más vueltas no caben
 const SESION_DIAS = 30;
@@ -303,7 +303,7 @@ async function listarUsuarios(env) {
   const r = await env.DB.prepare(`SELECT u.*, (SELECT COUNT(*) FROM movimientos m WHERE m.usuario_id = u.id) registros,
       (SELECT MAX(timestamp) FROM auditoria a WHERE a.usuario = u.nombre AND a.accion = 'login') ultimo
     FROM usuarios u ORDER BY activo DESC, CASE rol WHEN 'super' THEN 0 WHEN 'admin' THEN 1 ELSE 2 END, nombre`).all();
-  return r.results.map(u => ({ ...publico(u), nombre_completo: u.nombre_completo, registros: u.registros, ultimo: u.ultimo }));
+  return r.results.map(u => ({ ...publico(u), nombre_completo: u.nombre_completo, dni: u.dni, telefono: u.telefono, licencia: u.licencia, registros: u.registros, ultimo: u.ultimo }));
 }
 async function crearUsuario(env, yo, b) {
   exigirMando(yo);
@@ -338,6 +338,14 @@ async function editarUsuario(env, yo, id, b) {
   if (b.funcion !== undefined && b.funcion !== u.funcion) {
     if (!['operador', 'caja', 'digital'].includes(b.funcion)) throw new ErrorApi('Función no válida');
     cambios.funcion = b.funcion; notas.push(`asignó a ${u.nombre} la función ${({ operador: 'operador', caja: 'efectivo', digital: 'Yape' })[b.funcion]}`);
+  }
+  // Datos de conductor (para comprobantes de pago y manifiesto): nombre completo, DNI, celular y licencia.
+  if (b.conductor && typeof b.conductor === 'object') {
+    const t = (v, n) => String(v ?? '').trim().replace(/\s+/g, ' ').slice(0, n);
+    const c = { nombre_completo: t(b.conductor.nombre_completo, 80), dni: t(b.conductor.dni, 12).replace(/[^0-9A-Za-z]/g, ''), telefono: t(b.conductor.telefono, 15).replace(/[^0-9+]/g, ''), licencia: t(b.conductor.licencia, 40) };
+    if (c.dni && !/^\d{8}$/.test(c.dni) && !/^[A-Za-z0-9]{9,12}$/.test(c.dni)) throw new ErrorApi('El DNI tiene 8 números (o escribe el carné de extranjería).');
+    Object.keys(c).forEach(k => { if ((u[k] || '') !== c[k]) cambios[k] = c[k] || null; });
+    if (Object.keys(c).some(k => (u[k] || '') !== c[k])) notas.push(`actualizó los datos de conductor de ${u.nombre}`);
   }
   if (b.activo !== undefined && !!b.activo !== !!u.activo) {
     if (!b.activo) { const no = await motivoNo(env, 'desactivar', yo, u); if (no) throw new ErrorApi(no, 'SIN_PERMISO', 403); }

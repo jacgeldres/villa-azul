@@ -311,6 +311,13 @@ export function crearCotizador(h) {
       await env.DB.prepare("UPDATE cotizaciones SET excursion_id=?, estado='aceptada', actualizado_en=?, seq=? WHERE id=?").bind(excId, ahoraLima(), await reservarSeq(env, 1), c.id).run();
       await auditar(env, yo.nombre, 'liq_vincular', `${e.titulo} ← COT-${String(c.numero).padStart(4, '0')}`);
     }
+    if (b && b.conductor_id) {
+      if (!await env.DB.prepare('SELECT 1 FROM usuarios WHERE id=?').bind(String(b.conductor_id)).first()) throw new ErrorApi('Conductor no encontrado');
+      let L0 = {}; try { L0 = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { L0 = {}; }
+      L0.conductor_id = String(b.conductor_id);
+      await env.DB.prepare('UPDATE excursiones SET liquidacion=?, seq=? WHERE id=?').bind(JSON.stringify(L0), await reservarSeq(env, 1), excId).run();
+      e.liquidacion = JSON.stringify(L0);
+    }
     if (b && b.acordado !== undefined) {
       let L0 = {}; try { L0 = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { L0 = {}; }
       if (b.acordado === null || b.acordado === '') delete L0.acordado; else L0.acordado = Math.max(0, Math.round(num(b.acordado) * 100) / 100);
@@ -326,7 +333,7 @@ export function crearCotizador(h) {
         desayuno: sn(x && x.desayuno), almuerzo: sn(x && x.almuerzo), cena: sn(x && x.cena) }));
       ['horas_espera', 'dias', 'noches', 'galones', 'aguja', 'bono_extra', 'horas_tramo_real', 'gasto_comidas', 'bono_espera'].forEach(k => { if (a[k] !== undefined && a[k] !== null && a[k] !== '') L[k] = Math.max(0, Math.round(num(a[k]) * 100) / 100); });
       if (L.aguja !== undefined && L.aguja > 1) throw new ErrorApi('La aguja va de 0 (nada) a 1 (tanque lleno).');
-      { let L0 = {}; try { L0 = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { L0 = {}; } if (L0.acordado !== undefined) L.acordado = L0.acordado; }
+      { let L0 = {}; try { L0 = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { L0 = {}; } if (L0.acordado !== undefined) L.acordado = L0.acordado; if (L0.conductor_id) L.conductor_id = L0.conductor_id; }
       await env.DB.prepare('UPDATE excursiones SET liquidacion=?, seq=? WHERE id=?').bind(JSON.stringify(L), await reservarSeq(env, 1), excId).run();
       await auditar(env, yo.nombre, 'liq_ajustes', `${e.titulo} · ${JSON.stringify(L)}`);
       e.liquidacion = JSON.stringify(L);
@@ -411,10 +418,16 @@ export function crearCotizador(h) {
       ['Costo del viaje', cot ? num(cot.costo) : null, costoTotal, 'S/'],
       ['Precio', cot ? num(cot.precio_final) : null, base, 'S/'],
     ];
+    // Conductor del viaje: el elegido al pagar; si no, el operador que cotizó y vendió; si no, el primer operador activo.
+    const usuarios = (await env.DB.prepare("SELECT id, nombre, rol, activo, nombre_completo, dni, telefono, licencia FROM usuarios").all()).results;
+    const vendedor = cot ? usuarios.find(u => u.id === cot.creado_por_id) : null;
+    const chofer = usuarios.find(u => u.id === aj.conductor_id) || (vendedor && vendedor.rol === 'operador' ? vendedor : null) || usuarios.find(u => u.rol === 'operador' && u.activo);
     const libres = cot ? [] : (await env.DB.prepare("SELECT id, numero, cliente, origen, destino, fecha_servicio, precio_final FROM cotizaciones WHERE excursion_id IS NULL AND estado <> 'rechazada' ORDER BY creado_en DESC LIMIT 30").all()).results
       .map(c => ({ id: c.id, codigo: 'COT-' + String(c.numero).padStart(4, '0'), texto: `${c.origen} → ${c.destino}${c.cliente ? ' · ' + c.cliente : ''}${c.fecha_servicio ? ' · ' + String(c.fecha_servicio).slice(0, 10) : ''} · S/ ${c.precio_final}` }));
     return {
-      cotizacion: cot ? { id: cot.id, codigo: 'COT-' + String(cot.numero).padStart(4, '0'), precio: num(cot.precio_final), costo: num(cot.costo) } : null, libres,
+      cotizacion: cot ? { id: cot.id, codigo: 'COT-' + String(cot.numero).padStart(4, '0'), precio: num(cot.precio_final), costo: num(cot.costo), cotizo: vendedor ? vendedor.nombre : cot.creado_por || null } : null, libres,
+      chofer: chofer ? { id: chofer.id, nombre: chofer.nombre, nombre_completo: chofer.nombre_completo || '', dni: chofer.dni || '', telefono: chofer.telefono || '', licencia: chofer.licencia || '' } : null,
+      operadores: usuarios.filter(u => u.rol === 'operador' && u.activo).map(u => ({ id: u.id, nombre: u.nombre })),
       entradas: { km, km_real: kmReal, km_cotizado: kmCot, trocha, nocturno, horas_espera: horas, dias, noches, bono_extra: bonoExtra, galones, gal_fuente: galFuente, precio_galon: precioGal,
         aguja: aj.aguja ?? null, horas_tramo_real: aj.horas_tramo_real ?? null, comidas, comidas_marcadas: Array.isArray(aj.comidas), gasto_comidas: gastoCom, comidas_monto: comi.monto, reposicion: repone, bono_espera: aj.bono_espera ?? null, bono_espera_tarifa: bonoTarifa, horas_tramo_param: vel && cr ? r2(num(cd.km_ida) / vel) : null, ajustado: Object.keys(aj) },
       conductor: { lineas: cond, total: pagoTotal, tarifa, acordado: aj.acordado ?? null, pagado, pendiente: r2(Math.max(0, pagoTotal - pagado)) },

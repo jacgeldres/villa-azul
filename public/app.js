@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.10.1';
+var VERSION = '5.11.0';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -1240,7 +1240,7 @@ function vMovs(){
 function vModulos(){
   var nRev = porRevisar().length;
   var nSol = S.solL ? S.solL.resumen.pendientes : 0;
-  var m = [['unidad','Unidad y checklist','chk',UNI.modulo()],['solicitudes','Solicitudes de viaje','qr',nSol?nSol+' por atender':'Pedidos desde el QR'],['registrar','Registrar','mas','También días atrasados'],['calendario','Calendario','dia','Rutas, cierres y días sin registro'],['cuentas','Cuentas','cuentas','Bolsillos y traspasos'],['revision','Por revisar','check',nRev?nRev+' comprobante(s)':'Todo al día'],['usuarios','Usuarios','users','Equipo, PIN y funciones'],['importar','Importar datos','subir','Desde el Excel actual'],['dia','Mi día','dia','Tus registros de hoy'],['viajes','Viajes para compartir','van','Enlaces y pasajeros'],['cotizador','Cotizador','tarifa','Excursión, taxi y privado']];
+  var m = [['unidad','Unidad y checklist','chk',UNI.modulo()],['solicitudes','Solicitudes de viaje','qr',nSol?nSol+' por atender':'Pedidos desde el QR'],['registrar','Registrar','mas','También días atrasados'],['calendario','Calendario','dia','Rutas, cierres y días sin registro'],['cuentas','Cuentas','cuentas','Bolsillos y traspasos'],['revision','Por revisar','check',nRev?nRev+' comprobante(s)':'Todo al día'],['usuarios','Usuarios','users','Equipo, PIN y funciones'],['importar','Importar datos','subir','Desde el Excel actual'],['dia','Mi día','dia','Tus registros de hoy'],['excursiones','Excursiones','van','Viajes, liquidación y pago al conductor'],['viajes','Viajes para compartir','van','Enlaces y pasajeros'],['cotizador','Cotizador','tarifa','Excursión, taxi y privado']];
   $('vista').innerHTML = '<div class="modulos entrar">'+m.map(function(x){ return '<button type="button" class="modulo"'+(x[0]?' data-ir2="'+x[0]+'"':' data-pronto="'+x[3]+'"')+'><span class="ic">'+ico(x[2])+'</span><span><b>'+x[1]+'</b><br><small>'+x[3]+'</small></span></button>'; }).join('')+'</div>';
   $('vista').querySelectorAll('[data-ir2]').forEach(function(b){ b.onclick=function(){ ir(b.dataset.ir2); }; });
   $('vista').querySelectorAll('[data-pronto]').forEach(function(b){ b.onclick=function(){ toast('Este módulo llega en la '+b.dataset.pronto.toLowerCase()); }; });
@@ -1286,6 +1286,7 @@ function hojaUsuario(u){
   var acc = function(id, ic, t, sub, accion, peligro){ var no = accion?motivoNo(accion,u):''; return '<button type="button" class="acc'+(peligro?' peligro':'')+'" data-a="'+id+'"'+(no?' disabled aria-disabled="true"':'')+'>'+ico(ic)+'<span>'+t+'<small>'+esc(no||sub)+'</small></span></button>'; };
   var h = '<div style="display:flex;gap:14px;align-items:center"><span class="avatar grande '+claseAv(u)+'">'+esc(iniciales(u.nombre))+'</span><div><h2 id="hoja-t">'+esc(u.nombre)+'</h2><p class="desc"><span class="rol '+u.rol+'">'+ROL_TXT[u.rol]+'</span> '+(u.activo?'':'<span class="estado inac">Inactivo</span>')+(u.nombre_completo?' · '+esc(u.nombre_completo):'')+'</p></div></div><div style="margin-top:18px">';
   h += acc('nombre','lapiz','Editar nombre','Cómo aparece en la app y en los reportes');
+  h += acc('conductor','van','Datos de conductor', u.dni||u.licencia ? [u.nombre_completo, u.dni?'DNI '+u.dni:'', u.licencia?'Lic. '+u.licencia:''].filter(Boolean).join(' · ') : 'Nombre completo, DNI, celular y licencia · salen en su comprobante de pago');
   h += acc('rol','escudo','Cambiar rol','Ahora: '+ROL_TXT[u.rol],'rol');
   if(u.rol==='admin') h += acc('funcion','caja','Función en la caja','Ahora: '+({caja:'verifica el efectivo',digital:'verifica los Yape'}[u.funcion]||'sin asignar'));
   h += u.id===S.yo.id ? acc('mipin','llave','Cambiar mi PIN','Necesitas tu PIN actual') : acc('pin','llave','Restablecer PIN','Pones un PIN nuevo y se lo dices en persona');
@@ -1299,6 +1300,11 @@ function hojaUsuario(u){
     if(a==='pin'){ abrirHoja('<h2 id="hoja-t">Restablecer PIN</h2><p class="desc">El PIN anterior de '+esc(u.nombre)+' deja de funcionar al instante y se cierran sus sesiones.</p>'+campoPin('p1','PIN nuevo')+campoPin('p2','Repite el PIN')+botonesHoja('Guardar PIN'));
       $('ok').onclick=function(){ var x=$('p1').value, y=$('p2').value; if(!/^\d{4}$/.test(x)) return $('er').textContent='El PIN debe tener 4 números.'; if(x!==y) return $('er').textContent='Los dos PIN no coinciden.'; enviar(api('/api/usuarios/'+u.id+'/pin',{method:'POST',body:{pin:x}}),'PIN de '+u.nombre+' restablecido'); }; }
     if(a==='mipin') hojaMiPin();
+    if(a==='conductor'){ abrirHoja('<h2 id="hoja-t">Datos de conductor · '+esc(u.nombre)+'</h2><p class="desc">Salen en su comprobante de pago y sirven para el manifiesto de pasajeros.</p>'+
+      '<div class="campo"><label for="cnc">Nombre completo</label><input id="cnc" maxlength="80" autocomplete="off" value="'+esc(u.nombre_completo||'')+'"></div>'+
+      '<div class="dos"><div class="campo"><label for="cnd">DNI</label><input id="cnd" inputmode="numeric" maxlength="12" autocomplete="off" value="'+esc(u.dni||'')+'"></div><div class="campo"><label for="cnt">Celular</label><input id="cnt" inputmode="tel" maxlength="15" autocomplete="off" value="'+esc(u.telefono||'')+'"></div></div>'+
+      '<div class="campo"><label for="cnl">Licencia de conducir</label><input id="cnl" maxlength="40" autocomplete="off" placeholder="N.º y categoría · ej. Q12345678 · A-IIb" value="'+esc(u.licencia||'')+'"></div>'+botonesHoja('Guardar'));
+      $('ok').onclick=function(){ enviar(api('/api/usuarios/'+u.id,{method:'PATCH',body:{conductor:{nombre_completo:$('cnc').value, dni:$('cnd').value, telefono:$('cnt').value, licencia:$('cnl').value}}}), 'Datos de conductor guardados'); }; }
     if(a==='funcion'){ abrirHoja('<h2 id="hoja-t">Función de '+esc(u.nombre)+'</h2><p class="desc">Todos los administradores pueden cerrar cajas. La función decide qué parte verifica cada uno.</p><div class="campo"><label for="nf">Función</label><select id="nf"><option value="caja"'+(u.funcion==='caja'?' selected':'')+'>Efectivo: recibe y verifica el efectivo</option><option value="digital"'+(u.funcion==='digital'?' selected':'')+'>Yape: verifica los Yape</option></select></div>'+botonesHoja('Guardar'));
       $('ok').onclick=function(){ enviar(api('/api/usuarios/'+u.id,{method:'PATCH',body:{funcion:$('nf').value}}),'Función actualizada'); }; }
     if(a==='desactivar') enviarDirecto(api('/api/usuarios/'+u.id,{method:'PATCH',body:{activo:false}}), u.nombre+' desactivado');
@@ -1584,9 +1590,10 @@ function excLiquidacion(forzar){
 }
 /* ════════════ Pago al conductor con comprobante digital (ticket PNG) ════════════ */
 function hojaPagoConductor(e, L){
-  var c = L.conductor, ops = (S.cat.usuarios||[]).filter(function(u){ return u.activo!==false && u.rol==='operador'; });
+  var c = L.conductor, ops = L.operadores && L.operadores.length ? L.operadores : (S.cat.usuarios||[]).filter(function(u){ return u.activo!==false && u.rol==='operador'; }), ch = L.chofer || {};
   var h = '<h2 id="hoja-t">Pago al conductor</h2><p class="desc">'+esc(e.titulo)+'</p>'+
-    '<div class="campo"><label for="pcco">Conductor</label>'+(ops.length?'<select id="pcco">'+ops.map(function(u){ return '<option>'+esc(u.nombre)+'</option>'; }).join('')+'</select>':'<input id="pcco" value="Jorge">')+'</div>'+
+    '<div class="campo"><label for="pcco">Conductor</label>'+(ops.length?'<select id="pcco">'+ops.map(function(u){ return '<option value="'+esc(u.id)+'"'+(u.id===ch.id?' selected':'')+'>'+esc(u.nombre)+'</option>'; }).join('')+'</select>':'<input id="pcco" value="Conductor">')+'</div>'+
+    (L.cotizacion && L.cotizacion.cotizo ? '<p class="ayuda" style="margin-top:-4px">'+esc(L.cotizacion.codigo)+' la cotizó '+esc(L.cotizacion.cotizo)+'.'+(ch.dni||ch.licencia?'':' Completa sus datos (DNI y licencia) en Más → Usuarios → '+esc(ch.nombre||'conductor')+' → Datos de conductor.')+'</p>' : '')+
     '<div class="campo"><label for="pcmo">Monto que se le paga S/</label><input id="pcmo" inputmode="decimal" class="num" value="'+c.pendiente+'"></div>'+
     '<p class="ayuda" id="pcmh"></p>'+
     '<label class="interruptor-p oculto" id="pcsb"><input type="checkbox" id="pcsa"><span><b>Dar por saldado el viaje con este pago</b><small>Pago acordado con el conductor: no queda deuda y el ticket no muestra saldo.</small></span></label>'+
@@ -1603,7 +1610,8 @@ function hojaPagoConductor(e, L){
   $('pcop').closest('.campo').classList.add('oculto');
   $('ok').onclick = function(){
     var monto = Number(String($('pcmo').value).replace(',','.'))||0; if(!(monto>0)){ $('er').textContent = 'Escribe el monto.'; return; }
-    var medio = chipSel('pcm'), cond = $('pcco').value.trim()||'Conductor', id = uuid(), saldar = $('pcsa').checked;
+    var sel = $('pcco'), condId = sel.tagName==='SELECT' ? sel.value : '', cond = sel.tagName==='SELECT' ? sel.options[sel.selectedIndex].text : (sel.value.trim()||'Conductor');
+    var medio = chipSel('pcm'), id = uuid(), saldar = $('pcsa').checked;
     var desc = 'Pago a '+cond+(medio==='yape'&&$('pcop').value.trim()?' · Yape op. '+$('pcop').value.trim():'')+($('pcno').value.trim()?' · '+$('pcno').value.trim():'');
     $('ok').disabled = true;
     api('/api/excursiones/'+e.id+'/movimientos',{method:'POST',body:{id:id, tipo:'egreso', categoria:'pago_conductor', monto:monto, medio:medio, cuenta:$('pccu').value, comprobante_tipo:'sin', descripcion:desc, fecha:ahoraLocalInput()}})
@@ -1611,7 +1619,8 @@ function hojaPagoConductor(e, L){
         toast('Pago registrado'); excDetalle();
         var mov = {id:id, monto:monto, medio:medio, fecha:ahoraLocalInput(), descripcion:desc, registrado_por:S.yo.nombre};
         // Si se saldó con lo pagado, se guarda el acuerdo y el ticket sale con el total acordado.
-        (saldar ? api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:{acordado:Math.round((c.pagado+monto)*100)/100}}) : api('/api/cotizador/liquidacion/'+e.id))
+        var cuerpo = {}; if(condId) cuerpo.conductor_id = condId; if(saldar) cuerpo.acordado = Math.round((c.pagado+monto)*100)/100;
+        (Object.keys(cuerpo).length ? api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:cuerpo}) : api('/api/cotizador/liquidacion/'+e.id))
           .then(function(x){ var L2 = x.ok ? x.data : L; if(x.ok) S.liqCache = {id:e.id, r:x, t:Date.now()}; verTicket(datosTicket(e, L2, mov, c.pagado)); });
       });
   };
@@ -1626,9 +1635,13 @@ function reimprimirTicket(e, m){
   });
 }
 function datosTicket(e, L, m, pagadoAntes){
-  var cond = (String(m.descripcion||'').match(/^Pago a ([^·]+)/)||[])[1], c = L.conductor, este = Number(m.monto)||0;
+  var cond = (String(m.descripcion||'').match(/^Pago a ([^·]+)/)||[])[1], c = L.conductor, este = Number(m.monto)||0, ch = L.chofer || {};
+  if(!cond || (ch.nombre && cond.trim()===ch.nombre)) cond = ch.nombre || cond;
+  var datosCh = cond && ch.nombre && cond.trim()===ch.nombre ? ch : {};
   var op = (String(m.descripcion||'').match(/Yape op\. (\S+)/)||[])[1], nota = String(m.descripcion||'').split(' · ').filter(function(x){ return !/^Pago a |^Yape op\. /.test(x); }).join(' · ');
   return { numero:'PC-'+String(m.fecha||hoyLima()).slice(0,10).replace(/-/g,'')+'-'+String(m.id).slice(0,4).toUpperCase(), fecha:m.fecha, conductor:(cond||'Conductor').trim(),
+    nombre_completo:datosCh.nombre_completo||'', dni:datosCh.dni||'', licencia:datosCh.licencia||'', telefono:datosCh.telefono||'',
+    venta: L.cotizacion ? L.cotizacion.codigo+(L.cotizacion.cotizo?' · cotizó y vendió '+L.cotizacion.cotizo:'') : '',
     titulo:e.titulo, ruta:e.origen+' ⇄ '+e.destino, salida:e.salida, km:L.entradas.km, lineas:c.lineas, total:c.total, acordado:c.acordado!==null && c.acordado!==undefined, antes:Math.round((pagadoAntes||0)*100)/100, este:este,
     saldo:Math.max(0, Math.round((c.total-(pagadoAntes||0)-este)*100)/100), medio:m.medio==='yape'?'Yape':m.medio==='transferencia'?'Transferencia':'Efectivo', operacion:op||'', nota:nota, pago_por:m.registrado_por||S.yo.nombre };
 }
@@ -1653,7 +1666,11 @@ function ticketPNG(t){
     y = 92;  // cabecera azul
     y += 26; txt('COMPROBANTE DE PAGO', W/2, '800', 15, '#1E4FD1', 'center'); y += 20; txt('Pago al conductor · '+t.numero, W/2, '600', 12.5, '#5B6578', 'center');
     y += 18; linea(true);
-    fila('Conductor', t.conductor, '700', 14); fila('Fecha de pago', fechaExc(t.fecha, true), '500', 12.5, '#5B6578');
+    fila('Conductor', t.nombre_completo || t.conductor, '700', 14);
+    var idents = [t.dni?'DNI '+t.dni:'', t.licencia?'Licencia '+t.licencia:'', t.telefono?'Cel. '+t.telefono:''].filter(Boolean);
+    if(idents.length){ f('500', 11.5); partir(idents.join(' · '), W-2*pad).forEach(function(l){ y += 16; txt(l, W-pad, '500', 11.5, '#5B6578', 'right'); }); }
+    fila('Fecha de pago', fechaExc(t.fecha, true), '500', 12.5, '#5B6578');
+    if(t.venta) fila('Venta', t.venta, '500', 12.5, '#5B6578');
     y += 10; linea(true); y += 4;
     bloque(t.titulo, '700', 13.5, '#1D2433', 19); y += 2; bloque(t.ruta+(t.salida?' · '+fechaExc(t.salida):'')+(t.km?' · '+t.km+' km':''), '500', 12, '#5B6578', 17);
     y += 12; linea(true);

@@ -1,4 +1,4 @@
-# Villa Azul · v5.10.1 — Guía de despliegue
+# Villa Azul · v5.11.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,15 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.11 · Datos del conductor en el comprobante
+
+Sube a GitHub `src/` y `public/`. La base de datos no cambia (sigue en la **versión 17**). Comprueba en Mi perfil: **Villa Azul v5.11.0 · base de datos v17**.
+
+- **Datos de conductor:** Más → Usuarios → el operador → **Datos de conductor**: nombre completo, DNI, celular y licencia (N.º y categoría). Se llenan una sola vez.
+- **Conductor automático:** el comprobante toma al operador que cotizó y vendió el viaje; si lo cotizó un administrador, al primer operador activo. Al pagar se puede elegir otro y queda guardado para ese viaje.
+- **Ticket:** muestra el nombre completo, DNI, licencia y celular del conductor, y la venta («COT-0001 · cotizó y vendió Jorge»). Los pagos registrados antes desde «Gasto» también salen con el conductor al volver a emitirlos.
+- **Menú Más:** nueva opción **Excursiones** (viajes, liquidación y pago al conductor).
 
 ## Actualizar a la v5.10.1 · Comprobante general o detallado
 
