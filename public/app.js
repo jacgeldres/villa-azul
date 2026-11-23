@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.11.0';
+var VERSION = '5.11.1';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -1675,7 +1675,7 @@ function ticketPNG(t){
     bloque(t.titulo, '700', 13.5, '#1D2433', 19); y += 2; bloque(t.ruta+(t.salida?' · '+fechaExc(t.salida):'')+(t.km?' · '+t.km+' km':''), '500', 12, '#5B6578', 17);
     y += 12; linea(true);
     if(t.modo==='general'){ y += 6; fila('Concepto', 'Servicio de conducción', '600', 13); f('500', 11); y += 15; txt('Pago por el viaje '+t.ruta+(t.km?' · '+t.km+' km':''), pad, '500', 11, '#7A8396'); }
-    else t.lineas.forEach(function(l){ fila(l.concepto, (l.monto<0?'− ':'')+soles(Math.abs(l.monto)), '600', 13); f('500', 11); partir(l.detalle||'', W-2*pad-90).slice(0,2).forEach(function(d){ y += 15; txt(d, pad, '500', 11, '#7A8396'); }); });
+    else { y += 4; t.lineas.forEach(function(l){ fila(l.concepto, (l.monto<0?'− ':'')+soles(Math.abs(l.monto)), '600', 13); y += 4; }); }
     if(t.modo!=='general'){ y += 12; linea(false);
       fila(t.acordado ? 'Total acordado' : 'Total del viaje', soles(t.total), '700', 13); if(t.antes) fila('Pagado antes', '− '+soles(t.antes), '500', 12.5, '#5B6578'); }
     y += 12; var yb = y; ops.push(function(){ x.fillStyle = '#EEF3FF'; x.beginPath(); x.roundRect ? x.roundRect(pad-8, yb, W-2*pad+16, 62, 12) : x.rect(pad-8, yb, W-2*pad+16, 62); x.fill(); });

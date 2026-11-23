@@ -1,4 +1,4 @@
-# Villa Azul · v5.11.0 — Guía de despliegue
+# Villa Azul · v5.11.1 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,12 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.11.1 · Comprobante sin detalles de cálculo
+
+Sube a GitHub `public/` y `src/`. La base de datos no cambia (sigue en la **versión 17**). Comprueba en Mi perfil: **Villa Azul v5.11.1 · base de datos v17**.
+
+- El comprobante **Detallado** muestra solo cada concepto y su monto (por km, bono de espera, bono nocturno, comidas…). Ya no muestra cómo se calculó (tarifas, km × S/, «ajustado a mano», etc.). Ese detalle sigue visible solo para administradores en la pestaña Liquidación.
 
 ## Actualizar a la v5.11 · Datos del conductor en el comprobante
 
