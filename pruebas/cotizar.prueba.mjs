@@ -47,3 +47,10 @@ console.log('OK Pijobamba 14 pas.', JSON.stringify(pj14.estandar.precios), JSON.
 const pt = pj14.estandar.por_tramo;
 if (pt.recomendado * 2 % 1 !== 0 || pt.alto * 2 % 1 !== 0) { console.error('FALLA: tramo no redondo', pt); process.exit(1); }
 console.log('OK por tramo', JSON.stringify(pt), 'alto sobre recomendado:', Math.round((pj14.estandar.precios.alto / pj14.estandar.precios.recomendado - 1) * 100) + ' %');
+// v5.7 · Trocha y nocturno (Pijobamba real: 61.2 km, 14 pas., 12 h de espera, regreso a medianoche)
+const tro = calcular(P, { tipo: 'privado', modalidad: 'ida_vuelta', km_ida: 61.2, pasajeros: 14, horas_espera: 12, trocha: true, fecha_retorno: '2026-11-22T00:00' });
+const lin = (c) => (tro.estandar.lineas.find(l => l.clave === c) || {}).monto;
+if (tro.horas_tramo !== 3.06 || !tro.nocturno || lin('nocturno') !== 20 || lin('conductor') !== 59.23 || lin('desgaste') !== 68.54 || lin('combustible') !== 142.8) { console.error('FALLA: trocha', tro.horas_tramo, tro.nocturno, tro.estandar.lineas); process.exit(1); }
+const noc = calcular(P, { tipo: 'privado', modalidad: 'ida_vuelta', km_ida: 61.2, pasajeros: 14, fecha_retorno: '2026-11-21T17:00' });
+if (noc.nocturno) { console.error('FALLA: nocturno de día'); process.exit(1); }
+console.log('OK trocha', tro.estandar.costo, JSON.stringify(tro.estandar.precios));

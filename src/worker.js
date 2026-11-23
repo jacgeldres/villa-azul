@@ -8,12 +8,12 @@
 
 import { SQL_EXC, SQL_EXC_V5, SQL_EXC_V6, crearExcursiones } from './excursiones.js';
 import { SQL_CAJA_V4, crearCaja } from './caja.js';
-import { SQL_COT_V7, SQL_COT_V8, SQL_COT_V9, SQL_COT_V13, SQL_COT_V14, SQL_COT_V15, crearCotizador } from './cotizador.js';
+import { SQL_COT_V7, SQL_COT_V8, SQL_COT_V9, SQL_COT_V13, SQL_COT_V14, SQL_COT_V15, SQL_COT_V16, crearCotizador } from './cotizador.js';
 import { crearPanel } from './panel.js';
 import { SQL_SOL_V10, WHATSAPP_EMPRESA, crearSolicitudes } from './solicitudes.js';
 import { SQL_FLOTA_V11, SQL_FLOTA_V12, crearFlota } from './flota.js';
 
-const VERSION = '5.6.3';
+const VERSION = '5.7.0';
 const SCHEMA = 12;
 const PBKDF2_ITER = 10000;          // el plan gratuito da 10 ms de CPU por petición: más vueltas no caben
 const SESION_DIAS = 30;
@@ -193,6 +193,12 @@ async function migrar(env) {
   if (v < 15) {
     // v5.6: margen alto 45 % (solo si seguía en 50 %).
     await env.DB.batch([env.DB.prepare(SQL_COT_V15[0]).bind(await reservarSeq(env, 1)), env.DB.prepare("INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema', '15')")]);
+  }
+  if (v < 16) {
+    // v5.7: rutas de trocha y liquidación de cada viaje. Las columnas se agregan una por una (si ya existen, se sigue).
+    for (const q of SQL_COT_V16) { try { await env.DB.prepare(q).run(); } catch (e) { if (!/duplicate column/i.test(String(e.message))) throw e; } }
+    // Angasmarca–Trujillo es asfalto; lo demás se marca al cotizar.
+    await env.DB.batch([env.DB.prepare("UPDATE rutas_km SET trocha=0 WHERE clave IN ('angasmarca|trujillo','trujillo|angasmarca')"), env.DB.prepare("INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema', '16')")]);
   }
   listo = true;
 }

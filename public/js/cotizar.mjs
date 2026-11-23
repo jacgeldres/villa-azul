@@ -1,5 +1,5 @@
 /**
- * Villa Azul · Fórmula del cotizador (v5.6.0).
+ * Villa Azul · Fórmula del cotizador (v5.7.0).
  * Un solo archivo para la app (vista previa al instante) y para el servidor (cifra oficial al guardar).
  * Calcula dos servicios: Estándar y Premium (Estándar + snacks y WiFi).
  * v5.2: los km que la van hace vacía (volver a la base o ir a recoger) cuestan igual que los km con pasajeros.
@@ -23,6 +23,14 @@ export const PARAMETROS_BASE = {
   hospedaje_noche: 50,         // hospedaje del conductor por noche fuera
   cochera_noche: 10,           // cochera de la van por noche fuera
   emergencia: 25,              // fondo de emergencia por servicio (parchado de llanta)
+  // Ruta de sierra / trocha (v5.7, con el viaje real a Pijobamba: 124 km, ~5 gal, 3 h por tramo de 61 km).
+  trocha_rendimiento_km_gal: 24, // km por galón en trocha (en asfalto se usa rendimiento_km_gal)
+  trocha_velocidad: 20,        // km/h reales en trocha: 61 km en 3 h
+  trocha_factor_desgaste: 1.6, // llantas, suspensión y frenos se gastan más en camino accidentado
+  trocha_factor_conductor: 1.5,// el conductor cobra por km; en trocha cada km toma más tiempo
+  bono_espera_hora: 5,         // S/ que recibe el conductor por cada hora de espera (sale del costo de espera)
+  bono_nocturno: 20,           // S/ al conductor si llega a la base entre las 22:00 y las 05:00
+  tanque_litros: 70,           // tanque de la Hiace: para calcular galones con la aguja (1/4 = 17.5 L)
   espera_hora: 10,             // costo de cada hora de espera INCLUIDA en el precio (lleva margen; el cliente no la ve aparte)
   espera_larga_desde_h: 4,     // desde esta hora la espera es «larga»: la van está parada, solo cuenta el tiempo del conductor
   espera_larga_hora: 5,        // costo de cada hora de espera larga
@@ -53,8 +61,13 @@ const dado = (v) => v !== undefined && v !== null && v !== '';
 /** Costo de las horas de espera incluidas: las primeras a tarifa normal y, en esperas largas (van parada todo el día), el resto a tarifa reducida. */
 function costoEspera(p, h) { const corte = Math.max(0, n(p.espera_larga_desde_h)), larga = n(p.espera_larga_hora) || n(p.espera_hora);
   return corte && h > corte ? corte * n(p.espera_hora) + (h - corte) * larga : h * n(p.espera_hora); }
+/** Hora (0-23, con decimales) en que la van llega a la base: regreso desde el destino + un tramo de manejo. */
+function horaLlegada(d, hTramo) { const m = String(d.fecha_retorno || '').match(/T(\d{2}):(\d{2})/); if (!m) return null;
+  return ((+m[1] + +m[2] / 60 + hTramo) % 24 + 24) % 24; }
+/** Pago del conductor por la espera: lo recibe él y sale del costo de espera. */
+export const bonoEspera = (p, h) => r2(n({ ...PARAMETROS_BASE, ...(p || {}) }.bono_espera_hora) * n(h));
 function txtEspera(p, h) { const corte = Math.max(0, n(p.espera_larga_desde_h)), larga = n(p.espera_larga_hora) || n(p.espera_hora);
-  return (corte && h > corte ? `${corte} h × S/ ${n(p.espera_hora)} + ${r2(h - corte)} h × S/ ${larga} (espera larga)` : `${h} h × S/ ${n(p.espera_hora)}`) + ' · el cliente no la ve aparte'; }
+  return (corte && h > corte ? `${corte} h × S/ ${n(p.espera_hora)} + ${r2(h - corte)} h × S/ ${larga} (espera larga)` : `${h} h × S/ ${n(p.espera_hora)}`) + (n(p.bono_espera_hora) ? ` · de esto, S/ ${r2(n(p.bono_espera_hora) * h)} son el bono de espera del conductor` : '') + ' · el cliente no la ve aparte'; }
 
 /** Regla de espera que ve el cliente (taxi y transporte privado). Pocas líneas, sin desglose de costos. */
 export function politicaEspera(parametros, d) {
@@ -86,7 +99,13 @@ export function calcular(parametros, d) {
   const noches = md === 'dos_dias' ? 0 : Math.round(n(d.noches));
   const horas = n(d.horas_espera);
   const pax = Math.round(n(d.pasajeros));
-  const galones = n(p.rendimiento_km_gal) ? km / n(p.rendimiento_km_gal) : 0;
+  // Trocha: rinde menos, va más lento, se gasta más la van y el conductor trabaja más horas por km.
+  const tr = !!d.trocha, rend = tr && n(p.trocha_rendimiento_km_gal) ? n(p.trocha_rendimiento_km_gal) : n(p.rendimiento_km_gal);
+  const vel = tr && n(p.trocha_velocidad) ? n(p.trocha_velocidad) : n(p.velocidad_promedio);
+  const fD = tr ? n(p.trocha_factor_desgaste) || 1 : 1, fC = tr ? n(p.trocha_factor_conductor) || 1 : 1;
+  const galones = rend ? km / rend : 0;
+  // Nocturno: el conductor llega a la base entre las 22:00 y las 05:00 (regreso desde el destino + un tramo de manejo).
+  const llegada = horaLlegada(d, vel ? k / vel : 0), nocturno = llegada !== null && (llegada >= 22 || llegada < 5);
   // El precio del diésel se puede corregir en la propia cotización (el del día), sin tocar los parámetros.
   const galon = n(d.precio_galon) || n(p.precio_galon);
   // Bono del conductor: el que se escriba en la cotización; si no, el automático para viajes largos.
@@ -101,15 +120,16 @@ export function calcular(parametros, d) {
     : md === 'solo_ida' ? `ida S/ ${pi}` + (kmVacio ? ` + regreso vacío S/ ${pv}` : '') : `(ida S/ ${pi} + vuelta S/ ${pv})` + (salidas > 1 ? ` × ${salidas} salidas` : '');
   const txtKm = kmVacio ? `${km} km (${kmVacio} vacíos)` : `${km} km`;
   const base = [
-    ['combustible', 'Combustible', r2(galones * galon), `${txtKm} ÷ ${n(p.rendimiento_km_gal)} km/gal × S/ ${galon}`],
+    ['combustible', 'Combustible', r2(galones * galon), `${txtKm} ÷ ${rend} km/gal${tr ? ' (trocha)' : ''} × S/ ${galon}`],
     ['peajes', 'Peajes', peajes, txtPeajes],
-    ['conductor', 'Pago del conductor', r2(n(p.conductor_km) * km), `${txtKm} × S/ ${n(p.conductor_km)} por km`],
+    ['conductor', 'Pago del conductor', r2(n(p.conductor_km) * fC * km), `${txtKm} × S/ ${n(p.conductor_km)} por km` + (fC !== 1 ? ` × ${fC} (trocha)` : '')],
+    ['nocturno', 'Bono nocturno del conductor', nocturno ? r2(n(p.bono_nocturno)) : 0, 'Llega a la base entre las 22:00 y las 05:00'],
     ['bono', 'Bono del conductor', bono, manual ? 'Escrito en esta cotización' : `Viaje largo: ${dias} día(s) × S/ ${n(p.bono_por_dia)} (desde ${n(p.bono_desde_km)} km)`],
     ['viaticos', 'Alimentación del conductor', r2(n(p.viatico_dia) * dias), `${dias} día(s) × S/ ${n(p.viatico_dia)}`],
     ['hospedaje', 'Hospedaje del conductor', r2(n(p.hospedaje_noche) * noches), `${noches} noche(s) × S/ ${n(p.hospedaje_noche)}`],
     ['cochera', 'Cochera', r2(n(p.cochera_noche) * noches), `${noches} noche(s) × S/ ${n(p.cochera_noche)}`],
     ['espera', 'Espera incluida en el precio', r2(costoEspera(p, horas)), txtEspera(p, horas)],
-    ['desgaste', 'Desgaste de la van', r2(n(p.desgaste_km) * km), `${txtKm} × S/ ${n(p.desgaste_km)}`],
+    ['desgaste', 'Desgaste de la van', r2(n(p.desgaste_km) * fD * km), `${txtKm} × S/ ${n(p.desgaste_km)}` + (fD !== 1 ? ` × ${fD} (trocha)` : '')],
     ['emergencia', 'Fondo de emergencia', r2(n(p.emergencia) * salidas), salidas > 1 ? `${salidas} salidas × S/ ${n(p.emergencia)} · parchado de llanta u otro imprevisto` : 'Parchado de llanta u otro imprevisto'],
   ];
   (Array.isArray(d.otros) ? d.otros : []).forEach((o, i) => { if (n(o.monto)) base.push(['otro' + i, String(o.concepto || 'Otro costo').slice(0, 60), r2(n(o.monto)), 'Agregado a mano']); });
@@ -136,7 +156,7 @@ export function calcular(parametros, d) {
   return {
     km, km_pasajeros: kmPax, km_vacios: kmVacio, pct_vacios: km ? Math.round(kmVacio / km * 100) : 0, salidas, tramos: M.tramos, modalidad: md,
     dias, noches, pasajeros: pax, galones: r2(galones), precio_galon: galon, bono, bono_sugerido: bonoSugerido,
-    horas_manejo: n(p.velocidad_promedio) ? r2(km / n(p.velocidad_promedio)) : 0, horas_tramo: n(p.velocidad_promedio) ? r2(k / n(p.velocidad_promedio)) : 0,
+    horas_manejo: vel ? r2(km / vel) : 0, horas_tramo: vel ? r2(k / vel) : 0, trocha: tr, nocturno, rendimiento: rend, velocidad: vel,
     margenes: { minimo: Math.round(mn * 100), recomendado: Math.round(mo * 100), alto: Math.round(mp * 100) },
     estandar, premium, costo_km: km ? r2(estandar.costo / km) : 0,
     // Compatibilidad con cotizaciones anteriores (un solo servicio)

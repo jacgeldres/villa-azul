@@ -2,7 +2,7 @@
  * Villa Azul · Cotizador de excursión, taxi/expreso y transporte privado (v4.0)
  * Calcula con los costos reales de la empresa cuando existen y con supuestos editables cuando no.
  */
-import { calcular, PARAMETROS_BASE, SERVICIOS, MODALIDADES, esBase, politicaEspera } from '../public/js/cotizar.mjs';
+import { calcular, PARAMETROS_BASE, SERVICIOS, MODALIDADES, esBase, politicaEspera, bonoEspera } from '../public/js/cotizar.mjs';
 
 export const SQL_COT_V7 = [
   `CREATE TABLE IF NOT EXISTS cotizaciones (id TEXT PRIMARY KEY, token TEXT UNIQUE, numero INTEGER, tipo TEXT, cliente TEXT, cliente_tel TEXT, origen TEXT, destino TEXT,
@@ -27,6 +27,8 @@ export const SQL_COT_V13 = [
   "INSERT OR REPLACE INTO config (clave, valor, seq) VALUES ('cot_margen_objetivo','40',?)",
   "INSERT OR REPLACE INTO config (clave, valor, seq) VALUES ('cot_margen_premium','50',?)",
 ];
+// v5.7: rutas de trocha y liquidación de cada viaje (cálculo y pago del conductor).
+export const SQL_COT_V16 = ['ALTER TABLE rutas_km ADD COLUMN trocha INTEGER', 'ALTER TABLE excursiones ADD COLUMN liquidacion TEXT'];
 // v5.6: el margen alto baja de 50 % a 45 % (precio de lista con espacio para una rebaja), salvo que ya lo hayas cambiado.
 export const SQL_COT_V15 = ["UPDATE config SET valor='45', seq=? WHERE clave='cot_margen_premium' AND valor='50'"];
 // v5.2.1: hora de espera a S/ 10.
@@ -104,7 +106,7 @@ export function crearCotizador(h) {
     const b1 = esBase(b.origen) ? 0 : km(b.km_base_origen), b2 = esBase(b.origen) ? null : esBase(b.destino) ? 0 : km(b.km_destino_base);
     // Hora en que la van sale de regreso desde el destino (o el día del recojo, en «dejar y recoger»).
     const fr = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(String(b.fecha_retorno || '')) && modalidad !== 'solo_ida' ? String(b.fecha_retorno) : null;
-    return { tipo, modalidad, km_ida: num(b.km_ida), ida_vuelta: modalidad !== 'solo_ida', km_base_origen: b1, km_destino_base: b2, fecha_retorno: fr,
+    return { tipo, modalidad, km_ida: num(b.km_ida), ida_vuelta: modalidad !== 'solo_ida', km_base_origen: b1, km_destino_base: b2, fecha_retorno: fr, trocha: b.trocha === true || b.trocha === 'true' || b.trocha === 1,
       km_extra: num(b.km_extra), dias: num(b.dias) || 1, noches: num(b.noches),
       horas_espera: num(b.horas_espera), pasajeros: num(b.pasajeros), peajes_ida: num(b.peajes_ida), peajes_vuelta: num(b.peajes_vuelta),
       precio_galon: num(b.precio_galon) > 0 ? Math.round(num(b.precio_galon) * 100) / 100 : null,
@@ -143,7 +145,7 @@ export function crearCotizador(h) {
       datos: JSON.stringify(d), parametros: JSON.stringify(par), resultado: JSON.stringify(res), costo: res.costo, precio_minimo: res.precios.minimo, precio_recomendado: res.precios.recomendado,
       precio_premium: res.precios.premium, precio_final: final, precio_final_premium: finalP, notas: texto(b.notas, 500), incluye: JSON.stringify(incluye), actualizado_en: ahora };
     // La distancia y los peajes de la ruta se recuerdan para la próxima cotización.
-    const rk = env.DB.prepare('INSERT OR REPLACE INTO rutas_km (clave, origen, destino, km, peajes_ida, peajes_vuelta, actualizado_en) VALUES (?,?,?,?,?,?,?)').bind(claveRuta(origen, destino), origen, destino, d.km_ida, d.peajes_ida, d.peajes_vuelta, ahora);
+    const rk = env.DB.prepare('INSERT OR REPLACE INTO rutas_km (clave, origen, destino, km, peajes_ida, peajes_vuelta, trocha, actualizado_en) VALUES (?,?,?,?,?,?,?,?)').bind(claveRuta(origen, destino), origen, destino, d.km_ida, d.peajes_ida, d.peajes_vuelta, d.trocha ? 1 : 0, ahora);
     if (id) {
       const c = await env.DB.prepare('SELECT * FROM cotizaciones WHERE id=?').bind(id).first(); if (!c) throw new ErrorApi('Cotización no encontrada', 'NO_EXISTE', 404);
       if (c.estado === 'aceptada' && c.excursion_id) throw new ErrorApi('Ya se convirtió en excursión: edita la excursión.');
@@ -278,9 +280,9 @@ export function crearCotizador(h) {
     const maps = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' + encodeURIComponent(o + ', Perú') + '&destination=' + encodeURIComponent(d + ', Perú');
     const par = await parametros(env), vel = num(par.velocidad_promedio) || 31;
     const conocida = await env.DB.prepare('SELECT * FROM rutas_km WHERE clave=?').bind(claveRuta(o, d)).first();
-    if (conocida) return { km: conocida.km, peajes_ida: conocida.peajes_ida || 0, peajes_vuelta: conocida.peajes_vuelta || 0, horas: Math.round(conocida.km / vel * 10) / 10, fuente: 'guardada', maps };
+    if (conocida) return { km: conocida.km, peajes_ida: conocida.peajes_ida || 0, peajes_vuelta: conocida.peajes_vuelta || 0, trocha: conocida.trocha == null ? null : !!conocida.trocha, horas: Math.round(conocida.km / vel * 10) / 10, fuente: 'guardada', maps };
     const inversa = await env.DB.prepare('SELECT * FROM rutas_km WHERE clave=?').bind(claveRuta(d, o)).first();
-    if (inversa) return { km: inversa.km, peajes_ida: inversa.peajes_vuelta || 0, peajes_vuelta: inversa.peajes_ida || 0, horas: Math.round(inversa.km / vel * 10) / 10, fuente: 'guardada', maps };
+    if (inversa) return { km: inversa.km, peajes_ida: inversa.peajes_vuelta || 0, peajes_vuelta: inversa.peajes_ida || 0, trocha: inversa.trocha == null ? null : !!inversa.trocha, horas: Math.round(inversa.km / vel * 10) / 10, fuente: 'guardada', maps };
     const [a, z] = [await geocodificar(env, o), await geocodificar(env, d)];
     let r;
     try { r = await fetch((env.RUTA_URL || 'https://router.project-osrm.org') + `/route/v1/driving/${a.lon},${a.lat};${z.lon},${z.lat}?overview=false`, { headers: { 'User-Agent': 'VillaAzul-Cotizador/1.0' } }); }
@@ -291,6 +293,107 @@ export function crearCotizador(h) {
     const km = Math.round(j.routes[0].distance / 100) / 10;
     // El tiempo se estima con tu velocidad real (186 km en 6 h), no con la del mapa, que no conoce las curvas de la sierra.
     return { km, peajes_ida: null, peajes_vuelta: null, horas: Math.round(km / vel * 10) / 10, horas_mapa: Math.round(j.routes[0].duration / 360) / 10, fuente: 'mapa', origen_nombre: a.nombre, destino_nombre: z.nombre, maps };
+  }
+
+  /* ═════════ Liquidación de un viaje (solo administradores) ═════════
+     Lo cotizado frente a lo real (odómetro, diésel, cobros) y el pago del conductor con los parámetros vigentes.
+     Lo que no sale de los datos (trocha, horas de espera, aguja del tanque…) se ajusta aquí y se guarda con la excursión. */
+  async function liquidacion(env, excId, b, yo) {
+    const e = await env.DB.prepare('SELECT * FROM excursiones WHERE id=?').bind(excId).first();
+    if (!e) throw new ErrorApi('Excursión no encontrada', 'NO_EXISTE', 404);
+    if (b && b.vincular) {
+      const c = await env.DB.prepare('SELECT id, excursion_id, numero FROM cotizaciones WHERE id=?').bind(String(b.vincular)).first();
+      if (!c) throw new ErrorApi('Cotización no encontrada', 'NO_EXISTE', 404);
+      if (c.excursion_id && c.excursion_id !== excId) throw new ErrorApi('Esa cotización ya está unida a otro viaje.');
+      await env.DB.prepare("UPDATE cotizaciones SET excursion_id=NULL, seq=? WHERE excursion_id=? AND id<>?").bind(await reservarSeq(env, 1), excId, c.id).run();
+      await env.DB.prepare("UPDATE cotizaciones SET excursion_id=?, estado='aceptada', actualizado_en=?, seq=? WHERE id=?").bind(excId, ahoraLima(), await reservarSeq(env, 1), c.id).run();
+      await auditar(env, yo.nombre, 'liq_vincular', `${e.titulo} ← COT-${String(c.numero).padStart(4, '0')}`);
+    }
+    if (b && b.ajustes) {
+      const a = b.ajustes, L = {}, sn = (v) => v === true || v === 'true' || v === 1 || v === '1';
+      if (a.trocha !== undefined && a.trocha !== null) L.trocha = sn(a.trocha);
+      if (a.nocturno !== undefined && a.nocturno !== null) L.nocturno = sn(a.nocturno);
+      ['horas_espera', 'dias', 'noches', 'galones', 'aguja', 'bono_extra', 'horas_tramo_real'].forEach(k => { if (a[k] !== undefined && a[k] !== null && a[k] !== '') L[k] = Math.max(0, Math.round(num(a[k]) * 100) / 100); });
+      if (L.aguja !== undefined && L.aguja > 1) throw new ErrorApi('La aguja va de 0 (nada) a 1 (tanque lleno).');
+      await env.DB.prepare('UPDATE excursiones SET liquidacion=?, seq=? WHERE id=?').bind(JSON.stringify(L), await reservarSeq(env, 1), excId).run();
+      await auditar(env, yo.nombre, 'liq_ajustes', `${e.titulo} · ${JSON.stringify(L)}`);
+      e.liquidacion = JSON.stringify(L);
+    }
+    const par = await parametros(env), r2 = (x) => Math.round(x * 100) / 100;
+    const cot = await env.DB.prepare('SELECT * FROM cotizaciones WHERE excursion_id=?').bind(excId).first();
+    const cd = cot ? JSON.parse(cot.datos || '{}') : {}, cr = cot ? JSON.parse(cot.resultado || '{}') : null;
+    let aj = {}; try { aj = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { aj = {}; }
+    const movs = (await env.DB.prepare('SELECT * FROM exc_movimientos WHERE excursion_id=? AND COALESCE(anulado,0)=0').bind(excId).all()).results;
+    const suma = (f) => r2(movs.filter(f).reduce((s, m) => s + num(m.monto), 0));
+    const linea = (cr && cr.estandar ? cr.estandar.lineas : []).reduce((o, l) => { o[l.clave] = l.monto; return o; }, {});
+    const dE = (x) => x ? new Date(String(x).slice(0, 10) + 'T00:00:00Z') : null, s0 = dE(e.salida), s1 = dE(e.retorno);
+    const diasExc = s0 && s1 && s1 >= s0 ? Math.round((s1 - s0) / 864e5) + 1 : 1;
+    const de = (k, v) => aj[k] !== undefined ? aj[k] : v;
+
+    // Entradas: primero lo ajustado aquí, luego la cotización, luego lo que dice la excursión.
+    const kmReal = num(e.km_fin) > num(e.km_inicio) && num(e.km_inicio) ? num(e.km_fin) - num(e.km_inicio) : null;
+    const kmCot = cr ? num(cr.km) : 0, km = kmReal ?? kmCot;
+    const trocha = !!de('trocha', !!cd.trocha), nocturno = !!de('nocturno', !!(cr && cr.nocturno));
+    const horas = num(de('horas_espera', num(cd.horas_espera))), dias = Math.max(1, num(de('dias', cr ? num(cr.dias) : diasExc)));
+    const noches = num(de('noches', cr ? num(cr.noches) : Math.max(0, diasExc - 1)));
+    const bonoExtra = num(de('bono_extra', num(linea.bono)));
+    const fC = trocha ? num(par.trocha_factor_conductor) || 1 : 1, fD = trocha ? num(par.trocha_factor_desgaste) || 1 : 1;
+
+    // Diésel: lo escrito, o la aguja del tanque, o los galones de las boletas.
+    const comb = movs.filter(m => m.tipo === 'egreso' && m.categoria === 'combustible');
+    const galMov = r2(comb.reduce((s, m) => s + num(m.galones), 0)), solesMov = suma(m => m.tipo === 'egreso' && m.categoria === 'combustible');
+    const precioGal = galMov ? r2(solesMov / galMov) : num(cd.precio_galon) || num(par.precio_galon);
+    let galones = null, galFuente = '';
+    if (aj.galones !== undefined) { galones = num(aj.galones); galFuente = 'escrito en la liquidación'; }
+    else if (aj.aguja !== undefined) { galones = r2(num(aj.aguja) * num(par.tanque_litros) / 3.785); galFuente = `aguja: ${Math.round(num(aj.aguja) * 100)} % de ${num(par.tanque_litros)} L`; }
+    else if (galMov) { galones = galMov; galFuente = 'galones de las boletas de combustible'; }
+
+    // Pago del conductor con los parámetros vigentes.
+    const cond = [
+      ['km', 'Por km manejado', r2(km * num(par.conductor_km) * fC), `${km} km × S/ ${num(par.conductor_km)}` + (fC !== 1 ? ` × ${fC} (trocha)` : '')],
+      ['espera', 'Bono de espera', bonoEspera(par, horas), `${horas} h × S/ ${num(par.bono_espera_hora)}`],
+      ['nocturno', 'Bono nocturno', nocturno ? r2(num(par.bono_nocturno)) : 0, 'Llega a la base entre las 22:00 y las 05:00'],
+      ['alimentacion', 'Alimentación', r2(dias * num(par.viatico_dia)), `${dias} día(s) × S/ ${num(par.viatico_dia)}`],
+      ['hospedaje', 'Hospedaje', r2(noches * num(par.hospedaje_noche)), `${noches} noche(s) × S/ ${num(par.hospedaje_noche)}`],
+      ['extra', 'Bono adicional', bonoExtra, 'Escrito a mano'],
+    ].filter(x => x[2] > 0).map(([clave, concepto, monto, detalle]) => ({ clave, concepto, monto, detalle }));
+    const pagoTotal = r2(cond.reduce((s, x) => s + x.monto, 0));
+    const pagado = suma(m => m.tipo === 'egreso' && ['pago_conductor', 'alimentacion_conductor', 'hospedaje_conductor'].includes(m.categoria));
+
+    // Costo real del viaje.
+    const yaContados = ['combustible', 'pago_conductor', 'alimentacion_conductor', 'hospedaje_conductor'];
+    const otros = movs.filter(m => m.tipo === 'egreso' && !yaContados.includes(m.categoria));
+    const diesel = galones !== null ? r2(galones * precioGal) : solesMov;
+    const costo = [
+      ['diesel', 'Diésel consumido', diesel, galones !== null ? `${galones} gal × S/ ${precioGal} · ${galFuente}` : (solesMov ? 'Lo cargado según boletas (anota la aguja para el consumo real)' : 'Sin dato: anota la aguja o los galones')],
+      ['conductor', 'Pago del conductor', pagoTotal, 'Detalle en «Pago del conductor»'],
+      ['desgaste', 'Desgaste de la van', r2(km * num(par.desgaste_km) * fD), `${km} km × S/ ${num(par.desgaste_km)}` + (fD !== 1 ? ` × ${fD} (trocha)` : '')],
+      ['emergencia', 'Fondo de emergencia', r2(num(par.emergencia) * (cr ? num(cr.salidas) || 1 : 1)), 'Reserva para imprevistos'],
+      ...otros.map(m => [m.id, (m.categoria || 'gasto').replace(/_/g, ' '), r2(num(m.monto)), m.descripcion || 'Registrado en el viaje']),
+    ].filter(x => x[2] > 0).map(([clave, concepto, monto, detalle]) => ({ clave, concepto, monto, detalle }));
+    const costoTotal = r2(costo.reduce((s, x) => s + x.monto, 0));
+    const cobrado = suma(m => m.tipo === 'ingreso'), pactado = e.tipo === 'contrato' ? num(e.monto_contrato) : cobrado;
+    const base = cobrado || pactado, utilidad = r2(base - costoTotal);
+
+    const vel = trocha ? num(par.trocha_velocidad) : num(par.velocidad_promedio);
+    const comp = [
+      ['Km recorridos', kmCot || null, kmReal, 'km'],
+      ['Horas de manejo por tramo', cr ? num(cr.horas_tramo) || null : null, aj.horas_tramo_real ?? null, 'h'],
+      ['Galones de diésel', cr ? num(cr.galones) || null : null, galones, 'gal'],
+      ['Rendimiento', cr && cr.galones ? r2(num(cr.km) / num(cr.galones)) : null, galones && km ? r2(km / galones) : null, 'km/gal'],
+      ['Costo del viaje', cot ? num(cot.costo) : null, costoTotal, 'S/'],
+      ['Precio', cot ? num(cot.precio_final) : null, base, 'S/'],
+    ];
+    const libres = cot ? [] : (await env.DB.prepare("SELECT id, numero, cliente, origen, destino, fecha_servicio, precio_final FROM cotizaciones WHERE excursion_id IS NULL AND estado <> 'rechazada' ORDER BY creado_en DESC LIMIT 30").all()).results
+      .map(c => ({ id: c.id, codigo: 'COT-' + String(c.numero).padStart(4, '0'), texto: `${c.origen} → ${c.destino}${c.cliente ? ' · ' + c.cliente : ''}${c.fecha_servicio ? ' · ' + String(c.fecha_servicio).slice(0, 10) : ''} · S/ ${c.precio_final}` }));
+    return {
+      cotizacion: cot ? { id: cot.id, codigo: 'COT-' + String(cot.numero).padStart(4, '0'), precio: num(cot.precio_final), costo: num(cot.costo) } : null, libres,
+      entradas: { km, km_real: kmReal, km_cotizado: kmCot, trocha, nocturno, horas_espera: horas, dias, noches, bono_extra: bonoExtra, galones, gal_fuente: galFuente, precio_galon: precioGal,
+        aguja: aj.aguja ?? null, horas_tramo_real: aj.horas_tramo_real ?? null, horas_tramo_param: vel && cr ? r2(num(cd.km_ida) / vel) : null, ajustado: Object.keys(aj) },
+      conductor: { lineas: cond, total: pagoTotal, pagado, pendiente: r2(Math.max(0, pagoTotal - pagado)) },
+      costo: { lineas: costo, total: costoTotal }, cobrado, pactado, utilidad, margen: base ? Math.round(utilidad / base * 100) : 0, comparativo: comp,
+      parametros: { conductor_km: num(par.conductor_km), bono_espera_hora: num(par.bono_espera_hora), bono_nocturno: num(par.bono_nocturno), viatico_dia: num(par.viatico_dia), tanque_litros: num(par.tanque_litros) },
+    };
   }
 
   /** Para el operador: el servidor calcula y devuelve solo cifras básicas (recorrido y precios). */
@@ -307,9 +410,9 @@ export function crearCotizador(h) {
   async function verOperador(env) {
     const v = await verParametros(env);
     // Solo lo necesario para cotizar: lugares, rutas conocidas y el precio del diésel para verificarlo.
-    return { operador: true, lugares: v.lugares, rutas: v.rutas.map(r => ({ origen: r.origen, destino: r.destino, km: r.km, peajes_ida: r.peajes_ida, peajes_vuelta: r.peajes_vuelta })),
+    return { operador: true, lugares: v.lugares, rutas: v.rutas.map(r => ({ origen: r.origen, destino: r.destino, km: r.km, peajes_ida: r.peajes_ida, peajes_vuelta: r.peajes_vuelta, trocha: r.trocha })),
       tarifas: v.tarifas, precio_galon: v.parametros.precio_galon, velocidad_promedio: v.parametros.velocidad_promedio,
-      espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora },
+      espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora }, trocha_velocidad: v.parametros.trocha_velocidad,
       premium_activo: v.parametros.premium_activo };
   }
   async function rutas(env, yo, req, url, crearExcursion) {
@@ -338,6 +441,9 @@ export function crearCotizador(h) {
     if (p === '/api/cotizador/distancia' && m === 'POST') return distancia(env, await cuerpo());
     if (p === '/api/cotizaciones' && m === 'GET') return listar(env);
     if (p === '/api/cotizaciones' && m === 'POST') return guardar(env, yo, null, await cuerpo());
+    const lq = p.match(/^\/api\/cotizador\/liquidacion\/([\w-]+)$/);
+    if (lq && m === 'GET') return liquidacion(env, lq[1]);
+    if (lq && m === 'POST') { const b = await cuerpo(); return liquidacion(env, lq[1], b, yo); }
     const r = p.match(/^\/api\/cotizaciones\/([\w-]+)(?:\/(estado|convertir))?$/);
     if (r && !r[2] && m === 'GET') return detalle(env, r[1]);
     if (r && !r[2] && m === 'PATCH') return guardar(env, yo, r[1], await cuerpo());

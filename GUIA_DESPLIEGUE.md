@@ -1,4 +1,4 @@
-# Villa Azul · v5.6.3 — Guía de despliegue
+# Villa Azul · v5.7.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,24 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.7 · Rutas de trocha, pago del conductor y liquidación de cada viaje
+
+Sube a GitHub `src/` y `public/`. Al primer uso la base pasa sola a la **versión 16**. Comprueba en Mi perfil: **Villa Azul v5.7.0 · base de datos v16**.
+
+**Ruta de sierra o trocha (cotizador).** Casilla nueva en la cotización, marcada por defecto en rutas nuevas (Angasmarca–Trujillo queda como asfalto). La ruta recuerda lo que marques. Con trocha:
+- Rendimiento 24 km/gal (asfalto: el de siempre) y velocidad 20 km/h (la espera se calcula con eso).
+- Desgaste × 1.6 y pago por km del conductor × 1.5.
+- Se ajusta en Parámetros → Sierra / trocha.
+
+**Pago del conductor por espera y noche.** Bono de espera S/ 5 por hora (sale del costo de espera, el cliente no lo ve aparte) y bono nocturno S/ 20 si llega a la base entre las 22:00 y las 05:00. Parámetros → Pago del conductor por espera y noche.
+
+**Liquidación de cada viaje (solo administradores).** Excursiones → el viaje → pestaña **Liquidación**:
+- Cotizado frente a real: km (odómetro), horas por tramo, galones, rendimiento, costo y precio.
+- Pago del conductor con los parámetros vigentes, lo ya pagado y lo que falta; botón **Registrar pago** (queda como gasto «pago conductor» del viaje).
+- Costo real y utilidad.
+- Datos del viaje: trocha, llegada de noche, horas de espera, días, diésel por la aguja del tanque (70 L) o galones exactos, horas reales de manejo y bono adicional.
+- Si el viaje no vino de una cotización, se puede **unir** a una.
 
 ## Actualizar a la v5.6.3 · Mismo precio en la lista y al editar
 
