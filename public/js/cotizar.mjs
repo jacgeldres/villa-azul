@@ -1,5 +1,5 @@
 /**
- * Villa Azul · Fórmula del cotizador (v5.8.0).
+ * Villa Azul · Fórmula del cotizador (v5.9.0).
  * Un solo archivo para la app (vista previa al instante) y para el servidor (cifra oficial al guardar).
  * Calcula dos servicios: Estándar y Premium (Estándar + snacks y WiFi).
  * v5.2: los km que la van hace vacía (volver a la base o ir a recoger) cuestan igual que los km con pasajeros.
@@ -46,7 +46,7 @@ export const PARAMETROS_BASE = {
   bono_por_dia: 0,             // S/ de bono por día de servicio en viajes largos
   premium_activo: 0,           // 1 = se ofrece el servicio Premium; 0 = solo Estándar
   adelanto_pct: 50,            // % de adelanto para separar el viaje (se muestra al cliente)
-  redondeo_tramo: 0.5,         // el precio por pasajero y por tramo sube a S/ 0.50 (S/ 20.50 de ida + S/ 20.50 de retorno); 0 = redondear el total a S/ 10
+  redondeo_tramo: 1,           // el precio por pasajero y por tramo sube al sol entero (S/ 21.20 → S/ 22); 0.5 = a S/ 0.50; 0 = redondear el total a S/ 10
   margen_minimo: 30,           // % de margen mínimo (sobre el precio)
   margen_objetivo: 40,         // % de margen recomendado
   margen_premium: 45,          // % de margen alto: el «precio de lista» que deja espacio para una rebaja al recomendado

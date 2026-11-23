@@ -1,4 +1,4 @@
-# Villa Azul · v5.8.1 — Guía de despliegue
+# Villa Azul · v5.9.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,14 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.9 · Precios redondos y bono de espera editable
+
+Sube a GitHub `src/` y `public/`. Al primer uso la base pasa sola a la **versión 17**. Comprueba en Mi perfil: **Villa Azul v5.9.0 · base de datos v17**.
+
+- **Precio por pasajero y tramo en soles enteros, siempre hacia arriba:** S/ 21.20 → S/ 22; S/ 25.50 → S/ 26. El total es ese precio × tramos × pasajeros. Se cambia en Parámetros → Servicio y reserva → Redondeo (1 = soles enteros, 5 = de 5 en 5, 0.5 = a S/ 0.50, 0 = total a S/ 10). La migración solo lo cambia si seguía en 0.5.
+- **Bono de espera editable por viaje:** en la Liquidación, «Bono de espera S/». Vacío = por tarifa (horas × S/ por hora). Escribe otro monto para subirlo o bajarlo, o toca **Redondear ↑** (a la decena siguiente). **Por tarifa** vuelve al cálculo. El detalle del pago muestra cuánto habría sido por tarifa.
+- La tarifa por hora para todos los viajes sigue en Parámetros → Pago del conductor por espera y noche.
 
 ## Actualizar a la v5.8.1 · Resumen del viaje completo
 

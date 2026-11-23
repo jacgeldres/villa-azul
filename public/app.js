@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.8.1';
+var VERSION = '5.9.0';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -953,7 +953,7 @@ var COT_PAR = [
   ['Pago del conductor por espera y noche', [['bono_espera_hora','Bono de espera','S/ por hora de espera · lo recibe el conductor'],['bono_nocturno','Bono nocturno','S/ si llega a la base entre las 22:00 y las 05:00'],['tanque_litros','Tanque de la van','litros · para calcular el diésel con la aguja']]],
   ['Bono del conductor (viajes largos)', [['bono_desde_km','Desde cuántos km recorridos','km ida + vuelta · 0 = sin bono automático'],['bono_por_dia','Bono por día de servicio','S/ · se suma solo en viajes largos']]],
   ['Servicio Premium', [['snack_pax_dia','Refrigerio','S/ por pasajero por día'],['wifi_pax_viaje','WiFi a bordo','S/ por pasajero por viaje · igual si dura 1 o 4 días · sin margen encima']]],
-  ['Servicio y reserva', [['premium_activo','Servicio Premium','switch'],['adelanto_pct','Adelanto para separar','% del precio · lo ve el cliente'],['redondeo_tramo','Redondeo del precio por pasajero y tramo','S/ · 0.5 = S/ 20.50 de ida + S/ 20.50 de retorno · 0 = redondear el total a S/ 10']]],
+  ['Servicio y reserva', [['premium_activo','Servicio Premium','switch'],['adelanto_pct','Adelanto para separar','% del precio · lo ve el cliente'],['redondeo_tramo','Redondeo del precio por pasajero y tramo','S/ · siempre hacia arriba · 1 = soles enteros (21.20 → 22) · 5 = de 5 en 5 · 0.5 = a S/ 0.50 · 0 = total a S/ 10']]],
   ['Precios · margen sobre el precio', [['margen_minimo','Margen mínimo','% · hoy 30'],['margen_objetivo','Margen recomendado','% · hoy 40'],['margen_premium','Margen alto (precio de lista)','% · hoy 45 · deja espacio para rebajar al recomendado'],['validez_dias','Validez de la cotización','días']]]
 ];
 function cotParametros(){
@@ -1550,6 +1550,9 @@ function excLiquidacion(forzar){
       '<div class="dos"><div class="campo"><label for="lqgc">Gastó en comidas (lo que informa el conductor)</label><input id="lqgc" inputmode="decimal" class="num" placeholder="Opcional" value="'+(en.gasto_comidas===null?'':esc(en.gasto_comidas))+'"></div><div class="campo"><span class="etq" style="margin-top:0">Asignado</span><p class="num" id="lqca" style="margin:12px 0 0;font-weight:700"></p></div></div>'+
       '<p class="ayuda" id="lqcr"></p>'+
       '<div class="dos"><div class="campo"><label for="lqag">Diésel gastado (aguja)</label><select id="lqag">'+AGUJA.map(function(a){ return '<option value="'+a[0]+'"'+(String(en.aguja===null?'':en.aguja)===a[0]?' selected':'')+'>'+a[1]+'</option>'; }).join('')+'</select></div><div class="campo"><label for="lqga">o galones exactos</label><input id="lqga" inputmode="decimal" class="num" placeholder="'+(en.galones!==null&&en.aguja===null?esc(en.galones):'')+'" value="'+(L.entradas.ajustado.indexOf('galones')>=0?esc(en.galones):'')+'"></div></div>'+
+      '<div class="dos"><div class="campo"><label for="lqbe">Bono de espera S/</label><input id="lqbe" inputmode="decimal" class="num" placeholder="'+esc(en.bono_espera_tarifa)+'" value="'+(en.bono_espera===null?'':esc(en.bono_espera))+'"></div>'+
+        '<div class="campo"><span class="etq" style="margin-top:0">&nbsp;</span><div class="botones" style="margin-top:4px"><button type="button" class="btn-mini" id="lqber">Redondear ↑</button><button type="button" class="btn-mini" id="lqbet">Por tarifa</button></div></div></div>'+
+      '<p class="ayuda" id="lqbeh"></p>'+
       '<div class="dos"><div class="campo"><label for="lqht">Horas de manejo por tramo (real)</label><input id="lqht" inputmode="decimal" class="num" value="'+esc(en.horas_tramo_real===null?'':en.horas_tramo_real)+'"></div><div class="campo"><label for="lqbx">Bono adicional S/</label><input id="lqbx" inputmode="decimal" class="num" value="'+esc(en.bono_extra||'')+'"></div></div>'+
       '<p class="ayuda">Tanque de '+L.parametros.tanque_litros+' L: «1/4 y un poco» ≈ '+Math.round(0.28*L.parametros.tanque_litros/3.785*10)/10+' gal.</p><p class="error" id="lqer"></p><button type="button" class="btn" id="lqok">Recalcular y guardar</button></div>';
     P0.innerHTML = h;
@@ -1565,7 +1568,13 @@ function excLiquidacion(forzar){
     $('lqcd').onclick = function(){ var fs = $('lqcom').querySelectorAll('.fila-com'), ult = fs.length ? fs[fs.length-1].dataset.dia : hoyLima(), d = new Date(ult+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+(fs.length?1:0));
       $('lqcom').insertAdjacentHTML('beforeend', filaComidas({dia:d.toISOString().slice(0,10), desayuno:true, almuerzo:true, cena:true})); verComidas(); };
     $('lqgc').oninput = verComidas; verComidas();
-    $('lqok').onclick = function(){ var aj = {trocha:$('lqtr').checked, nocturno:$('lqno').checked, horas_espera:$('lqhe').value, noches:$('lqnc').value, comidas:leerComidas(), gasto_comidas:$('lqgc').value, aguja:$('lqag').value, galones:$('lqga').value, horas_tramo_real:$('lqht').value, bono_extra:$('lqbx').value};
+    // Bono de espera: vacío = por tarifa (horas × S/ por hora); se puede subir, bajar o redondear para este viaje.
+    var tarifaH = L.parametros.bono_espera_hora, verBono = function(){ var h = Number(String($('lqhe').value).replace(',','.'))||0, t = Math.round(h*tarifaH*100)/100;
+      $('lqbe').placeholder = t; $('lqbeh').innerHTML = 'Por tarifa: '+h+' h × S/ '+tarifaH+' = <b>'+soles(t)+'</b>.'+($('lqbe').value.trim()!=='' ? ' Para este viaje: <b>'+soles(Number($('lqbe').value.replace(',','.'))||0)+'</b>.' : ' Escribe otro monto para subirlo, bajarlo o redondearlo.'); };
+    $('lqber').onclick = function(){ var v = $('lqbe').value.trim()!=='' ? Number($('lqbe').value.replace(',','.'))||0 : Number($('lqbe').placeholder)||0; $('lqbe').value = Math.ceil(v/10)*10; verBono(); };
+    $('lqbet').onclick = function(){ $('lqbe').value = ''; verBono(); };
+    $('lqbe').oninput = verBono; $('lqhe').addEventListener('input', verBono); verBono();
+    $('lqok').onclick = function(){ var aj = {trocha:$('lqtr').checked, nocturno:$('lqno').checked, horas_espera:$('lqhe').value, bono_espera:$('lqbe').value, noches:$('lqnc').value, comidas:leerComidas(), gasto_comidas:$('lqgc').value, aguja:$('lqag').value, galones:$('lqga').value, horas_tramo_real:$('lqht').value, bono_extra:$('lqbx').value};
       if(aj.galones) aj.aguja = '';
       $('lqok').disabled = true; api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:{ajustes:aj}}).then(function(r){ if(r.ok) toast('Liquidación guardada'); else { $('lqer').textContent = r.error; $('lqok').disabled = false; return; } pintar(r); }); };
     if($('lqpag')) $('lqpag').onclick = function(){ if(!confirm('¿Registrar el pago de '+soles(c.pendiente)+' al conductor como gasto de este viaje?')) return;
