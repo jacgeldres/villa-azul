@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.8.0';
+var VERSION = '5.8.1';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -1522,7 +1522,7 @@ var AGUJA = [['','No anotada'],['0.125','1/8'],['0.25','1/4'],['0.28','1/4 y un 
 function excLiquidacion(forzar){
   var e = S.excDet.excursion, P0 = $('panelx'), cache = S.liqCache && S.liqCache.id===e.id ? S.liqCache : null;
   var pintar = function(r){
-    if(r.ok) S.liqCache = {id:e.id, r:r};
+    if(r.ok) S.liqCache = {id:e.id, r:r, t:Date.now()};
     if(!$('panelx') || S.excTab!=='liq' || S.excId!==e.id) return;
     P0 = $('panelx'); P0.dataset.liq = e.id;
     if(!r.ok){ P0.innerHTML = '<div class="card"><p class="vacio">'+esc(r.codigo==='RED'?'Sin señal: la liquidación se calcula con conexión.':r.error)+'</p></div>'; return; }
@@ -1580,7 +1580,15 @@ function precioComida(c){ var p = (S.liqCache && S.liqCache.r.ok && S.liqCache.r
 function filaComidas(o){ var f = new Date(o.dia+'T12:00:00Z');
   return '<div class="fila-com" data-dia="'+esc(o.dia)+'"><b>'+(isNaN(f)?'Día':f.toLocaleDateString('es-PE',{weekday:'short', day:'numeric', month:'short', timeZone:'UTC'}))+'</b>'+
     [['desayuno','Desayuno'],['almuerzo','Almuerzo'],['cena','Cena']].map(function(c){ return '<button type="button" class="chip" data-com="'+c[0]+'" aria-pressed="'+(!!o[c[0]])+'">'+c[1]+'</button>'; }).join('')+'</div>'; }
-function kpiX(v,l,alerta){ return '<div class="kpi'+(alerta?' alerta':'')+'"><small>'+esc(l)+'</small><b class="num">'+esc(v)+'</b></div>'; }
+function kpiX(v,l,alerta,id){ return '<div class="kpi'+(alerta?' alerta':'')+'"'+(id?' id="'+id+'"':'')+'><small>'+esc(l)+'</small><b class="num">'+esc(v)+'</b></div>'; }
+/** Cuadros del Resumen que salen de la Liquidación (diésel por la aguja, rendimiento, utilidad con todos los costos). */
+function resumenDesdeLiq(){
+  var e = S.excDet && S.excDet.excursion, c = S.liqCache; if(!e || !c || c.id!==e.id || !c.r.ok) return;
+  var L = c.r.data, k = S.excDet.kpis, rend = (L.comparativo.filter(function(x){ return x[0]==='Rendimiento'; })[0]||[])[2], pon = function(id, v, l, alerta){ var x = $(id); if(x) x.outerHTML = kpiX(v, l, alerta, id); };
+  if(!k.km_galon && rend) pon('kxRend', rend+' km/gal', 'Rendimiento real · según '+(L.entradas.aguja!==null?'la aguja':'la liquidación'));
+  if(!k.precio_galon && L.entradas.precio_galon) pon('kxPgal', soles(L.entradas.precio_galon), 'Precio por galón · '+(L.entradas.galones!==null?L.entradas.galones+' gal consumidos':'de la cotización'));
+  pon('kxLiq', soles(L.utilidad), 'Utilidad real (liquidación) · margen '+L.margen+' %', L.utilidad<0);
+}
 function excResumen(){
   var d = S.excDet, e = d.excursion, k = d.kpis, orden = ['borrador','abierta','cerrada','en_ruta','finalizada'], i = orden.indexOf(e.estado);
   var pasos = [['Crear el viaje','Datos, precio o monto del contrato'],['Abrir reservas','Compartir el enlace; los asientos llegan solos'],['Cerrar reservas','Confirmar pagos y descargar el manifiesto'],['Salida','Km del odómetro al salir; gastos con foto de la boleta'],['Llegada y cierre','Km al volver, saldo cobrado, utilidad final']];
@@ -1610,9 +1618,9 @@ function excResumen(){
   }
   h += '<div class="kpis k3" style="margin-top:14px">'+
     kpiX(soles(k.pactado), e.tipo==='contrato'?'Monto del contrato':'Venta de asientos')+kpiX(soles(k.cobrado), k.pago_adicional>0 ? 'Cobrado · incluye '+soles(k.pago_adicional)+' de más' : 'Cobrado')+kpiX(soles(k.por_cobrar),'Por cobrar', k.por_cobrar>0 && (e.estado==='en_ruta'||e.estado==='finalizada'))+
-    kpiX(soles(k.gastos),'Gastos')+kpiX(soles(k.utilidad),'Utilidad real', k.utilidad<0)+kpiX(soles(k.utilidad_proyectada),'Utilidad si se cobra todo', k.utilidad_proyectada<0)+
-    kpiX(k.margen+' %','Margen sobre lo cobrado')+kpiX(k.ocupados+' / '+k.asientos_venta,'Asientos ('+k.ocupacion+' %)')+kpiX(k.km?k.km.toLocaleString('es-PE')+' km':'—','Recorrido')+
-    kpiX(k.costo_km?soles(k.costo_km):'—','Costo por km')+kpiX(k.km_galon?k.km_galon+' km/gal':'—','Rendimiento real')+kpiX(k.precio_galon?soles(k.precio_galon):'—','Precio por galón')+
+    kpiX(soles(k.gastos),'Gastos')+kpiX(soles(k.utilidad),'Utilidad en caja (cobrado − gastos)', k.utilidad<0)+kpiX('…','Utilidad real (liquidación)',false,'kxLiq')+kpiX(soles(k.utilidad_proyectada),'Utilidad si se cobra todo', k.utilidad_proyectada<0)+
+    kpiX(k.margen+' %','Margen sobre lo cobrado')+(e.tipo==='contrato' && !k.ocupados && k.pasajeros_cotizados ? kpiX(k.pasajeros_cotizados+' pas.','Pasajeros cotizados · aún sin registrar') : kpiX(k.ocupados+' / '+k.asientos_venta,'Asientos ('+k.ocupacion+' %)'))+kpiX(k.km?k.km.toLocaleString('es-PE')+' km':'—','Recorrido')+
+    kpiX(k.costo_km?soles(k.costo_km):'—','Costo por km')+kpiX(k.km_galon?k.km_galon+' km/gal':'—','Rendimiento real',false,'kxRend')+kpiX(k.precio_galon?soles(k.precio_galon):'—','Precio por galón',false,'kxPgal')+
     kpiX(k.soles_asiento_km?'S/ '+k.soles_asiento_km.toFixed(3):'—','Soles por asiento-km')+kpiX(soles(k.sin_comprobante), k.sin_comprobante_n+' gasto'+(k.sin_comprobante_n===1?'':'s')+' sin boleta', k.sin_comprobante_n>0)+'</div>';
   var cats = Object.keys(k.gastos_por_categoria).sort(function(a,b){ return k.gastos_por_categoria[b]-k.gastos_por_categoria[a]; });
   if(cats.length) h += '<div class="titulo-sec"><h3>Gastos por tipo</h3></div><div class="card"><ul class="lista">'+cats.map(function(c){ var v=k.gastos_por_categoria[c]; return '<li class="mov" style="grid-template-columns:1fr auto"><div><b>'+esc(EXC_CAT_TXT[c]||c)+'</b><div class="barra-ocup" style="margin-top:6px"><i style="width:'+Math.round(v/k.gastos*100)+'%;background:var(--bad);opacity:.75"></i></div></div><span class="m num">'+soles(v)+' · '+Math.round(v/k.gastos*100)+' %</span></li>'; }).join('')+'</ul></div>';
@@ -1623,6 +1631,9 @@ function excResumen(){
   $('panelx').querySelectorAll('[data-est]').forEach(function(b){ b.onclick=function(){ cambiarEstadoExc(b.dataset.est); }; });
   $('panelx').querySelectorAll('[data-km]').forEach(function(b){ b.onclick=function(){ formKm(b.dataset.km); }; });
   if($('xchk')) UNI.tarjetaExc(e.id, $('xchk'));
+  resumenDesdeLiq();
+  var c0 = S.liqCache, eid = e.id;
+  if(!c0 || c0.id!==eid || Date.now()-(c0.t||0) > 60000) api('/api/cotizador/liquidacion/'+eid).then(function(r){ if(!r.ok) return; S.liqCache = {id:eid, r:r, t:Date.now()}; if(S.excTab==='resumen' && S.excId===eid) resumenDesdeLiq(); });
 }
 function textoWa(e,url){ return '🚐 *'+e.titulo+'*\n'+e.origen+' ⇄ '+e.destino+'\nSalida: '+fechaExc(e.salida,true)+(e.retorno?'\nRetorno: '+fechaExc(e.retorno,true):'')+(e.tipo==='por_asiento'?'\nPrecio: '+soles(e.precio_asiento)+' por asiento':'')+'\n\nElige tu asiento aquí 👇\n'+url+'\n\nVilla Azul · Turismo & Excursiones'; }
 function cambiarEstadoExc(est){

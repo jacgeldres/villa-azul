@@ -1,4 +1,4 @@
-# Villa Azul · v5.8.0 — Guía de despliegue
+# Villa Azul · v5.8.1 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,14 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.8.1 · Resumen del viaje completo
+
+Sube a GitHub `src/` y `public/`. La base de datos no cambia (sigue en la **versión 16**). Comprueba en Mi perfil: **Villa Azul v5.8.1 · base de datos v16**.
+
+- **Contratos sin pasajeros registrados:** el cuadro de asientos muestra «14 pas. · Pasajeros cotizados · aún sin registrar» en vez de «0 / 15». Al registrar pasajeros (por ejemplo con el enlace del organizador) vuelve a mostrar los asientos.
+- **Rendimiento y precio por galón:** si las boletas de combustible no tienen galones, se toman de la Liquidación (aguja del tanque o galones anotados).
+- **Dos utilidades:** «Utilidad en caja» (cobrado − gastos registrados) y «Utilidad real (liquidación)», que suma el diésel consumido, el pago del conductor según tarifa, el desgaste y el fondo de emergencia.
 
 ## Actualizar a la v5.8 · Comidas del conductor, pago adicional y liquidación sin parpadeo
 

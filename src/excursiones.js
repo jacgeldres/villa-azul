@@ -185,7 +185,11 @@ export function crearExcursiones(h) {
     const e = await porId(env, id); if (!e) throw new ErrorApi('Excursión no encontrada', 'NO_EXISTE', 404);
     const pas = await pasajerosDe(env, id), movs = await movsDe(env, id);
     const vou = (await env.DB.prepare('SELECT * FROM exc_vouchers WHERE excursion_id = ? ORDER BY creado_en DESC').bind(id).all()).results;
-    return { excursion: e, pasajeros: pas.map(x => ({ ...x, vencido: vencido(x) })), movimientos: movs, vouchers: vou, kpis: kpis(e, pas, movs), categorias: CAT_EXC };
+    const k = kpis(e, pas, movs);
+    // Contrato sin pasajeros registrados: se muestra cuántos se cotizaron.
+    const cot = await env.DB.prepare('SELECT datos FROM cotizaciones WHERE excursion_id = ?').bind(id).first().catch(() => null);
+    if (cot) { try { k.pasajeros_cotizados = Number(JSON.parse(cot.datos || '{}').pasajeros) || 0; } catch (x) { k.pasajeros_cotizados = 0; } }
+    return { excursion: e, pasajeros: pas.map(x => ({ ...x, vencido: vencido(x) })), movimientos: movs, vouchers: vou, kpis: k, categorias: CAT_EXC };
   }
   async function guardar(env, yo, id, x) {
     const d = {
