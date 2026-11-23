@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.9.0';
+var VERSION = '5.10.1';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -1577,12 +1577,131 @@ function excLiquidacion(forzar){
     $('lqok').onclick = function(){ var aj = {trocha:$('lqtr').checked, nocturno:$('lqno').checked, horas_espera:$('lqhe').value, bono_espera:$('lqbe').value, noches:$('lqnc').value, comidas:leerComidas(), gasto_comidas:$('lqgc').value, aguja:$('lqag').value, galones:$('lqga').value, horas_tramo_real:$('lqht').value, bono_extra:$('lqbx').value};
       if(aj.galones) aj.aguja = '';
       $('lqok').disabled = true; api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:{ajustes:aj}}).then(function(r){ if(r.ok) toast('Liquidación guardada'); else { $('lqer').textContent = r.error; $('lqok').disabled = false; return; } pintar(r); }); };
-    if($('lqpag')) $('lqpag').onclick = function(){ if(!confirm('¿Registrar el pago de '+soles(c.pendiente)+' al conductor como gasto de este viaje?')) return;
-      api('/api/excursiones/'+e.id+'/movimientos',{method:'POST',body:{id:uuid(), tipo:'egreso', categoria:'pago_conductor', monto:c.pendiente, medio:'efectivo', comprobante_tipo:'sin', descripcion:'Liquidación: '+c.lineas.map(function(x){ return x.concepto+' '+soles(x.monto); }).join(' · '), fecha:hoyLima()}})
-        .then(function(r){ if(!r.ok){ toast(r.error,true); return; } toast('Pago al conductor registrado'); excLiquidacion(true); excDetalle(); }); };
+    if($('lqpag')) $('lqpag').onclick = function(){ hojaPagoConductor(e, L); };
   };
   if(cache) pintar(cache.r); else P0.innerHTML = '<p class="vacio">Calculando…</p>';
   if(!cache || forzar) api('/api/cotizador/liquidacion/'+e.id).then(pintar);
+}
+/* ════════════ Pago al conductor con comprobante digital (ticket PNG) ════════════ */
+function hojaPagoConductor(e, L){
+  var c = L.conductor, ops = (S.cat.usuarios||[]).filter(function(u){ return u.activo!==false && u.rol==='operador'; });
+  var h = '<h2 id="hoja-t">Pago al conductor</h2><p class="desc">'+esc(e.titulo)+'</p>'+
+    '<div class="campo"><label for="pcco">Conductor</label>'+(ops.length?'<select id="pcco">'+ops.map(function(u){ return '<option>'+esc(u.nombre)+'</option>'; }).join('')+'</select>':'<input id="pcco" value="Jorge">')+'</div>'+
+    '<div class="campo"><label for="pcmo">Monto que se le paga S/</label><input id="pcmo" inputmode="decimal" class="num" value="'+c.pendiente+'"></div>'+
+    '<p class="ayuda" id="pcmh"></p>'+
+    '<label class="interruptor-p oculto" id="pcsb"><input type="checkbox" id="pcsa"><span><b>Dar por saldado el viaje con este pago</b><small>Pago acordado con el conductor: no queda deuda y el ticket no muestra saldo.</small></span></label>'+
+    '<span class="etq">Medio de pago</span><div class="chips"><button type="button" class="chip" data-pcm="efectivo" aria-pressed="true">Efectivo</button><button type="button" class="chip" data-pcm="yape" aria-pressed="false">Yape</button></div>'+
+    '<div class="campo"><label for="pccu">¿De qué bolsillo sale?</label><select id="pccu">'+opcionesCuenta('efectivo_myaipen')+'</select></div>'+
+    '<div class="campo"><label for="pcop">N.º de operación Yape</label><input id="pcop" inputmode="numeric" autocomplete="off" placeholder="Opcional"></div>'+
+    '<div class="campo"><label for="pcno">Nota para el conductor</label><input id="pcno" autocomplete="off" placeholder="Opcional · aparece en el ticket"></div>'+botonesHoja('Registrar pago y emitir comprobante');
+  abrirHoja(h); enlazarChips('pcm');
+  var verMonto = function(){ var v = Number(String($('pcmo').value).replace(',','.'))||0, falta = Math.round((c.pendiente - v)*100)/100;
+    $('pcmh').innerHTML = 'Según la liquidación le corresponden '+soles(c.total)+(c.pagado?' (ya se le pagó '+soles(c.pagado)+')':'')+'.'+(falta>0?' Si le pagas '+soles(v)+', quedan <b>'+soles(falta)+'</b> por pagar.':falta<0?' Le pagas <b>'+soles(-falta)+'</b> más de lo que marca la tarifa.':'');
+    $('pcsb').classList.toggle('oculto', !(falta>0)); if(!(falta>0)) $('pcsa').checked = false; };
+  $('pcmo').oninput = verMonto; verMonto();
+  hoja.querySelectorAll('[data-pcm]').forEach(function(b){ b.addEventListener('click', function(){ $('pccu').value = b.dataset.pcm==='yape' ? 'yape_ychavez' : 'efectivo_myaipen'; $('pcop').closest('.campo').classList.toggle('oculto', b.dataset.pcm!=='yape'); }); });
+  $('pcop').closest('.campo').classList.add('oculto');
+  $('ok').onclick = function(){
+    var monto = Number(String($('pcmo').value).replace(',','.'))||0; if(!(monto>0)){ $('er').textContent = 'Escribe el monto.'; return; }
+    var medio = chipSel('pcm'), cond = $('pcco').value.trim()||'Conductor', id = uuid(), saldar = $('pcsa').checked;
+    var desc = 'Pago a '+cond+(medio==='yape'&&$('pcop').value.trim()?' · Yape op. '+$('pcop').value.trim():'')+($('pcno').value.trim()?' · '+$('pcno').value.trim():'');
+    $('ok').disabled = true;
+    api('/api/excursiones/'+e.id+'/movimientos',{method:'POST',body:{id:id, tipo:'egreso', categoria:'pago_conductor', monto:monto, medio:medio, cuenta:$('pccu').value, comprobante_tipo:'sin', descripcion:desc, fecha:ahoraLocalInput()}})
+      .then(function(r){ if(!r.ok){ $('er').textContent = r.codigo==='RED'?'Sin conexión: el pago se registra con señal.':r.error; $('ok').disabled = false; return; }
+        toast('Pago registrado'); excDetalle();
+        var mov = {id:id, monto:monto, medio:medio, fecha:ahoraLocalInput(), descripcion:desc, registrado_por:S.yo.nombre};
+        // Si se saldó con lo pagado, se guarda el acuerdo y el ticket sale con el total acordado.
+        (saldar ? api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:{acordado:Math.round((c.pagado+monto)*100)/100}}) : api('/api/cotizador/liquidacion/'+e.id))
+          .then(function(x){ var L2 = x.ok ? x.data : L; if(x.ok) S.liqCache = {id:e.id, r:x, t:Date.now()}; verTicket(datosTicket(e, L2, mov, c.pagado)); });
+      });
+  };
+}
+/** Reemite el ticket de un pago ya registrado, con la liquidación de hoy. */
+function reimprimirTicket(e, m){
+  if(!m) return; toast('Preparando el comprobante…');
+  api('/api/cotizador/liquidacion/'+e.id).then(function(r){
+    if(!r.ok){ toast(r.codigo==='RED'?'El comprobante se arma con señal':r.error, true); return; }
+    var antes = (S.excDet.movimientos||[]).filter(function(x){ return !x.anulado && ['pago_conductor','alimentacion_conductor','hospedaje_conductor'].indexOf(x.categoria)>=0 && String(x.fecha) < String(m.fecha); }).reduce(function(s,x){ return s+Number(x.monto||0); }, 0);
+    verTicket(datosTicket(e, r.data, m, antes));
+  });
+}
+function datosTicket(e, L, m, pagadoAntes){
+  var cond = (String(m.descripcion||'').match(/^Pago a ([^·]+)/)||[])[1], c = L.conductor, este = Number(m.monto)||0;
+  var op = (String(m.descripcion||'').match(/Yape op\. (\S+)/)||[])[1], nota = String(m.descripcion||'').split(' · ').filter(function(x){ return !/^Pago a |^Yape op\. /.test(x); }).join(' · ');
+  return { numero:'PC-'+String(m.fecha||hoyLima()).slice(0,10).replace(/-/g,'')+'-'+String(m.id).slice(0,4).toUpperCase(), fecha:m.fecha, conductor:(cond||'Conductor').trim(),
+    titulo:e.titulo, ruta:e.origen+' ⇄ '+e.destino, salida:e.salida, km:L.entradas.km, lineas:c.lineas, total:c.total, acordado:c.acordado!==null && c.acordado!==undefined, antes:Math.round((pagadoAntes||0)*100)/100, este:este,
+    saldo:Math.max(0, Math.round((c.total-(pagadoAntes||0)-este)*100)/100), medio:m.medio==='yape'?'Yape':m.medio==='transferencia'?'Transferencia':'Efectivo', operacion:op||'', nota:nota, pago_por:m.registrado_por||S.yo.nombre };
+}
+var TICKET_FRASES = [
+  'Gracias por llevar a cada pasajero como si fuera de tu familia. Tu manejo seguro es la mejor publicidad de Villa Azul.',
+  'Cada viaje bien hecho trae al siguiente cliente. ¡Gracias por tu esfuerzo y tu paciencia en la ruta!',
+  'La sierra exige experiencia y calma. Gracias por cuidar a la gente y a la van en cada curva.',
+  'Puntualidad, buen trato y llegar con bien: eso es Villa Azul. ¡Gracias por representarnos así!'];
+var TICKET_RECORDAR = ['Checklist de la van antes de cada salida (entre 1 h y 30 min antes).','Anota el km al salir y al llegar, y los galones al cargar.','Toma foto a cada boleta: combustible, peajes y comidas.','Avisa por WhatsApp al llegar al punto de recojo.','Descansa antes de un viaje largo: nunca manejes con sueño.','En trocha: cinturón para todos y velocidad prudente.'];
+/** Dibuja el ticket en un lienzo y lo devuelve como PNG. */
+function ticketPNG(t){
+  var W = 440, S2 = 2, pad = 26, fam = getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif';
+  var cv = document.createElement('canvas'), x = cv.getContext('2d');
+  var f = function(peso, tam){ x.font = peso+' '+tam+'px '+fam; };
+  var partir = function(txt, ancho){ var pal = String(txt).split(' '), L = [], l = ''; pal.forEach(function(p){ var pr = l ? l+' '+p : p; if(x.measureText(pr).width > ancho && l){ L.push(l); l = p; } else l = pr; }); if(l) L.push(l); return L; };
+  var frase = TICKET_FRASES[Math.abs(String(t.numero).split('').reduce(function(a,ch){ return a + ch.charCodeAt(0); }, 0)) % TICKET_FRASES.length];
+  var dibujar = function(pintar){ var y = 0, ops = [];
+    var txt = function(s, px, peso, tam, color, alin){ var yy = y; ops.push(function(){ f(peso, tam); x.fillStyle = color; x.textAlign = alin||'left'; x.fillText(s, px, yy); }); };
+    var linea = function(dash){ var yy = y; ops.push(function(){ x.strokeStyle = '#C9D2E3'; x.lineWidth = 1; x.setLineDash(dash?[5,5]:[]); x.beginPath(); x.moveTo(pad, yy); x.lineTo(W-pad, yy); x.stroke(); x.setLineDash([]); }); };
+    var bloque = function(texto, peso, tam, color, alto, ancho, px){ f(peso, tam); partir(texto, ancho||W-2*pad).forEach(function(l){ y += alto; txt(l, px||pad, peso, tam, color); }); };
+    var fila = function(izq, der, peso, tam, color){ y += tam+10; txt(izq, pad, peso, tam, color||'#1D2433'); txt(der, W-pad, peso, tam, color||'#1D2433', 'right'); };
+    y = 92;  // cabecera azul
+    y += 26; txt('COMPROBANTE DE PAGO', W/2, '800', 15, '#1E4FD1', 'center'); y += 20; txt('Pago al conductor · '+t.numero, W/2, '600', 12.5, '#5B6578', 'center');
+    y += 18; linea(true);
+    fila('Conductor', t.conductor, '700', 14); fila('Fecha de pago', fechaExc(t.fecha, true), '500', 12.5, '#5B6578');
+    y += 10; linea(true); y += 4;
+    bloque(t.titulo, '700', 13.5, '#1D2433', 19); y += 2; bloque(t.ruta+(t.salida?' · '+fechaExc(t.salida):'')+(t.km?' · '+t.km+' km':''), '500', 12, '#5B6578', 17);
+    y += 12; linea(true);
+    if(t.modo==='general'){ y += 6; fila('Concepto', 'Servicio de conducción', '600', 13); f('500', 11); y += 15; txt('Pago por el viaje '+t.ruta+(t.km?' · '+t.km+' km':''), pad, '500', 11, '#7A8396'); }
+    else t.lineas.forEach(function(l){ fila(l.concepto, (l.monto<0?'− ':'')+soles(Math.abs(l.monto)), '600', 13); f('500', 11); partir(l.detalle||'', W-2*pad-90).slice(0,2).forEach(function(d){ y += 15; txt(d, pad, '500', 11, '#7A8396'); }); });
+    if(t.modo!=='general'){ y += 12; linea(false);
+      fila(t.acordado ? 'Total acordado' : 'Total del viaje', soles(t.total), '700', 13); if(t.antes) fila('Pagado antes', '− '+soles(t.antes), '500', 12.5, '#5B6578'); }
+    y += 12; var yb = y; ops.push(function(){ x.fillStyle = '#EEF3FF'; x.beginPath(); x.roundRect ? x.roundRect(pad-8, yb, W-2*pad+16, 62, 12) : x.rect(pad-8, yb, W-2*pad+16, 62); x.fill(); });
+    y += 26; txt('ESTE PAGO', pad+6, '800', 12, '#1E4FD1'); txt(soles(t.este), W-pad-6, '800', 24, '#1E4FD1', 'right');
+    y += 22; txt(t.medio+(t.operacion?' · op. '+t.operacion:''), pad+6, '600', 12.5, '#1D2433'); txt('Pagó: '+t.pago_por, W-pad-6, '500', 11.5, '#5B6578', 'right');
+    y += 14;
+    if(t.saldo>0){ y += 22; txt('Queda por pagar: '+soles(t.saldo), W/2, '700', 12.5, '#B54708', 'center'); }
+    if(t.nota){ y += 10; bloque('Nota: '+t.nota, '500', 12, '#1D2433', 17); }
+    y += 18; linea(true);
+    y += 6; bloque('★ '+frase, '600', 12.5, '#1D2433', 18);
+    y += 26; txt('RECUERDA', pad, '800', 11.5, '#1E4FD1'); y += 2;
+    TICKET_RECORDAR.forEach(function(r){ f('500', 11.5); partir(r, W-2*pad-14).forEach(function(l, i){ y += 16; txt((i?'   ':'✓ ')+l, pad, '500', 11.5, '#3B4456'); }); });
+    y += 20; linea(true); y += 18; txt('Villa Azul · Turismo & Excursiones · WhatsApp +51 990 587 558', W/2, '500', 10.5, '#7A8396', 'center');
+    y += 28;
+    if(pintar) ops.forEach(function(o){ o(); });
+    return y; };
+  x.scale(S2, S2); var H = dibujar(false);
+  cv.width = W*S2; cv.height = H*S2; x.scale(S2, S2);
+  // papel con borde dentado arriba y abajo
+  x.fillStyle = '#F2F4F8'; x.fillRect(0, 0, W, H);
+  x.fillStyle = '#FFFFFF'; x.beginPath(); x.moveTo(0, 8); for(var i=0;i<=W;i+=16){ x.lineTo(i+8, 0); x.lineTo(i+16, 8); } x.lineTo(W, H-8); for(var j=W;j>=0;j-=16){ x.lineTo(j-8, H); x.lineTo(j-16, H-8); } x.closePath(); x.fill();
+  var g = x.createLinearGradient(0, 0, W, 0); g.addColorStop(0, '#1E4FD1'); g.addColorStop(1, '#0F8FA8');
+  x.fillStyle = g; x.fillRect(0, 8, W, 84);
+  x.fillStyle = '#fff'; x.beginPath(); x.roundRect ? x.roundRect(pad, 26, 44, 44, 11) : x.rect(pad, 26, 44, 44); x.fill();
+  x.strokeStyle = '#1E4FD1'; x.lineWidth = 3; x.lineCap = 'round'; x.beginPath(); x.moveTo(pad+8, 54); x.bezierCurveTo(pad+16, 40, pad+22, 38, pad+26, 42); x.bezierCurveTo(pad+30, 46, pad+33, 50, pad+37, 44); x.stroke();
+  f('800', 21); x.fillStyle = '#fff'; x.textAlign = 'left'; x.fillText('Villa Azul', pad+58, 48); f('500', 12.5); x.fillStyle = 'rgba(255,255,255,.85)'; x.fillText('Turismo & Excursiones', pad+58, 66);
+  dibujar(true);
+  return cv.toDataURL('image/png');
+}
+function verTicket(t){
+  var modo = 'general'; try { modo = localStorage.getItem('va_ticket_modo') || 'general'; } catch(e){}
+  t.modo = modo; var png = ticketPNG(t), nombre = 'comprobante-'+t.numero+'.png';
+  abrirHoja('<h2 id="hoja-t">Comprobante de pago</h2>'+
+    '<div class="seg" role="group" aria-label="Tipo de comprobante" style="margin-top:10px"><button type="button" data-tkm="general" aria-pressed="'+(modo==='general')+'">General</button><button type="button" data-tkm="detallado" aria-pressed="'+(modo==='detallado')+'">Detallado</button></div>'+
+    '<p class="ayuda">'+(modo==='general'?'Solo el monto pagado, el medio y el viaje.':'Con el desglose: por km, espera, noche, comidas y ajustes.')+'</p>'+
+    '<img id="tkimg" src="'+png+'" alt="Comprobante de pago a '+esc(t.conductor)+'" style="width:100%;max-width:440px;display:block;margin:10px auto;border-radius:12px;box-shadow:0 4px 18px rgba(0,0,0,.12)">'+
+    '<div class="acciones"><button type="button" class="btn ancho" id="tkcomp">Compartir (WhatsApp)</button><a class="btn sec ancho" id="tkdes" href="'+png+'" download="'+esc(nombre)+'">Descargar PNG</a><button type="button" class="btn sec ancho" data-cerrar>Cerrar</button></div>');
+  hoja.querySelectorAll('[data-tkm]').forEach(function(b){ b.onclick = function(){ try { localStorage.setItem('va_ticket_modo', b.dataset.tkm); } catch(e){} verTicket(t); }; });
+  $('tkcomp').onclick = function(){
+    fetch(png).then(function(r){ return r.blob(); }).then(function(b){ var f = new File([b], nombre, {type:'image/png'});
+      if(navigator.canShare && navigator.canShare({files:[f]})) return navigator.share({files:[f], title:'Comprobante de pago', text:'Comprobante de pago '+t.numero+' · Villa Azul'}).catch(function(){});
+      $('tkdes').click(); toast('Se descargó el PNG: adjúntalo en WhatsApp'); });
+  };
 }
 /** Una fila de la grilla de comidas: el día y sus tres comidas (marcada = se le paga). */
 function precioComida(c){ var p = (S.liqCache && S.liqCache.r.ok && S.liqCache.r.data.parametros.comidas) || []; var x = p.filter(function(z){ return z.clave===c; })[0]; return x ? x.precio : 10; }
@@ -1797,12 +1916,13 @@ function excCaja(){
     if(m.galones) det.push(m.galones+' gal'); if(m.comprobante_tipo && m.comprobante_tipo!=='sin') det.push(m.comprobante_tipo+(m.comprobante_num?' '+m.comprobante_num:''));
     return '<li class="mov"'+(an?' style="opacity:.55"':'')+'><span class="ic '+(m.tipo==='ingreso'?'i':'e')+'">'+ico(m.tipo==='ingreso'?'arriba':'abajo')+'</span><div><b>'+esc(EXC_CAT_TXT[m.categoria]||m.categoria)+(m.descripcion?' · '+esc(m.descripcion):'')+'</b><small>'+esc(det.join(' · '))+
       (m.foto_id?' · <a href="#" data-foto="'+esc(m.foto_url)+'">Ver boleta</a>':(m.tipo==='egreso'&&(!m.comprobante_tipo||m.comprobante_tipo==='sin')?' · <b class="bad">sin boleta</b>':''))+(an?'<br>Anulado por '+esc(m.anulado_por)+': '+esc(m.motivo_anulacion):'')+'</small></div>'+
-      '<div style="text-align:right"><span class="m num '+(m.tipo==='ingreso'?'ok':'bad')+'"'+(an?' style="text-decoration:line-through"':'')+'>'+(m.tipo==='ingreso'?'+':'−')+soles(m.monto)+'</span>'+(an?'':'<br><span class="botones" style="justify-content:flex-end;margin-top:4px"><button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-editx="'+esc(m.id)+'">Editar</button><button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-anular="'+esc(m.id)+'">Anular</button></span>')+'</div></li>';
+      '<div style="text-align:right"><span class="m num '+(m.tipo==='ingreso'?'ok':'bad')+'"'+(an?' style="text-decoration:line-through"':'')+'>'+(m.tipo==='ingreso'?'+':'−')+soles(m.monto)+'</span>'+(an?'':'<br><span class="botones" style="justify-content:flex-end;margin-top:4px">'+(m.categoria==='pago_conductor'?'<button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-ticket="'+esc(m.id)+'">Comprobante</button>':'')+'<button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-editx="'+esc(m.id)+'">Editar</button><button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-anular="'+esc(m.id)+'">Anular</button></span>')+'</div></li>';
   }).join('');
   h += '</ul></div><div style="height:80px"></div><div class="flota"><button type="button" class="btn sec" id="ning">'+ico('arriba')+'Ingreso</button><button type="button" class="btn" id="ngas">'+ico('abajo')+'Gasto</button></div>';
   $('panelx').innerHTML = h;
   $('ning').onclick = function(){ formMovExc('ingreso'); }; $('ngas').onclick = function(){ formMovExc('egreso'); };
   $('panelx').querySelectorAll('[data-foto]').forEach(function(a){ a.onclick=function(ev){ ev.preventDefault(); verBoleta(a.dataset.foto); }; });
+  $('panelx').querySelectorAll('[data-ticket]').forEach(function(b){ b.onclick=function(){ reimprimirTicket(e, d.movimientos.filter(function(m){ return m.id===b.dataset.ticket; })[0]); }; });
   $('panelx').querySelectorAll('[data-editx]').forEach(function(b){ b.onclick=function(){ editarMovExc(d.movimientos.filter(function(m){ return m.id===b.dataset.editx; })[0]); }; });
   $('panelx').querySelectorAll('[data-anular]').forEach(function(b){ b.onclick=function(){
     var motivo = prompt('Motivo de la anulación (queda registrado):'); if(!motivo) return;

@@ -311,6 +311,13 @@ export function crearCotizador(h) {
       await env.DB.prepare("UPDATE cotizaciones SET excursion_id=?, estado='aceptada', actualizado_en=?, seq=? WHERE id=?").bind(excId, ahoraLima(), await reservarSeq(env, 1), c.id).run();
       await auditar(env, yo.nombre, 'liq_vincular', `${e.titulo} ← COT-${String(c.numero).padStart(4, '0')}`);
     }
+    if (b && b.acordado !== undefined) {
+      let L0 = {}; try { L0 = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { L0 = {}; }
+      if (b.acordado === null || b.acordado === '') delete L0.acordado; else L0.acordado = Math.max(0, Math.round(num(b.acordado) * 100) / 100);
+      await env.DB.prepare('UPDATE excursiones SET liquidacion=?, seq=? WHERE id=?').bind(JSON.stringify(L0), await reservarSeq(env, 1), excId).run();
+      await auditar(env, yo.nombre, 'liq_acuerdo', `${e.titulo} · pago acordado S/ ${L0.acordado ?? 'por tarifa'}`);
+      e.liquidacion = JSON.stringify(L0);
+    }
     if (b && b.ajustes) {
       const a = b.ajustes, L = {}, sn = (v) => v === true || v === 'true' || v === 1 || v === '1';
       if (a.trocha !== undefined && a.trocha !== null) L.trocha = sn(a.trocha);
@@ -319,6 +326,7 @@ export function crearCotizador(h) {
         desayuno: sn(x && x.desayuno), almuerzo: sn(x && x.almuerzo), cena: sn(x && x.cena) }));
       ['horas_espera', 'dias', 'noches', 'galones', 'aguja', 'bono_extra', 'horas_tramo_real', 'gasto_comidas', 'bono_espera'].forEach(k => { if (a[k] !== undefined && a[k] !== null && a[k] !== '') L[k] = Math.max(0, Math.round(num(a[k]) * 100) / 100); });
       if (L.aguja !== undefined && L.aguja > 1) throw new ErrorApi('La aguja va de 0 (nada) a 1 (tanque lleno).');
+      { let L0 = {}; try { L0 = JSON.parse(e.liquidacion || '{}') || {}; } catch (x) { L0 = {}; } if (L0.acordado !== undefined) L.acordado = L0.acordado; }
       await env.DB.prepare('UPDATE excursiones SET liquidacion=?, seq=? WHERE id=?').bind(JSON.stringify(L), await reservarSeq(env, 1), excId).run();
       await auditar(env, yo.nombre, 'liq_ajustes', `${e.titulo} · ${JSON.stringify(L)}`);
       e.liquidacion = JSON.stringify(L);
@@ -371,7 +379,10 @@ export function crearCotizador(h) {
       ['hospedaje', 'Hospedaje', r2(noches * num(par.hospedaje_noche)), `${noches} noche(s) × S/ ${num(par.hospedaje_noche)}`],
       ['extra', 'Bono adicional', bonoExtra, 'Escrito a mano'],
     ].filter(x => x[2] > 0).map(([clave, concepto, monto, detalle]) => ({ clave, concepto, monto, detalle }));
-    const pagoTotal = r2(cond.reduce((s, x) => s + x.monto, 0));
+    const tarifa = r2(cond.reduce((s, x) => s + x.monto, 0));
+    // Pago acordado: si el administrador saldó el viaje con otro monto, la diferencia queda a la vista como ajuste.
+    if (aj.acordado !== undefined && r2(aj.acordado - tarifa) !== 0) cond.push({ clave: 'acuerdo', concepto: 'Ajuste por acuerdo', monto: r2(aj.acordado - tarifa), detalle: `Por tarifa: S/ ${tarifa} · acordado: S/ ${aj.acordado}` });
+    const pagoTotal = aj.acordado !== undefined ? r2(aj.acordado) : tarifa;
     const pagado = suma(m => m.tipo === 'egreso' && ['pago_conductor', 'alimentacion_conductor', 'hospedaje_conductor'].includes(m.categoria));
 
     // Costo real del viaje.
@@ -406,7 +417,7 @@ export function crearCotizador(h) {
       cotizacion: cot ? { id: cot.id, codigo: 'COT-' + String(cot.numero).padStart(4, '0'), precio: num(cot.precio_final), costo: num(cot.costo) } : null, libres,
       entradas: { km, km_real: kmReal, km_cotizado: kmCot, trocha, nocturno, horas_espera: horas, dias, noches, bono_extra: bonoExtra, galones, gal_fuente: galFuente, precio_galon: precioGal,
         aguja: aj.aguja ?? null, horas_tramo_real: aj.horas_tramo_real ?? null, comidas, comidas_marcadas: Array.isArray(aj.comidas), gasto_comidas: gastoCom, comidas_monto: comi.monto, reposicion: repone, bono_espera: aj.bono_espera ?? null, bono_espera_tarifa: bonoTarifa, horas_tramo_param: vel && cr ? r2(num(cd.km_ida) / vel) : null, ajustado: Object.keys(aj) },
-      conductor: { lineas: cond, total: pagoTotal, pagado, pendiente: r2(Math.max(0, pagoTotal - pagado)) },
+      conductor: { lineas: cond, total: pagoTotal, tarifa, acordado: aj.acordado ?? null, pagado, pendiente: r2(Math.max(0, pagoTotal - pagado)) },
       costo: { lineas: costo, total: costoTotal }, cobrado, pactado, adicional, utilidad, margen: base ? Math.round(utilidad / base * 100) : 0, comparativo: comp,
       parametros: { conductor_km: num(par.conductor_km), bono_espera_hora: num(par.bono_espera_hora), bono_nocturno: num(par.bono_nocturno), tanque_litros: num(par.tanque_litros),
         comidas: COMIDAS.map(([c, t]) => ({ clave: c, nombre: t, precio: num(par['comida_' + c]) })) },

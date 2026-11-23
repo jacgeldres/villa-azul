@@ -1,4 +1,4 @@
-# Villa Azul · v5.9.0 — Guía de despliegue
+# Villa Azul · v5.10.1 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,22 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.10.1 · Comprobante general o detallado
+
+Sube a GitHub `public/` y `src/`. La base de datos no cambia (sigue en la **versión 17**). Comprueba en Mi perfil: **Villa Azul v5.10.1 · base de datos v17**.
+
+- En la ventana del comprobante hay dos botones: **General** (solo concepto «Servicio de conducción», el monto pagado, el medio y el viaje) y **Detallado** (con el desglose por km, espera, noche, comidas y ajustes).
+- El ticket se vuelve a generar al instante y la app recuerda el último modo elegido en ese teléfono. Por defecto, General.
+
+## Actualizar a la v5.10 · Comprobante digital de pago al conductor
+
+Sube a GitHub `src/` y `public/`. La base de datos no cambia (sigue en la **versión 17**). Comprueba en Mi perfil: **Villa Azul v5.10.0 · base de datos v17**.
+
+- **Pagar:** Excursiones → el viaje → Liquidación → **Registrar pago**. Eliges conductor, monto (viene lo pendiente, se puede cambiar), **Efectivo o Yape** (con N.º de operación opcional), bolsillo de donde sale y una nota. Queda como gasto «Pago al conductor» del viaje.
+- **Pago acordado:** si le pagas menos que la tarifa por acuerdo, marca «Dar por saldado el viaje con este pago». La liquidación queda en cero por pagar y el ticket muestra «Ajuste por acuerdo» y «Total acordado».
+- **Ticket PNG:** al registrar se genera el comprobante (N.º PC-AAAAMMDD-XXXX) con el detalle del pago, el medio, quién pagó, un mensaje de agradecimiento y los recordatorios del operador. Botones **Compartir (WhatsApp)** y **Descargar PNG**.
+- **Volver a emitirlo:** Ingresos y gastos → en el pago al conductor → **Comprobante**.
 
 ## Actualizar a la v5.9 · Precios redondos y bono de espera editable
 
