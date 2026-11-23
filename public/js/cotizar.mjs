@@ -1,5 +1,5 @@
 /**
- * Villa Azul · Fórmula del cotizador (v5.7.0).
+ * Villa Azul · Fórmula del cotizador (v5.8.0).
  * Un solo archivo para la app (vista previa al instante) y para el servidor (cifra oficial al guardar).
  * Calcula dos servicios: Estándar y Premium (Estándar + snacks y WiFi).
  * v5.2: los km que la van hace vacía (volver a la base o ir a recoger) cuestan igual que los km con pasajeros.
@@ -19,7 +19,10 @@ export const PARAMETROS_BASE = {
   precio_galon: 17,            // S/ por galón de diésel
   conductor_km: 0.3226,        // S/ por km manejado: S/ 120 ÷ 372 km (Angasmarca–Trujillo ida y vuelta)
   velocidad_promedio: 31,      // km/h reales: 186 km en 6 h
-  viatico_dia: 30,             // alimentación del conductor por día de servicio
+  viatico_dia: 30,             // alimentación por día cuando el viaje no tiene horas (desayuno + almuerzo + cena)
+  comida_desayuno: 10,         // S/ que se le paga al conductor por cada comida durante el viaje
+  comida_almuerzo: 10,
+  comida_cena: 10,
   hospedaje_noche: 50,         // hospedaje del conductor por noche fuera
   cochera_noche: 10,           // cochera de la van por noche fuera
   emergencia: 25,              // fondo de emergencia por servicio (parchado de llanta)
@@ -61,6 +64,39 @@ const dado = (v) => v !== undefined && v !== null && v !== '';
 /** Costo de las horas de espera incluidas: las primeras a tarifa normal y, en esperas largas (van parada todo el día), el resto a tarifa reducida. */
 function costoEspera(p, h) { const corte = Math.max(0, n(p.espera_larga_desde_h)), larga = n(p.espera_larga_hora) || n(p.espera_hora);
   return corte && h > corte ? corte * n(p.espera_hora) + (h - corte) * larga : h * n(p.espera_hora); }
+/* ═════════ Comidas del conductor ═════════
+   Cuentan las comidas cuya hora (desayuno 7:00, almuerzo 13:00, cena 19:00) cae mientras el conductor está fuera de la base.
+   Sin horas de salida y regreso: días × (desayuno + almuerzo + cena). */
+export const COMIDAS = [['desayuno', 'Desayuno', 7], ['almuerzo', 'Almuerzo', 13], ['cena', 'Cena', 19]];
+const fechaHora = (t) => { const m = String(t || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/); return m ? Date.UTC(+m[1], m[2] - 1, +m[3], +m[4], +m[5]) : null; };
+/** Días y comidas que se le pagan: [{dia:'2026-11-21', desayuno:false, almuerzo:true, cena:true}] */
+export function comidasPorHorario(d, hTramo, dias) {
+  const a = fechaHora(d.fecha_servicio), b = fechaHora(d.fecha_retorno), h = (n(hTramo) || 0) * 36e5;
+  const md = d.modalidad || 'ida_vuelta', ventanas = [];
+  if (a !== null && md === 'solo_ida') ventanas.push([a, a + 2 * h]);
+  else if (a !== null && b !== null && md === 'dos_dias') ventanas.push([a, a + 2 * h], [b, b + 2 * h]);
+  else if (a !== null && b !== null && b > a) ventanas.push([a, b + h]);
+  if (!ventanas.length) {
+    const ini = a !== null ? a : fechaHora(String(d.fecha_servicio || '').slice(0, 10) + 'T00:00');
+    return Array.from({ length: Math.max(1, Math.round(n(dias) || 1)) }, (_, i) => ({ dia: ini !== null ? new Date(ini + i * 864e5).toISOString().slice(0, 10) : '', desayuno: true, almuerzo: true, cena: true }));
+  }
+  const L = {};
+  ventanas.forEach(([x, y]) => { for (let t = Date.UTC(...new Date(x).toISOString().slice(0, 10).split('-').map((v, i) => i === 1 ? v - 1 : +v)); t <= y; t += 864e5) {
+    const dia = new Date(t).toISOString().slice(0, 10);
+    COMIDAS.forEach(([c, , hora]) => { const m = t + hora * 36e5; if (m >= x && m <= y) { L[dia] = L[dia] || { dia, desayuno: false, almuerzo: false, cena: false }; L[dia][c] = true; } });
+  } });
+  return Object.values(L).sort((p, q) => p.dia < q.dia ? -1 : 1);
+}
+/** Lo que se le paga por comidas, con su detalle. */
+export function montoComidas(p, lista) {
+  const q = { ...PARAMETROS_BASE, ...(p || {}) }, precio = (c) => n(q['comida_' + c]);
+  let monto = 0, cuenta = 0;
+  (lista || []).forEach(x => COMIDAS.forEach(([c]) => { if (x[c]) { monto += precio(c); cuenta++; } }));
+  const nombres = COMIDAS.filter(([c]) => (lista || []).some(x => x[c])).map(([, t]) => t.toLowerCase());
+  return { monto: r2(monto), cuenta, detalle: cuenta ? `${cuenta} comida(s): ${nombres.join(', ')}` + (COMIDAS.every(([c]) => precio(c) === precio('desayuno')) ? ` × S/ ${precio('desayuno')}` : '') : 'Ninguna comida durante el viaje' };
+}
+function comidasViaje(p, d, hTramo, dias) { const lista = comidasPorHorario(d, hTramo, dias); return { lista, ...montoComidas(p, lista) }; }
+
 /** Hora (0-23, con decimales) en que la van llega a la base: regreso desde el destino + un tramo de manejo. */
 function horaLlegada(d, hTramo) { const m = String(d.fecha_retorno || '').match(/T(\d{2}):(\d{2})/); if (!m) return null;
   return ((+m[1] + +m[2] / 60 + hTramo) % 24 + 24) % 24; }
@@ -106,6 +142,7 @@ export function calcular(parametros, d) {
   const galones = rend ? km / rend : 0;
   // Nocturno: el conductor llega a la base entre las 22:00 y las 05:00 (regreso desde el destino + un tramo de manejo).
   const llegada = horaLlegada(d, vel ? k / vel : 0), nocturno = llegada !== null && (llegada >= 22 || llegada < 5);
+  const comi = comidasViaje(p, { ...d, modalidad: md || (iv ? 'ida_vuelta' : 'solo_ida') }, vel ? k / vel : 0, dias);
   // El precio del diésel se puede corregir en la propia cotización (el del día), sin tocar los parámetros.
   const galon = n(d.precio_galon) || n(p.precio_galon);
   // Bono del conductor: el que se escriba en la cotización; si no, el automático para viajes largos.
@@ -125,7 +162,7 @@ export function calcular(parametros, d) {
     ['conductor', 'Pago del conductor', r2(n(p.conductor_km) * fC * km), `${txtKm} × S/ ${n(p.conductor_km)} por km` + (fC !== 1 ? ` × ${fC} (trocha)` : '')],
     ['nocturno', 'Bono nocturno del conductor', nocturno ? r2(n(p.bono_nocturno)) : 0, 'Llega a la base entre las 22:00 y las 05:00'],
     ['bono', 'Bono del conductor', bono, manual ? 'Escrito en esta cotización' : `Viaje largo: ${dias} día(s) × S/ ${n(p.bono_por_dia)} (desde ${n(p.bono_desde_km)} km)`],
-    ['viaticos', 'Alimentación del conductor', r2(n(p.viatico_dia) * dias), `${dias} día(s) × S/ ${n(p.viatico_dia)}`],
+    ['viaticos', 'Alimentación del conductor', comi.monto, comi.detalle],
     ['hospedaje', 'Hospedaje del conductor', r2(n(p.hospedaje_noche) * noches), `${noches} noche(s) × S/ ${n(p.hospedaje_noche)}`],
     ['cochera', 'Cochera', r2(n(p.cochera_noche) * noches), `${noches} noche(s) × S/ ${n(p.cochera_noche)}`],
     ['espera', 'Espera incluida en el precio', r2(costoEspera(p, horas)), txtEspera(p, horas)],
@@ -156,7 +193,7 @@ export function calcular(parametros, d) {
   return {
     km, km_pasajeros: kmPax, km_vacios: kmVacio, pct_vacios: km ? Math.round(kmVacio / km * 100) : 0, salidas, tramos: M.tramos, modalidad: md,
     dias, noches, pasajeros: pax, galones: r2(galones), precio_galon: galon, bono, bono_sugerido: bonoSugerido,
-    horas_manejo: vel ? r2(km / vel) : 0, horas_tramo: vel ? r2(k / vel) : 0, trocha: tr, nocturno, rendimiento: rend, velocidad: vel,
+    horas_manejo: vel ? r2(km / vel) : 0, horas_tramo: vel ? r2(k / vel) : 0, trocha: tr, nocturno, rendimiento: rend, velocidad: vel, comidas: comi.lista,
     margenes: { minimo: Math.round(mn * 100), recomendado: Math.round(mo * 100), alto: Math.round(mp * 100) },
     estandar, premium, costo_km: km ? r2(estandar.costo / km) : 0,
     // Compatibilidad con cotizaciones anteriores (un solo servicio)

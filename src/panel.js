@@ -4,7 +4,7 @@
  */
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Dic'];
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-const EXC_CAT = { adelanto: 'Excursiones: adelantos', saldo: 'Excursiones: saldos', pasaje: 'Excursiones: pasajes', otro_ingreso: 'Excursiones: otros',
+const EXC_CAT = { adelanto: 'Excursiones: adelantos', saldo: 'Excursiones: saldos', pasaje: 'Excursiones: pasajes', pago_adicional: 'Excursiones: pagos adicionales', otro_ingreso: 'Excursiones: otros',
   combustible: 'Combustible', peaje: 'Peajes', pago_conductor: 'Pago conductor', hospedaje_conductor: 'Hospedaje conductor', alimentacion_conductor: 'Alimentación conductor',
   cochera: 'Cochera', lavado: 'Lavado', mantenimiento: 'Mantenimiento', otro_gasto: 'Otros gastos' };
 

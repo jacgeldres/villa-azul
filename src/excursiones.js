@@ -18,7 +18,7 @@ const ESTADOS = ['borrador', 'abierta', 'cerrada', 'en_ruta', 'finalizada', 'anu
 const EST_PAS = ['reservado', 'confirmado', 'pagado', 'liberado'];
 const ACTIVOS = ['reservado', 'confirmado', 'pagado'];
 export const CAT_EXC = {
-  ingreso: ['adelanto', 'saldo', 'pasaje', 'otro_ingreso'],
+  ingreso: ['adelanto', 'saldo', 'pasaje', 'pago_adicional', 'otro_ingreso'],
   egreso: ['combustible', 'peaje', 'pago_conductor', 'hospedaje_conductor', 'alimentacion_conductor', 'cochera', 'lavado', 'mantenimiento', 'otro_gasto'],
 };
 const MAX_ASIENTOS = 15;
@@ -118,7 +118,7 @@ export function crearExcursiones(h) {
     const r2 = n => Math.round(n * 100) / 100, cuenta = { reservado: 0, confirmado: 0, pagado: 0 };
     act.forEach(x => { cuenta[x.estado]++; });
     return { asientos_venta: vendibles, ocupados: act.length, libres: Math.max(0, vendibles - act.length), ocupacion: vendibles ? r2(act.length / vendibles * 100) : 0, por_estado: cuenta,
-      pactado: r2(pactado), cobrado: r2(ing), por_cobrar: r2(Math.max(0, pactado - ing)), gastos: r2(egr), gastos_por_categoria: porCat,
+      pactado: r2(pactado), cobrado: r2(ing), por_cobrar: r2(Math.max(0, pactado - ing)), pago_adicional: e.tipo === 'contrato' && pactado ? r2(Math.max(0, ing - pactado)) : 0, gastos: r2(egr), gastos_por_categoria: porCat,
       utilidad: r2(ing - egr), utilidad_proyectada: r2(pactado - egr), margen: ing ? r2((ing - egr) / ing * 100) : 0,
       km, costo_km: km ? r2(egr / km) : 0, galones: r2(gal), km_galon: km && gal ? r2(km / gal) : 0, precio_galon: gal ? r2(comb / gal) : 0,
       soles_asiento_km: km && vendibles ? Math.round(pactado / (vendibles * km) * 1000) / 1000 : 0, sin_comprobante: r2(sinC), sin_comprobante_n: sinCn };

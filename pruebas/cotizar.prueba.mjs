@@ -54,3 +54,11 @@ if (tro.horas_tramo !== 3.06 || !tro.nocturno || lin('nocturno') !== 20 || lin('
 const noc = calcular(P, { tipo: 'privado', modalidad: 'ida_vuelta', km_ida: 61.2, pasajeros: 14, fecha_retorno: '2026-11-21T17:00' });
 if (noc.nocturno) { console.error('FALLA: nocturno de día'); process.exit(1); }
 console.log('OK trocha', tro.estandar.costo, JSON.stringify(tro.estandar.precios));
+// v5.8 · Comidas por horario: salida 9:00 y regreso a medianoche = almuerzo y cena (S/ 20)
+import { comidasPorHorario, montoComidas } from '../public/js/cotizar.mjs';
+const cm = comidasPorHorario({ modalidad: 'ida_vuelta', fecha_servicio: '2026-11-21T09:00', fecha_retorno: '2026-11-22T00:00' }, 3, 1);
+const mc = montoComidas({}, cm);
+if (cm.length !== 1 || cm[0].desayuno || !cm[0].almuerzo || !cm[0].cena || mc.monto !== 20) { console.error('FALLA: comidas Pijobamba', cm, mc); process.exit(1); }
+const sinHora = montoComidas({}, comidasPorHorario({ fecha_servicio: '2026-12-01' }, 0, 3));
+if (sinHora.monto !== 90) { console.error('FALLA: comidas sin horario', sinHora); process.exit(1); }
+console.log('OK comidas', mc.detalle);

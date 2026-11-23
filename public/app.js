@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.7.0';
+var VERSION = '5.8.0';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -946,7 +946,7 @@ function cotDetalle(id){
 }
 var COT_PAR = [
   ['Combustible', [['precio_galon','Precio del diésel','S/ por galón · cámbialo cuando suba o baje'],['rendimiento_km_gal','Rendimiento de la Hiace','km por galón']]],
-  ['Conductor', [['conductor_km','Pago al conductor','S/ por km · hoy S/ 120 ÷ 372 km = 0.3226'],['viatico_dia','Alimentación','S/ por día'],['hospedaje_noche','Hospedaje','S/ por noche fuera']]],
+  ['Conductor', [['conductor_km','Pago al conductor','S/ por km · hoy S/ 120 ÷ 372 km = 0.3226'],['comida_desayuno','Desayuno del conductor','S/ por comida'],['comida_almuerzo','Almuerzo del conductor','S/ por comida'],['comida_cena','Cena del conductor','S/ por comida'],['viatico_dia','Alimentación sin horario','S/ por día · cuando el viaje no tiene hora de salida y regreso'],['hospedaje_noche','Hospedaje','S/ por noche fuera']]],
   ['Van', [['cochera_noche','Cochera','S/ por noche fuera'],['desgaste_km','Desgaste (llantas, aceite)','S/ por km'],['emergencia','Fondo de emergencia','S/ por viaje · parchado de llanta'],['velocidad_promedio','Velocidad real promedio','km/h · 186 km en 6 h = 31']]],
   ['Espera (taxi y transporte privado)', [['espera_hora','Costo por hora incluida','S/ · va dentro del precio con margen; el cliente no la ve aparte'],['espera_larga_desde_h','Espera larga desde','horas · desde ahí la van está parada'],['espera_larga_hora','Costo por hora de espera larga','S/ · 0 = igual a la tarifa normal'],['tolerancia_min','Tolerancia sin costo','minutos · si no hay horas incluidas'],['espera_extra_hora','Hora adicional','S/ que paga el cliente, sin margen · hoy 10']]],
   ['Sierra / trocha (se aplica al marcar «Ruta de sierra o trocha»)', [['trocha_rendimiento_km_gal','Rendimiento en trocha','km por galón · medido: 124 km con ~5 gal'],['trocha_velocidad','Velocidad en trocha','km/h · medido: 61 km en 3 h'],['trocha_factor_desgaste','Desgaste en trocha','× el desgaste normal · 1.6 = 60 % más'],['trocha_factor_conductor','Pago por km en trocha','× la tarifa por km · 1.5 = 50 % más']]],
@@ -1441,8 +1441,8 @@ function ejecutarImport(){
 }
 
 /* ════════════ Excursiones (solo admin y superadmin) ════════════ */
-var EXC_CAT_TXT = {adelanto:'Adelanto',saldo:'Saldo',pasaje:'Pasaje',otro_ingreso:'Otro ingreso',combustible:'Combustible',peaje:'Peaje',pago_conductor:'Pago al conductor',hospedaje_conductor:'Hospedaje conductor',alimentacion_conductor:'Alimentación conductor',cochera:'Cochera',lavado:'Lavado',mantenimiento:'Mantenimiento',otro_gasto:'Otro gasto'};
-var EXC_CAT = {ingreso:['adelanto','saldo','pasaje','otro_ingreso'], egreso:['combustible','peaje','pago_conductor','hospedaje_conductor','alimentacion_conductor','cochera','lavado','mantenimiento','otro_gasto']};
+var EXC_CAT_TXT = {adelanto:'Adelanto',saldo:'Saldo',pasaje:'Pasaje',pago_adicional:'Pagó de más (propina)',otro_ingreso:'Otro ingreso',combustible:'Combustible',peaje:'Peaje',pago_conductor:'Pago al conductor',hospedaje_conductor:'Hospedaje conductor',alimentacion_conductor:'Alimentación conductor',cochera:'Cochera',lavado:'Lavado',mantenimiento:'Mantenimiento',otro_gasto:'Otro gasto'};
+var EXC_CAT = {ingreso:['adelanto','saldo','pasaje','pago_adicional','otro_ingreso'], egreso:['combustible','peaje','pago_conductor','hospedaje_conductor','alimentacion_conductor','cochera','lavado','mantenimiento','otro_gasto']};
 var EXC_EST = {borrador:'Borrador',abierta:'Reservas abiertas',cerrada:'Reservas cerradas',en_ruta:'En ruta',finalizada:'Finalizada',anulada:'Anulada'};
 var PAS_TXT = {reservado:'Separado (sin pago)',confirmado:'Confirmado',pagado:'Pagado',liberado:'Liberado'};
 var SEATS = {1:'Adelante, junto al conductor',2:'Adelante, ventana',3:'Fila 2, ventana',4:'Fila 2, centro',5:'Fila 2, pasillo',6:'Fila 3, ventana',7:'Fila 3, pasillo',8:'Fila 3, ventana junto a la puerta',9:'Fila 4, ventana',10:'Fila 4, pasillo',11:'Fila 4, ventana (detrás del 8)',12:'Última fila, ventana',13:'Última fila, centro',14:'Última fila, centro',15:'Última fila, ventana (detrás del 11)'};
@@ -1493,11 +1493,13 @@ function pintarExcLista(){
   document.querySelectorAll('#vista [data-v]').forEach(contar);
 }
 function abrirExc(id, tab){ transicion(function(){ S.excId=id; S.excTab=tab||'resumen'; S.excDet=null; recordarVista(); excDetalle(); window.scrollTo(0,0); }); }
+// La liquidación tiene un formulario: si ya está en pantalla, los refrescos solo actualizan los datos, nunca la repintan (así no parpadea ni borra lo escrito).
+function liqEnPantalla(){ var p = $('panelx'); return S.excTab==='liq' && p && p.dataset.liq===S.excId; }
 function excDetalle(){
-  if(!S.excDet || S.excDet.excursion.id!==S.excId) $('vista').innerHTML='<p class="vacio">Cargando…</p>'; else pintarExcDetalle();
+  if(!S.excDet || S.excDet.excursion.id!==S.excId) $('vista').innerHTML='<p class="vacio">Cargando…</p>'; else if(!liqEnPantalla()) pintarExcDetalle();
   return api('/api/excursiones/'+S.excId).then(function(r){
     if(!r.ok){ if(r.codigo!=='RED'){ toast(r.error,true); S.excId=null; excLista(); } else if(!S.excDet) $('vista').innerHTML='<div class="card"><p class="vacio">Sin señal: el detalle se carga con conexión.</p></div>'; return; }
-    S.excDet = r.data; if(S.vista==='excursiones' && S.excId===r.data.excursion.id) pintarExcDetalle();
+    S.excDet = r.data; if(S.vista==='excursiones' && S.excId===r.data.excursion.id && !liqEnPantalla()) pintarExcDetalle();
   });
 }
 function pintarExcDetalle(){
@@ -1510,22 +1512,26 @@ function pintarExcDetalle(){
   $('vlista').onclick = function(){ transicion(function(){ S.excId=null; excLista(); }); };
   if($('xedit')) $('xedit').onclick = function(){ S.excTab='datos'; pintarExcDetalle(); };
   if($('xdel')) $('xdel').onclick = function(){ hojaEliminarExc(e); };
-  $('vista').querySelectorAll('[data-tab]').forEach(function(b){ b.onclick=function(){ S.excTab=b.dataset.tab; pintarExcDetalle(); if(S.excTab!=='datos' && S.excTab!=='liq') excDetalle(); }; });
+  $('vista').querySelectorAll('[data-tab]').forEach(function(b){ b.onclick=function(){ S.excTab=b.dataset.tab; if(S.excTab==='liq') S.liqCache = null; pintarExcDetalle(); if(S.excTab!=='datos' && S.excTab!=='liq') excDetalle(); }; });
   ({resumen:excResumen,asientos:excAsientos,caja:excCaja,liq:excLiquidacion,datos:function(){ formExcursion(e, $('panelx')); }}[S.excTab])();
   document.querySelectorAll('#vista [data-v]').forEach(contar);
 }
 /* ════════════ Liquidación del viaje (bitácora: cálculo y pago del conductor) ════════════
    Solo administradores. Cotizado frente a real y el pago del conductor con los parámetros vigentes. */
 var AGUJA = [['','No anotada'],['0.125','1/8'],['0.25','1/4'],['0.28','1/4 y un poco'],['0.375','3/8'],['0.5','1/2'],['0.625','5/8'],['0.75','3/4'],['1','Tanque completo']];
-function excLiquidacion(){
-  var e = S.excDet.excursion, P0 = $('panelx'); P0.innerHTML = '<p class="vacio">Calculando…</p>';
+function excLiquidacion(forzar){
+  var e = S.excDet.excursion, P0 = $('panelx'), cache = S.liqCache && S.liqCache.id===e.id ? S.liqCache : null;
   var pintar = function(r){
+    if(r.ok) S.liqCache = {id:e.id, r:r};
+    if(!$('panelx') || S.excTab!=='liq' || S.excId!==e.id) return;
+    P0 = $('panelx'); P0.dataset.liq = e.id;
     if(!r.ok){ P0.innerHTML = '<div class="card"><p class="vacio">'+esc(r.codigo==='RED'?'Sin señal: la liquidación se calcula con conexión.':r.error)+'</p></div>'; return; }
     var L = r.data, en = L.entradas, c = L.conductor, f = function(v,u){ return v===null||v===undefined ? '—' : (u==='S/' ? soles(v) : (Math.round(v*100)/100).toLocaleString('es-PE')+' '+u); };
     var tabla = function(ls){ return '<ul class="lista">'+ls.map(function(x){ return '<li class="mov" style="grid-template-columns:1fr auto"><div><b>'+esc(x.concepto)+'</b><small>'+esc(x.detalle||'')+'</small></div><b class="num">'+soles(x.monto)+'</b></li>'; }).join('')+'</ul>'; };
     var h = '<p class="ayuda">Bitácora del viaje: lo cotizado frente a lo real y cuánto le corresponde al conductor, con los parámetros vigentes. Solo la ven los administradores.</p>';
     h += L.cotizacion ? '<p class="ayuda">Viene de <b>'+esc(L.cotizacion.codigo)+'</b> (precio cotizado '+soles(L.cotizacion.precio)+').</p>'
       : '<div class="card"><b>Une este viaje con su cotización</b><p class="ayuda">Así se traen la espera, la trocha y lo cotizado.</p>'+(L.libres.length?'<div class="campo"><select id="lqv"><option value="">Elige la cotización…</option>'+L.libres.map(function(x){ return '<option value="'+esc(x.id)+'">'+esc(x.codigo+' · '+x.texto)+'</option>'; }).join('')+'</select></div><button type="button" class="btn sec" id="lqvok">Unir</button>':'<p class="vacio">No hay cotizaciones sin viaje.</p>')+'</div>';
+    if(L.adicional>0) h += '<div class="aviso-precio" style="margin:12px 0 0">El cliente pagó <b>'+soles(L.adicional)+'</b> por encima de lo pactado ('+soles(L.pactado)+'). Ya está sumado en lo cobrado y en la utilidad.</div>';
     h += '<div class="kpis k4" style="margin-top:12px">'+kpiX(soles(L.cobrado||L.pactado), L.cobrado?'Cobrado':'Pactado')+kpiX(soles(L.costo.total),'Costo real')+kpiX(soles(L.utilidad),'Utilidad · margen '+L.margen+' %', L.utilidad<0)+kpiX(soles(c.pendiente),'Por pagar al conductor', c.pendiente>0)+'</div>';
     h += '<div class="titulo-sec"><h3>Cotizado y real</h3></div><div class="card"><table class="tabla-liq"><thead><tr><th></th><th>Cotizado</th><th>Real</th></tr></thead><tbody>'+
       L.comparativo.map(function(x){ var d = x[1]!==null && x[2]!==null && x[1] ? Math.round((x[2]-x[1])/x[1]*100) : null;
@@ -1538,21 +1544,42 @@ function excLiquidacion(){
     h += '<div class="titulo-sec"><h3>Datos del viaje</h3></div><div class="card"><p class="ayuda">Lo que no sale del odómetro ni de las boletas. Se guarda con este viaje.</p>'+
       '<label class="interruptor-p"><input type="checkbox" id="lqtr"'+(en.trocha?' checked':'')+'><span><b>Ruta de sierra o trocha</b><small>Sube el pago por km del conductor y el desgaste.</small></span></label>'+
       '<label class="interruptor-p"><input type="checkbox" id="lqno"'+(en.nocturno?' checked':'')+'><span><b>Llegó de noche</b><small>Entre las 22:00 y las 05:00: bono nocturno de '+soles(L.parametros.bono_nocturno)+'.</small></span></label>'+
-      '<div class="dos"><div class="campo"><label for="lqhe">Horas de espera</label><input id="lqhe" inputmode="decimal" class="num" value="'+esc(en.horas_espera)+'"></div><div class="campo"><label for="lqdi">Días fuera</label><input id="lqdi" inputmode="numeric" class="num" value="'+esc(en.dias)+'"></div></div>'+
+      '<div class="dos"><div class="campo"><label for="lqhe">Horas de espera</label><input id="lqhe" inputmode="decimal" class="num" value="'+esc(en.horas_espera)+'"></div><div class="campo"><label for="lqnc">Noches fuera (hospedaje)</label><input id="lqnc" inputmode="numeric" class="num" value="'+esc(en.noches)+'"></div></div>'+
+      '<span class="etq">Comidas que se le pagan</span><p class="ayuda" style="margin-top:0">'+(en.comidas_marcadas?'Marcadas a mano.':'Según el horario del viaje.')+' Desmarca las que le dio Villa Azul o no aplican. '+L.parametros.comidas.map(function(x){ return x.nombre+' S/ '+x.precio; }).join(' · ')+'.</p>'+
+      '<div id="lqcom">'+en.comidas.map(filaComidas).join('')+'</div><button type="button" class="btn-mini" id="lqcd">+ Agregar día</button>'+
+      '<div class="dos"><div class="campo"><label for="lqgc">Gastó en comidas (lo que informa el conductor)</label><input id="lqgc" inputmode="decimal" class="num" placeholder="Opcional" value="'+(en.gasto_comidas===null?'':esc(en.gasto_comidas))+'"></div><div class="campo"><span class="etq" style="margin-top:0">Asignado</span><p class="num" id="lqca" style="margin:12px 0 0;font-weight:700"></p></div></div>'+
+      '<p class="ayuda" id="lqcr"></p>'+
       '<div class="dos"><div class="campo"><label for="lqag">Diésel gastado (aguja)</label><select id="lqag">'+AGUJA.map(function(a){ return '<option value="'+a[0]+'"'+(String(en.aguja===null?'':en.aguja)===a[0]?' selected':'')+'>'+a[1]+'</option>'; }).join('')+'</select></div><div class="campo"><label for="lqga">o galones exactos</label><input id="lqga" inputmode="decimal" class="num" placeholder="'+(en.galones!==null&&en.aguja===null?esc(en.galones):'')+'" value="'+(L.entradas.ajustado.indexOf('galones')>=0?esc(en.galones):'')+'"></div></div>'+
       '<div class="dos"><div class="campo"><label for="lqht">Horas de manejo por tramo (real)</label><input id="lqht" inputmode="decimal" class="num" value="'+esc(en.horas_tramo_real===null?'':en.horas_tramo_real)+'"></div><div class="campo"><label for="lqbx">Bono adicional S/</label><input id="lqbx" inputmode="decimal" class="num" value="'+esc(en.bono_extra||'')+'"></div></div>'+
       '<p class="ayuda">Tanque de '+L.parametros.tanque_litros+' L: «1/4 y un poco» ≈ '+Math.round(0.28*L.parametros.tanque_litros/3.785*10)/10+' gal.</p><p class="error" id="lqer"></p><button type="button" class="btn" id="lqok">Recalcular y guardar</button></div>';
     P0.innerHTML = h;
     if($('lqvok')) $('lqvok').onclick = function(){ if(!$('lqv').value) return; api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:{vincular:$('lqv').value}}).then(function(r){ if(r.ok) toast('Cotización unida al viaje'); pintar(r); }); };
-    $('lqok').onclick = function(){ var aj = {trocha:$('lqtr').checked, nocturno:$('lqno').checked, horas_espera:$('lqhe').value, dias:$('lqdi').value, aguja:$('lqag').value, galones:$('lqga').value, horas_tramo_real:$('lqht').value, bono_extra:$('lqbx').value};
+    // Comidas: al tocar se ve al instante lo asignado y si hay que reponer.
+    var precios = {}; L.parametros.comidas.forEach(function(x){ precios[x.clave] = x.precio; });
+    var leerComidas = function(){ return Array.prototype.map.call($('lqcom').querySelectorAll('.fila-com'), function(f){ var o = {dia:f.dataset.dia}; f.querySelectorAll('[data-com]').forEach(function(b){ o[b.dataset.com] = b.getAttribute('aria-pressed')==='true'; }); return o; }); };
+    var verComidas = function(){ var asig = 0; leerComidas().forEach(function(o){ Object.keys(precios).forEach(function(c){ if(o[c]) asig += precios[c]; }); });
+      var g = $('lqgc').value.trim()==='' ? null : Number($('lqgc').value.replace(',','.'))||0;
+      $('lqca').textContent = soles(asig);
+      $('lqcr').innerHTML = g===null ? 'Si al volver informa que gastó más, escríbelo: se le repone la diferencia.' : g>asig ? 'Gastó <b>'+soles(g)+'</b>: se le reponen <b>'+soles(g-asig)+'</b> (se suman a su pago).' : 'Gastó '+soles(g)+': no hay nada que reponer.'; };
+    $('lqcom').addEventListener('click', function(ev){ var b = ev.target.closest('[data-com]'); if(!b) return; b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true'); verComidas(); });
+    $('lqcd').onclick = function(){ var fs = $('lqcom').querySelectorAll('.fila-com'), ult = fs.length ? fs[fs.length-1].dataset.dia : hoyLima(), d = new Date(ult+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+(fs.length?1:0));
+      $('lqcom').insertAdjacentHTML('beforeend', filaComidas({dia:d.toISOString().slice(0,10), desayuno:true, almuerzo:true, cena:true})); verComidas(); };
+    $('lqgc').oninput = verComidas; verComidas();
+    $('lqok').onclick = function(){ var aj = {trocha:$('lqtr').checked, nocturno:$('lqno').checked, horas_espera:$('lqhe').value, noches:$('lqnc').value, comidas:leerComidas(), gasto_comidas:$('lqgc').value, aguja:$('lqag').value, galones:$('lqga').value, horas_tramo_real:$('lqht').value, bono_extra:$('lqbx').value};
       if(aj.galones) aj.aguja = '';
       $('lqok').disabled = true; api('/api/cotizador/liquidacion/'+e.id,{method:'POST',body:{ajustes:aj}}).then(function(r){ if(r.ok) toast('Liquidación guardada'); else { $('lqer').textContent = r.error; $('lqok').disabled = false; return; } pintar(r); }); };
     if($('lqpag')) $('lqpag').onclick = function(){ if(!confirm('¿Registrar el pago de '+soles(c.pendiente)+' al conductor como gasto de este viaje?')) return;
       api('/api/excursiones/'+e.id+'/movimientos',{method:'POST',body:{id:uuid(), tipo:'egreso', categoria:'pago_conductor', monto:c.pendiente, medio:'efectivo', comprobante_tipo:'sin', descripcion:'Liquidación: '+c.lineas.map(function(x){ return x.concepto+' '+soles(x.monto); }).join(' · '), fecha:hoyLima()}})
-        .then(function(r){ if(!r.ok){ toast(r.error,true); return; } toast('Pago al conductor registrado'); excDetalle(); }); };
+        .then(function(r){ if(!r.ok){ toast(r.error,true); return; } toast('Pago al conductor registrado'); excLiquidacion(true); excDetalle(); }); };
   };
-  api('/api/cotizador/liquidacion/'+e.id).then(pintar);
+  if(cache) pintar(cache.r); else P0.innerHTML = '<p class="vacio">Calculando…</p>';
+  if(!cache || forzar) api('/api/cotizador/liquidacion/'+e.id).then(pintar);
 }
+/** Una fila de la grilla de comidas: el día y sus tres comidas (marcada = se le paga). */
+function precioComida(c){ var p = (S.liqCache && S.liqCache.r.ok && S.liqCache.r.data.parametros.comidas) || []; var x = p.filter(function(z){ return z.clave===c; })[0]; return x ? x.precio : 10; }
+function filaComidas(o){ var f = new Date(o.dia+'T12:00:00Z');
+  return '<div class="fila-com" data-dia="'+esc(o.dia)+'"><b>'+(isNaN(f)?'Día':f.toLocaleDateString('es-PE',{weekday:'short', day:'numeric', month:'short', timeZone:'UTC'}))+'</b>'+
+    [['desayuno','Desayuno'],['almuerzo','Almuerzo'],['cena','Cena']].map(function(c){ return '<button type="button" class="chip" data-com="'+c[0]+'" aria-pressed="'+(!!o[c[0]])+'">'+c[1]+'</button>'; }).join('')+'</div>'; }
 function kpiX(v,l,alerta){ return '<div class="kpi'+(alerta?' alerta':'')+'"><small>'+esc(l)+'</small><b class="num">'+esc(v)+'</b></div>'; }
 function excResumen(){
   var d = S.excDet, e = d.excursion, k = d.kpis, orden = ['borrador','abierta','cerrada','en_ruta','finalizada'], i = orden.indexOf(e.estado);
@@ -1582,7 +1609,7 @@ function excResumen(){
       '<button type="button" class="btn sec" id="rtorg">Cambiar enlace</button></div></div>';
   }
   h += '<div class="kpis k3" style="margin-top:14px">'+
-    kpiX(soles(k.pactado), e.tipo==='contrato'?'Monto del contrato':'Venta de asientos')+kpiX(soles(k.cobrado),'Cobrado')+kpiX(soles(k.por_cobrar),'Por cobrar', k.por_cobrar>0 && (e.estado==='en_ruta'||e.estado==='finalizada'))+
+    kpiX(soles(k.pactado), e.tipo==='contrato'?'Monto del contrato':'Venta de asientos')+kpiX(soles(k.cobrado), k.pago_adicional>0 ? 'Cobrado · incluye '+soles(k.pago_adicional)+' de más' : 'Cobrado')+kpiX(soles(k.por_cobrar),'Por cobrar', k.por_cobrar>0 && (e.estado==='en_ruta'||e.estado==='finalizada'))+
     kpiX(soles(k.gastos),'Gastos')+kpiX(soles(k.utilidad),'Utilidad real', k.utilidad<0)+kpiX(soles(k.utilidad_proyectada),'Utilidad si se cobra todo', k.utilidad_proyectada<0)+
     kpiX(k.margen+' %','Margen sobre lo cobrado')+kpiX(k.ocupados+' / '+k.asientos_venta,'Asientos ('+k.ocupacion+' %)')+kpiX(k.km?k.km.toLocaleString('es-PE')+' km':'—','Recorrido')+
     kpiX(k.costo_km?soles(k.costo_km):'—','Costo por km')+kpiX(k.km_galon?k.km_galon+' km/gal':'—','Rendimiento real')+kpiX(k.precio_galon?soles(k.precio_galon):'—','Precio por galón')+
@@ -1784,6 +1811,8 @@ function verBoleta(url){
 function formMovExc(tipo){
   var e = S.excDet.excursion, def = tipo==='egreso'?'combustible':(S.excDet.kpis.cobrado>0?'saldo':'adelanto'), foto = null;
   var h = '<h2 id="hoja-t">'+(tipo==='egreso'?'Nuevo gasto':'Nuevo ingreso')+'</h2><span class="etq">Tipo</span><div class="chips">'+EXC_CAT[tipo].map(function(c){ return '<button type="button" class="chip" data-mcat="'+c+'" aria-pressed="'+(c===def)+'">'+EXC_CAT_TXT[c]+'</button>'; }).join('')+'</div>'+
+    (tipo==='egreso'?'<div id="bcom" class="oculto"><span class="etq">¿Qué comidas se le pagan?</span><div class="chips">'+[['desayuno','Desayuno'],['almuerzo','Almuerzo'],['cena','Cena']].map(function(c){ return '<button type="button" class="chip" data-mc="'+c[0]+'" aria-pressed="false">'+c[1]+' · S/ '+precioComida(c[0])+'</button>'; }).join('')+'</div><p class="ayuda">El monto se llena solo. Si gastó más, escribe lo que gastó.</p></div>':'')+
+    (tipo==='ingreso'?'<p class="ayuda oculto" id="bpad">Lo que el cliente pagó por encima del precio pactado. Se suma a lo cobrado y a la utilidad del viaje.</p>':'')+
     '<div class="dos"><div class="campo"><label for="mmo">Monto S/</label><input id="mmo" inputmode="decimal" class="num"></div><div class="campo" id="bgal"><label for="mga">Galones</label><input id="mga" inputmode="decimal" class="num"></div></div>'+
     '<span class="etq">Medio</span>'+chipsMedio('mmed','efectivo')+'<div class="campo"><label for="mcu">'+(tipo==='egreso'?'¿De qué bolsillo salió?':'¿A qué bolsillo entró?')+'</label><select id="mcu">'+opcionesCuenta('')+'</select></div>';
   if(tipo==='egreso') h += '<span class="etq">Comprobante</span><div class="chips">'+[['boleta','Boleta'],['factura','Factura'],['ticket','Ticket'],['sin','Sin comprobante']].map(function(c,i){ return '<button type="button" class="chip" data-mcom="'+c[0]+'" aria-pressed="'+(i===0)+'">'+c[1]+'</button>'; }).join('')+'</div>'+
@@ -1791,7 +1820,13 @@ function formMovExc(tipo){
     '<div class="campo"><label for="mfo">Foto de la boleta</label><input id="mfo" type="file" accept="image/*,application/pdf" capture="environment"></div><img id="mpr" class="previa oculto" alt="Vista previa de la boleta">';
   h += '<div class="campo"><label for="mde">Detalle</label><input id="mde" autocomplete="off" placeholder="Grifo, lugar, quién pagó…"></div><div class="campo"><label for="mfe">Fecha y hora</label><input id="mfe" type="datetime-local" value="'+ahoraLocalInput()+'"></div>'+botonesHoja('Guardar');
   abrirHoja(h); enlazarChips('mmed'); enlazarChips('mcom');
-  function verGal(){ $('bgal').style.visibility = chipSel('mcat')==='combustible'?'visible':'hidden'; }
+  function verGal(){ var c = chipSel('mcat'); $('bgal').style.visibility = c==='combustible'?'visible':'hidden';
+    if($('bcom')) $('bcom').classList.toggle('oculto', c!=='alimentacion_conductor'); if($('bpad')) $('bpad').classList.toggle('oculto', c!=='pago_adicional');
+    if(c==='pago_adicional' && !$('mmo').value && S.excDet.kpis.pago_adicional>0) $('mmo').value = S.excDet.kpis.pago_adicional; }
+  hoja.querySelectorAll('[data-mc]').forEach(function(b){ b.onclick = function(){ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true');
+    var sel = Array.prototype.filter.call(hoja.querySelectorAll('[data-mc]'), function(x){ return x.getAttribute('aria-pressed')==='true'; });
+    $('mmo').value = sel.reduce(function(s,x){ return s + precioComida(x.dataset.mc); }, 0) || '';
+    $('mde').value = sel.map(function(x){ return x.textContent.split(' · ')[0]; }).join(', '); }; });
   hoja.querySelectorAll('[data-mcat]').forEach(function(b){ b.onclick=function(){ hoja.querySelectorAll('[data-mcat]').forEach(function(x){ x.setAttribute('aria-pressed', x===b); }); verGal(); }; }); verGal();
   if($('mfo')) $('mfo').onchange = function(){
     var file = this.files[0]; if(!file){ foto=null; return; }
@@ -1867,7 +1902,7 @@ function formExcursion(e, dentro){
   };
 }
 
-setInterval(function(){ if(S.yo && S.vista==='excursiones' && S.excId && S.excTab!=='datos' && !hoja.open && document.visibilityState==='visible' && navigator.onLine) excDetalle(); }, 30000);
+setInterval(function(){ if(S.yo && S.vista==='excursiones' && S.excId && S.excTab!=='datos' && S.excTab!=='liq' && !hoja.open && document.visibilityState==='visible' && navigator.onLine) excDetalle(); }, 30000);
 
 
 /* ════════════ Caja diaria ════════════ */

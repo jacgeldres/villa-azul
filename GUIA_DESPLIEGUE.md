@@ -1,4 +1,4 @@
-# Villa Azul · v5.7.0 — Guía de despliegue
+# Villa Azul · v5.8.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,21 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.8 · Comidas del conductor, pago adicional y liquidación sin parpadeo
+
+Sube a GitHub `src/` y `public/`. La base de datos no cambia (sigue en la **versión 16**). Comprueba en Mi perfil: **Villa Azul v5.8.0 · base de datos v16**.
+
+**Comidas del conductor (S/ 10 cada una).**
+- El cotizador cuenta solo las comidas cuya hora (desayuno 7:00, almuerzo 13:00, cena 19:00) cae mientras el conductor está fuera. Salida 9:00 y regreso a medianoche = almuerzo y cena, S/ 20. Sin horas, días × 3 comidas.
+- En la **Liquidación**, una grilla por día con Desayuno / Almuerzo / Cena: marcada = se le paga. Desmarca las que le dio Villa Azul o no aplican. «+ Agregar día» para viajes más largos.
+- «Gastó en comidas»: lo que informa el conductor al volver. Si es más que lo asignado, la diferencia entra como **Reposición de comidas** en su pago.
+- Al registrar un gasto «Alimentación conductor», se marcan las comidas y el monto se llena solo.
+- Precios en Parámetros → Conductor.
+
+**Pago adicional del cliente.** Nueva categoría de ingreso «Pagó de más (propina)». Si el cobro de un contrato supera lo pactado, el Resumen y la Liquidación lo muestran solos («Cobrado · incluye S/ 34 de más»).
+
+**Liquidación sin parpadeo.** El refresco automático de cada 30 s ya no repinta la Liquidación ni borra lo que estás escribiendo; se recalcula al abrir la pestaña, al guardar y al registrar el pago.
 
 ## Actualizar a la v5.7 · Rutas de trocha, pago del conductor y liquidación de cada viaje
 
