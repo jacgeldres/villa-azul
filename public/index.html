@@ -238,6 +238,16 @@ main{width:100%;max-width:760px;margin:0 auto;padding:18px 16px calc(96px + env(
 .mov b{display:block;font-weight:700;line-height:1.25}
 .mov small{color:var(--muted);font-size:13px}
 .mov .m{font-weight:800;text-align:right;white-space:nowrap}
+/* Filas con acciones (movimientos del viaje): texto y monto en la primera fila, botones debajo alineados con el texto. */
+.mov.mov-acc{grid-template-columns:40px minmax(0,1fr) auto;align-items:start;row-gap:4px}
+.mov.mov-acc .mt{grid-column:2;grid-row:1;align-self:center;overflow-wrap:anywhere}
+.mov.mov-acc .m{grid-column:3;grid-row:1}
+.mov.mov-acc .md{grid-column:2/-1;grid-row:2}
+.mov.mov-acc .acc-mov{grid-row:3;margin-top:6px}
+.mov.mov-acc .m{padding-top:2px}
+.mov .acc-mov{grid-column:2/-1;display:flex;flex-wrap:wrap;gap:6px}
+.mov .acc-mov .btn-mini{min-height:34px;padding:4px 12px}
+.mov small b{display:inline}
 .estado{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 8px;margin-left:6px;vertical-align:1px}
 .estado.cola{background:var(--warn-soft);color:var(--warn)}
 .estado.inac{background:var(--surface-2);color:var(--muted)}

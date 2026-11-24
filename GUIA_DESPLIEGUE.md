@@ -1,4 +1,4 @@
-# Villa Azul · v5.11.1 — Guía de despliegue
+# Villa Azul · v5.11.2 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,12 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.11.2 · Movimientos del viaje ordenados
+
+Sube a GitHub `public/` y `src/`. La base de datos no cambia (sigue en la **versión 17**). Comprueba en Mi perfil: **Villa Azul v5.11.2 · base de datos v17**.
+
+- En Excursiones → el viaje → Ingresos y gastos, cada movimiento muestra el título y el monto arriba, el detalle (fecha, medio, quién, boleta) a todo el ancho y los botones **Comprobante / Editar / Anular** en su propia fila debajo. El texto ya no se aplasta en una columna angosta.
 
 ## Actualizar a la v5.11.1 · Comprobante sin detalles de cálculo
 

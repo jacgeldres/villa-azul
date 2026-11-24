@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.11.1';
+var VERSION = '5.11.2';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -1931,9 +1931,11 @@ function excCaja(){
   h += movs.map(function(m){
     var an = !!m.anulado, det = [fechaExc(m.fecha), m.medio, m.registrado_por];
     if(m.galones) det.push(m.galones+' gal'); if(m.comprobante_tipo && m.comprobante_tipo!=='sin') det.push(m.comprobante_tipo+(m.comprobante_num?' '+m.comprobante_num:''));
-    return '<li class="mov"'+(an?' style="opacity:.55"':'')+'><span class="ic '+(m.tipo==='ingreso'?'i':'e')+'">'+ico(m.tipo==='ingreso'?'arriba':'abajo')+'</span><div><b>'+esc(EXC_CAT_TXT[m.categoria]||m.categoria)+(m.descripcion?' · '+esc(m.descripcion):'')+'</b><small>'+esc(det.join(' · '))+
-      (m.foto_id?' · <a href="#" data-foto="'+esc(m.foto_url)+'">Ver boleta</a>':(m.tipo==='egreso'&&(!m.comprobante_tipo||m.comprobante_tipo==='sin')?' · <b class="bad">sin boleta</b>':''))+(an?'<br>Anulado por '+esc(m.anulado_por)+': '+esc(m.motivo_anulacion):'')+'</small></div>'+
-      '<div style="text-align:right"><span class="m num '+(m.tipo==='ingreso'?'ok':'bad')+'"'+(an?' style="text-decoration:line-through"':'')+'>'+(m.tipo==='ingreso'?'+':'−')+soles(m.monto)+'</span>'+(an?'':'<br><span class="botones" style="justify-content:flex-end;margin-top:4px">'+(m.categoria==='pago_conductor'?'<button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-ticket="'+esc(m.id)+'">Comprobante</button>':'')+'<button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-editx="'+esc(m.id)+'">Editar</button><button type="button" class="btn-mini" style="min-height:32px;padding:4px 10px" data-anular="'+esc(m.id)+'">Anular</button></span>')+'</div></li>';
+    return '<li class="mov mov-acc"'+(an?' style="opacity:.55"':'')+'><span class="ic '+(m.tipo==='ingreso'?'i':'e')+'">'+ico(m.tipo==='ingreso'?'arriba':'abajo')+'</span><b class="mt">'+esc(EXC_CAT_TXT[m.categoria]||m.categoria)+(m.descripcion?' · '+esc(m.descripcion):'')+'</b><small class="md">'+esc(det.join(' · '))+
+      (m.foto_id?' · <a href="#" data-foto="'+esc(m.foto_url)+'">Ver boleta</a>':(m.tipo==='egreso'&&(!m.comprobante_tipo||m.comprobante_tipo==='sin')?' · <b class="bad">sin boleta</b>':''))+(an?'<br>Anulado por '+esc(m.anulado_por)+': '+esc(m.motivo_anulacion):'')+'</small>'+
+      // Monto arriba a la derecha; los botones en su propia fila, debajo del texto, para que el texto use todo el ancho.
+      '<span class="m num '+(m.tipo==='ingreso'?'ok':'bad')+'"'+(an?' style="text-decoration:line-through"':'')+'>'+(m.tipo==='ingreso'?'+':'−')+soles(m.monto)+'</span>'+
+      (an?'':'<span class="acc-mov">'+(m.categoria==='pago_conductor'?'<button type="button" class="btn-mini" data-ticket="'+esc(m.id)+'">Comprobante</button>':'')+'<button type="button" class="btn-mini" data-editx="'+esc(m.id)+'">Editar</button><button type="button" class="btn-mini" data-anular="'+esc(m.id)+'">Anular</button></span>')+'</li>';
   }).join('');
   h += '</ul></div><div style="height:80px"></div><div class="flota"><button type="button" class="btn sec" id="ning">'+ico('arriba')+'Ingreso</button><button type="button" class="btn" id="ngas">'+ico('abajo')+'Gasto</button></div>';
   $('panelx').innerHTML = h;
