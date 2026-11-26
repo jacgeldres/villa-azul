@@ -1,4 +1,4 @@
-# Villa Azul · v5.11.2 — Guía de despliegue
+# Villa Azul · v5.12.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,17 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.12.0 · Tres precios para Jorge y clientes banda
+
+Sube `src/` y `public/` a GitHub como siempre. No hay migración de base de datos.
+
+- **Mensaje de WhatsApp sin la línea Premium.** El cliente ve un solo precio; en el enlace puede elegir Estándar o Premium (si Premium está activo).
+- **Jorge ve tres precios:** Alto (45 %), Recomendado (40 %) y Con descuento (35 %), todos redondeados al sol entero por tramo. Por debajo de 35 % solo un administrador.
+- **Nuevo parámetro `Margen con descuento`** (hoy 35 %) en Parámetros.
+- **Tipo de cliente:** Turistas, Banda u orquesta, Otro grupo. Cambia lo que «incluye» el servicio (bandas: espacio y traslado cuidadoso de instrumentos, salida puntual).
+- **Aviso de capacidad** cuando se cotizan más de 15 pasajeros.
+- **Guion «Si te dicen otros me cobran menos»** en la pantalla de Jorge.
 
 ## Actualizar a la v5.11.2 · Movimientos del viaje ordenados
 

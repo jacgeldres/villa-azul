@@ -1,5 +1,5 @@
 /**
- * Villa Azul · Fórmula del cotizador (v5.9.0).
+ * Villa Azul · Fórmula del cotizador (v5.12.0).
  * Un solo archivo para la app (vista previa al instante) y para el servidor (cifra oficial al guardar).
  * Calcula dos servicios: Estándar y Premium (Estándar + snacks y WiFi).
  * v5.2: los km que la van hace vacía (volver a la base o ir a recoger) cuestan igual que los km con pasajeros.
@@ -48,14 +48,24 @@ export const PARAMETROS_BASE = {
   adelanto_pct: 50,            // % de adelanto para separar el viaje (se muestra al cliente)
   redondeo_tramo: 1,           // el precio por pasajero y por tramo sube al sol entero (S/ 21.20 → S/ 22); 0.5 = a S/ 0.50; 0 = redondear el total a S/ 10
   margen_minimo: 30,           // % de margen mínimo (sobre el precio)
+  margen_descuento: 35,        // % de margen con descuento: lo más bajo que puede ofrecer el operador si el cliente pide rebaja
   margen_objetivo: 40,         // % de margen recomendado
   margen_premium: 45,          // % de margen alto: el «precio de lista» que deja espacio para una rebaja al recomendado
   validez_dias: 7,
 };
-export const SERVICIOS = {
-  estandar: { nombre: 'Estándar', incluye: ['Asientos acolchados para viaje', 'Asientos reclinables', 'Paradas para fotos'] },
-  premium: { nombre: 'Premium', incluye: ['Asientos acolchados para viaje', 'Asientos reclinables', 'Paradas para fotos', 'Refrigerio (snacks) 1 por día', 'WiFi a bordo'] },
+/** Tipo de cliente: cambia lo que se le ofrece (a una banda no le sirven las paradas para fotos; le importan sus instrumentos). */
+export const PERFILES = {
+  turismo: { nombre: 'Turistas / excursión', corto: 'Turistas', incluye: ['Asientos acolchados para viaje', 'Asientos reclinables', 'Paradas para fotos'] },
+  banda: { nombre: 'Banda u orquesta', corto: 'Banda', incluye: ['Espacio para sus instrumentos', 'Traslado cuidadoso de instrumentos y equipos', 'Asientos acolchados y reclinables', 'Salida puntual para llegar a su presentación'] },
+  grupo: { nombre: 'Delegación, trabajadores o familia', corto: 'Otro grupo', incluye: ['Asientos acolchados y reclinables', 'Paradas cuando el grupo lo necesite'] },
 };
+const EXTRAS_PREMIUM = ['Refrigerio (snacks) 1 por día', 'WiFi a bordo'];
+/** Los dos servicios con lo que incluye cada uno para ese tipo de cliente. */
+export function serviciosPara(perfil) {
+  const base = (PERFILES[perfil] || PERFILES.turismo).incluye;
+  return { estandar: { nombre: 'Estándar', incluye: base.slice() }, premium: { nombre: 'Premium', incluye: base.concat(EXTRAS_PREMIUM) } };
+}
+export const SERVICIOS = serviciosPara('turismo');
 const n = (v) => { const x = Number(String(v ?? '').replace(',', '.')); return isFinite(x) && x > 0 ? x : 0; };
 const r2 = (x) => Math.round(x * 100) / 100;
 const arriba10 = (x) => Math.ceil(r2(x) / 10) * 10;
@@ -176,7 +186,7 @@ export function calcular(parametros, d) {
   ];
   const lim = (ls) => ls.filter(l => l[2] > 0).map(([clave, concepto, monto, detalle]) => ({ clave, concepto, monto, detalle }));
   // Márgenes sobre el precio: precio = costo ÷ (1 − margen). 40 % → el costo es el 60 % del precio.
-  const mn = Math.min(90, n(p.margen_minimo)) / 100, mo = Math.min(90, n(p.margen_objetivo)) / 100, mp = Math.min(95, n(p.margen_premium)) / 100;
+  const mdc = Math.min(90, n(p.margen_descuento)) / 100, mn = Math.min(90, n(p.margen_minimo)) / 100, mo = Math.min(90, n(p.margen_objetivo)) / 100, mp = Math.min(95, n(p.margen_premium)) / 100;
   const pasajes = pax * M.tramos;
   // El cliente mira el precio por pasajero: se redondea hacia arriba ese número y el total es por pasajero × pasajeros.
   // Se redondea el precio por pasajero y por tramo (lo que el cliente compara con un pasaje); el total es ese precio × tramos × pasajeros.
@@ -185,8 +195,8 @@ export function calcular(parametros, d) {
     const costo = r2(lineas.reduce((s, l) => s + l.monto, 0));
     // El WiFi se cobra tal cual (S/ por pasajero por viaje): el margen se aplica solo al resto de costos.
     const fijo = r2(lineas.filter(l => l.clave === 'wifi').reduce((s, l) => s + l.monto, 0)), resto = costo - fijo;
-    const precios = { minimo: redondear(resto / (1 - mn) + fijo), recomendado: redondear(resto / (1 - mo) + fijo), alto: redondear(resto / (1 - mp) + fijo) };
-    const cada = (div) => div ? { minimo: r2(precios.minimo / div), recomendado: r2(precios.recomendado / div), alto: r2(precios.alto / div) } : null;
+    const precios = { minimo: redondear(resto / (1 - mn) + fijo), descuento: redondear(resto / (1 - mdc) + fijo), recomendado: redondear(resto / (1 - mo) + fijo), alto: redondear(resto / (1 - mp) + fijo) };
+    const cada = (div) => div ? Object.fromEntries(Object.entries(precios).map(([k, v]) => [k, r2(v / div)])) : null;
     return { lineas, costo, precios, por_pasajero: cada(pax), por_tramo: cada(pasajes) };
   };
   const estandar = plan(lim(base)), premium = plan(lim(base.concat(extra)));
@@ -194,7 +204,7 @@ export function calcular(parametros, d) {
     km, km_pasajeros: kmPax, km_vacios: kmVacio, pct_vacios: km ? Math.round(kmVacio / km * 100) : 0, salidas, tramos: M.tramos, modalidad: md,
     dias, noches, pasajeros: pax, galones: r2(galones), precio_galon: galon, bono, bono_sugerido: bonoSugerido,
     horas_manejo: vel ? r2(km / vel) : 0, horas_tramo: vel ? r2(k / vel) : 0, trocha: tr, nocturno, rendimiento: rend, velocidad: vel, comidas: comi.lista,
-    margenes: { minimo: Math.round(mn * 100), recomendado: Math.round(mo * 100), alto: Math.round(mp * 100) },
+    margenes: { minimo: Math.round(mn * 100), descuento: Math.round(mdc * 100), recomendado: Math.round(mo * 100), alto: Math.round(mp * 100) },
     estandar, premium, costo_km: km ? r2(estandar.costo / km) : 0,
     // Compatibilidad con cotizaciones anteriores (un solo servicio)
     lineas: estandar.lineas, costo: estandar.costo, precios: { minimo: estandar.precios.minimo, recomendado: estandar.precios.recomendado, premium: estandar.precios.alto }, por_pasajero: estandar.por_pasajero,
