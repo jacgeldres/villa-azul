@@ -65,3 +65,13 @@ if (cm.length !== 1 || cm[0].desayuno || !cm[0].almuerzo || !cm[0].cena || mc.mo
 const sinHora = montoComidas({}, comidasPorHorario({ fecha_servicio: '2026-12-01' }, 0, 3));
 if (sinHora.monto !== 90) { console.error('FALLA: comidas sin horario', sinHora); process.exit(1); }
 console.log('OK comidas', mc.detalle);
+// Extras opcionales (v5.14): WiFi S/ 10 por viaje y refrigerio S/ 7.50 por día, por pasajero; se ofrecen desde sus días
+import { extrasDe, EXTRAS_BASE } from '../public/js/cotizar.mjs';
+const e1 = extrasDe(EXTRAS_BASE, calcular(P, { tipo: 'privado', modalidad: 'ida_vuelta', km_ida: 23.2, pasajeros: 16 }), P);
+const w1 = e1.find(e => e.id === 'wifi'), r1 = e1.find(e => e.id === 'refrigerio');
+if (!(w1.por_tramo === 5 && w1.total === 160 && w1.sugerido && r1.por_tramo === 4 && !r1.sugerido)) { console.error('FALLA: extras 1 día', e1); process.exit(1); }
+const e2 = extrasDe(EXTRAS_BASE, calcular(P, { modalidad: 'dos_dias', km_ida: 62, pasajeros: 8, km_destino_base: 62 }), P);
+const r2x = e2.find(e => e.id === 'refrigerio');
+if (!(r2x.sugerido && r2x.por_tramo === 8 && r2x.total === 128 && r2x.costo === 96)) { console.error('FALLA: extras 2 días', e2); process.exit(1); }
+if (extrasDe(EXTRAS_BASE, calcular(P, { modalidad: 'ida_vuelta', km_ida: 20 }), P).length) { console.error('FALLA: extras sin pasajeros'); process.exit(1); }
+console.log('OK extras', JSON.stringify(e1.map(e => [e.id, e.por_tramo, e.total, e.sugerido])), JSON.stringify(e2.map(e => [e.id, e.por_tramo, e.total, e.sugerido])));

@@ -46,6 +46,7 @@ export const PARAMETROS_BASE = {
   bono_desde_km: 0,            // bono automático del conductor desde estos km recorridos (0 = apagado)
   bono_por_dia: 0,             // S/ de bono por día de servicio en viajes largos
   premium_activo: 0,           // 1 = se ofrece el servicio Premium; 0 = solo Estándar
+  extras_activo: 1,            // 1 = el cliente puede sumar extras opcionales (WiFi, refrigerio…) al precio Estándar desde su enlace
   adelanto_pct: 50,            // % de adelanto para separar el viaje (se muestra al cliente)
   redondeo_tramo: 1,           // el precio por pasajero y por tramo sube al sol entero (S/ 21.20 → S/ 22); 0.5 = a S/ 0.50; 0 = redondear el total a S/ 10
   margen_minimo: 30,           // % de margen mínimo (sobre el precio)
@@ -54,6 +55,27 @@ export const PARAMETROS_BASE = {
   margen_premium: 45,          // % de margen alto: el «precio de lista» que deja espacio para una rebaja al recomendado
   validez_dias: 7,
 };
+/** Extras opcionales que el cliente suma al Estándar desde su enlace. Se editan en Parámetros.
+ *  precio: lo que paga cada pasajero (por viaje, por día o por tramo) · costo: lo que te cuesta (para la utilidad)
+ *  desde_dias: se ofrece solo desde esos días de viaje (quien cotiza puede prenderlo igual) · tarea: lo que hay que preparar si lo eligen. */
+export const EXTRAS_BASE = [
+  { id: 'wifi', nombre: 'WiFi a bordo', precio: 10, costo: 0, unidad: 'viaje', desde_dias: 1, activo: 1, tarea: 'Cargar y probar el WiFi (Starlink) antes de salir' },
+  { id: 'refrigerio', nombre: 'Refrigerio (1 por día)', precio: 7.5, costo: 6, unidad: 'dia', desde_dias: 2, activo: 1, tarea: 'Comprar los refrigerios: 1 por pasajero por día' },
+];
+export const UNIDADES_EXTRA = { viaje: 'por viaje', dia: 'por día', tramo: 'por tramo' };
+/** Precio de cada extra para un viaje ya calculado (r = calcular()). Se redondea por pasajero y tramo, igual que el Estándar,
+ *  y cada extra por separado: así lo que ve el cliente suma exacto. Sin pasajeros no se pueden ofrecer extras por pasajero. */
+export function extrasDe(catalogo, r, parametros) {
+  const p = { ...PARAMETROS_BASE, ...(parametros || {}) }, paso = n(p.redondeo_tramo), pax = n(r && r.pasajeros), tramos = n(r && r.tramos) || 1, dias = n(r && r.dias) || 1;
+  if (!pax || !Array.isArray(catalogo)) return [];
+  return catalogo.filter(e => e && n(e.activo) && n(e.precio) > 0).map(e => {
+    const unidades = e.unidad === 'dia' ? dias : e.unidad === 'tramo' ? tramos : 1;
+    const porPax = n(e.precio) * unidades, crudo = porPax / tramos;
+    const porTramo = paso > 0 ? Math.ceil(r2(crudo) / paso) * paso : Math.ceil(crudo);
+    return { id: String(e.id), nombre: String(e.nombre), unidad: e.unidad, por_tramo: r2(porTramo), por_pasajero: r2(porTramo * tramos), total: r2(porTramo * tramos * pax),
+      costo: r2(n(e.costo) * unidades * pax), sugerido: dias >= (n(e.desde_dias) || 1), desde_dias: n(e.desde_dias) || 1, tarea: String(e.tarea || '') };
+  });
+}
 /** Tipo de cliente: cambia lo que se le ofrece (a una banda no le sirven las paradas para fotos; le importan sus instrumentos). */
 export const PERFILES = {
   turismo: { nombre: 'Turistas / excursión', corto: 'Turistas', incluye: ['Asientos acolchados para viaje', 'Asientos reclinables', 'Paradas para fotos'] },

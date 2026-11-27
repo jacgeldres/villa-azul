@@ -2,7 +2,7 @@
  * Villa Azul · Cotizador de excursión, taxi/expreso y transporte privado (v4.0)
  * Calcula con los costos reales de la empresa cuando existen y con supuestos editables cuando no.
  */
-import { calcular, PARAMETROS_BASE, SERVICIOS, serviciosPara, PERFILES, MODALIDADES, esBase, politicaEspera, bonoEspera, comidasPorHorario, montoComidas, COMIDAS } from '../public/js/cotizar.mjs';
+import { calcular, PARAMETROS_BASE, SERVICIOS, serviciosPara, PERFILES, EXTRAS_BASE, extrasDe, UNIDADES_EXTRA, MODALIDADES, esBase, politicaEspera, bonoEspera, comidasPorHorario, montoComidas, COMIDAS } from '../public/js/cotizar.mjs';
 
 export const SQL_COT_V7 = [
   `CREATE TABLE IF NOT EXISTS cotizaciones (id TEXT PRIMARY KEY, token TEXT UNIQUE, numero INTEGER, tipo TEXT, cliente TEXT, cliente_tel TEXT, origen TEXT, destino TEXT,
@@ -53,9 +53,32 @@ export function crearCotizador(h) {
   const paraOperador = (c) => c && ({ id: c.id, token: c.token, codigo: c.codigo, numero: c.numero, tipo: c.tipo, cliente: c.cliente, cliente_tel: c.cliente_tel, origen: c.origen, destino: c.destino,
     fecha_servicio: c.fecha_servicio, precio_final: c.precio_final, precio_final_premium: c.precio_final_premium, precio_acordado: c.precio_acordado, plan_elegido: c.plan_elegido, estado: c.estado,
     valida_hasta: c.valida_hasta, vencida: c.vencida, notas: c.notas, excursion_id: c.excursion_id, creado_por: c.creado_por, creado_por_id: c.creado_por_id, creado_en: c.creado_en,
-    datos: (({ bono, otros, ...resto }) => resto)(c.datos || {}), politica_espera: c.politica_espera, adelanto_pct: c.adelanto_pct, incluye: c.incluye, servicio_incluye: c.servicio_incluye,
+    datos: (({ bono, otros, extras, ...resto }) => ({ ...resto, extras: (extras || []).map(sinCosto) }))(c.datos || {}), politica_espera: c.politica_espera, adelanto_pct: c.adelanto_pct, incluye: c.incluye, servicio_incluye: c.servicio_incluye,
     resultado: { km: c.resultado.km, km_vacios: c.resultado.km_vacios || 0, salidas: c.resultado.salidas || 1, dias: c.resultado.dias, noches: c.resultado.noches, horas_manejo: c.resultado.horas_manejo, pasajeros: c.resultado.pasajeros } });
   const r2s = (x) => Math.round(x * 100) / 100;
+  const sinCosto = ({ costo, ...e }) => e;
+  /* ═════════ Extras opcionales ═════════ */
+  async function catalogoExtras(env) {
+    const f = await env.DB.prepare("SELECT valor FROM config WHERE clave='extras_catalogo'").first();
+    try { const L = f ? JSON.parse(f.valor) : null; if (Array.isArray(L)) return L; } catch (e) { }
+    return EXTRAS_BASE.map(e => ({ ...e }));
+  }
+  function limpiarCatalogo(L) {
+    if (!Array.isArray(L)) throw new ErrorApi('Lista de extras no válida.');
+    const vistos = new Set();
+    return L.slice(0, 10).map((e, i) => {
+      const nombre = texto(e.nombre, 50); if (!nombre) return null;
+      let id = texto(e.id, 30).toLowerCase().replace(/[^a-z0-9_-]/g, '') || nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'extra' + i;
+      while (vistos.has(id)) id += '2'; vistos.add(id);
+      const precio = Math.max(0, Math.min(10000, num(e.precio))), costo = Math.max(0, Math.min(10000, num(e.costo)));
+      return { id, nombre, precio: r2s(precio), costo: r2s(costo), unidad: UNIDADES_EXTRA[e.unidad] ? e.unidad : 'viaje', desde_dias: Math.max(1, Math.min(30, Math.round(num(e.desde_dias) || 1))),
+        activo: e.activo === false || e.activo === 0 || e.activo === '0' ? 0 : 1, tarea: texto(e.tarea, 120) };
+    }).filter(Boolean);
+  }
+  /** Lo que suman los extras elegidos (solo los que se ofrecieron en esa cotización, con el precio con que se enviaron). */
+  const extrasElegidos = (d) => { const of = Array.isArray(d && d.extras) ? d.extras : [], el = Array.isArray(d && d.extras_elegidos) ? d.extras_elegidos : [];
+    return of.filter(e => el.includes(e.id)); };
+  const sumaExtras = (d) => r2s(extrasElegidos(d).reduce((t, e) => t + num(e.total), 0));
   const num = (v) => { const x = Number(String(v ?? '').replace(',', '.')); return isFinite(x) ? x : 0; };
   const adelantoDe = (c) => { const p = JSON.parse(c.parametros || '{}'); return p.adelanto_pct !== undefined ? num(p.adelanto_pct) : PARAMETROS_BASE.adelanto_pct; };
   const texto = (v, max = 100) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
@@ -87,7 +110,7 @@ export function crearCotizador(h) {
     const lugares = (await env.DB.prepare('SELECT DISTINCT origen l FROM tarifas UNION SELECT DISTINCT destino FROM tarifas UNION SELECT origen FROM rutas_km UNION SELECT destino FROM rutas_km').all()).results.map(x => x.l).filter(Boolean).sort();
     const tarifas = (await env.DB.prepare('SELECT origen, destino, tarifa FROM tarifas WHERE COALESCE(activo,1)=1').all()).results;
     const wa = await env.DB.prepare("SELECT valor FROM config WHERE clave='whatsapp_empresa'").first();
-    return { parametros: await parametros(env), base: PARAMETROS_BASE, sugeridos: await sugeridos(env), rutas, lugares, tarifas, whatsapp_empresa: wa ? wa.valor : '' };
+    return { parametros: await parametros(env), base: PARAMETROS_BASE, sugeridos: await sugeridos(env), rutas, lugares, tarifas, whatsapp_empresa: wa ? wa.valor : '', extras: await catalogoExtras(env), unidades_extra: UNIDADES_EXTRA };
   }
   async function guardarParametros(env, yo, b) {
     exigirMando(yo);
@@ -97,6 +120,9 @@ export function crearCotizador(h) {
       st.push(env.DB.prepare('INSERT OR REPLACE INTO config (clave, valor, seq) VALUES (?,?,?)').bind('cot_' + k, String(v), await reservarSeq(env, 1))); cambios.push(`${k}=${v}`);
     }
     if (b.whatsapp_empresa !== undefined) { st.push(env.DB.prepare('INSERT OR REPLACE INTO config (clave, valor, seq) VALUES (?,?,?)').bind('whatsapp_empresa', tel(b.whatsapp_empresa), await reservarSeq(env, 1))); cambios.push('whatsapp'); }
+    if (b.extras !== undefined) { const L = limpiarCatalogo(b.extras);
+      st.push(env.DB.prepare('INSERT OR REPLACE INTO config (clave, valor, seq) VALUES (?,?,?)').bind('extras_catalogo', JSON.stringify(L), await reservarSeq(env, 1)));
+      cambios.push('extras: ' + L.map(e => `${e.nombre} S/ ${e.precio} ${UNIDADES_EXTRA[e.unidad]}${e.activo ? '' : ' (apagado)'}`).join(', ')); }
     if (st.length) await env.DB.batch(st);
     await auditar(env, yo.nombre, 'cot_parametros', cambios.join(' · '));
     return verParametros(env);
@@ -134,11 +160,15 @@ export function crearCotizador(h) {
     d.nivel = nivel;
     const final = b.precio_final !== undefined && b.precio_final !== '' ? Math.round(num(b.precio_final) * 100) / 100 : res.estandar.precios[nivel];
     // Mientras el Premium no esté activo (Parámetros → Precios), la cotización solo lleva Estándar.
-    const conPremium = num(par.premium_activo) === 1;
-    // Premium = el precio Estándar que se envía + los extras (refrigerio y WiFi). Si se escribe a mano, se respeta.
-    const finalP = !conPremium ? null : b.precio_final_premium !== undefined && b.precio_final_premium !== '' ? Math.round(num(b.precio_final_premium) * 100) / 100 : r2s(final + res.premium.recargo);
+    const conPremium = false; // el Premium fijo quedó para cotizaciones anteriores a la v5.14
+    // v5.14: ya no se arma un Premium fijo. El cliente suma extras opcionales al Estándar desde su enlace.
+    const finalP = null;
+    // Extras que se ofrecen en esta cotización: los que marcó quien cotiza o, si no tocó nada, los sugeridos (WiFi siempre; refrigerio desde 2 días).
+    const catalogo = await catalogoExtras(env), todos = num(par.extras_activo) === 1 ? extrasDe(catalogo, res, par) : [];
+    const pedidos = Array.isArray(b.extras_ofrecidos) ? b.extras_ofrecidos.map(String) : null;
+    d.extras = todos.filter(e => pedidos ? pedidos.includes(e.id) : e.sugerido);
     if (!(final > 0) || (conPremium && !(finalP > 0))) throw new ErrorApi('Precio final no válido.');
-    if (conPremium && finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
+    if (conPremium && finalP !== null && finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
     d.precio_manual = { estandar: final !== res.estandar.precios[nivel], premium: conPremium && finalP !== res.premium.precios[nivel] };
     const ahora = ahoraLima(), valida = new Date(Date.now() - 5 * 3600000 + num(par.validez_dias) * 864e5).toISOString().slice(0, 10);
     const PARA_CLIENTE = { combustible: 'Combustible', peajes: 'Peajes', conductor: 'Conductor profesional', viaticos: 'Alimentación del conductor', hospedaje: 'Hospedaje del conductor', cochera: 'Cochera de la van' };
@@ -151,6 +181,9 @@ export function crearCotizador(h) {
     if (id) {
       const c = await env.DB.prepare('SELECT * FROM cotizaciones WHERE id=?').bind(id).first(); if (!c) throw new ErrorApi('Cotización no encontrada', 'NO_EXISTE', 404);
       if (c.estado === 'aceptada' && c.excursion_id) throw new ErrorApi('Ya se convirtió en excursión: edita la excursión.');
+      // Lo que el cliente ya eligió se conserva, si ese extra se sigue ofreciendo.
+      const prevEl = (JSON.parse(c.datos || '{}').extras_elegidos || []).filter(x => d.extras.some(e => e.id === x));
+      if (prevEl.length) { d.extras_elegidos = prevEl; fila.datos = JSON.stringify(d); }
       fila.seq = await reservarSeq(env, 1);
       const k = Object.keys(fila);
       await env.DB.batch([env.DB.prepare(`UPDATE cotizaciones SET ${k.map(x => `${x}=?`).join(', ')} WHERE id=?`).bind(...k.map(x => fila[x]), id), rk]);
@@ -171,7 +204,7 @@ export function crearCotizador(h) {
     if (op) {
       const cod = 'COT-' + String(n2).padStart(4, '0'), diesel = d.precio_galon && d.precio_galon !== num(par.precio_galon) ? ` · usó diésel a S/ ${d.precio_galon} (parámetro S/ ${num(par.precio_galon)})` : '';
       await avisar(env, { tipo: 'cotizacion', para: 'mando', titulo: `${yo.nombre} cotizó ${cod}`, ir: 'cotizador:' + fila.id,
-        detalle: `${TIPOS[d.tipo]} ${origen} → ${destino}${fila.cliente ? ' · ' + fila.cliente : ''} · Estándar ${soles(final)} · Premium ${soles(finalP)}${diesel}` });
+        detalle: `${TIPOS[d.tipo]} ${origen} → ${destino}${fila.cliente ? ' · ' + fila.cliente : ''} · Estándar ${soles(final)}${d.extras.length ? ' · extras ofrecidos: ' + d.extras.map(e => e.nombre).join(', ') : ''}${diesel}` });
       return paraOperador(await detalle(env, fila.id));
     }
     return detalle(env, fila.id);
@@ -187,10 +220,11 @@ export function crearCotizador(h) {
     dif('pasajeros', a.pasajeros, d.pasajeros); dif('km de ida', a.km_ida, d.km_ida); dif('km vacíos', a.km_base_origen, d.km_base_origen);
     dif('peaje ida', a.peajes_ida, d.peajes_ida); dif('peaje vuelta', a.peajes_vuelta, d.peajes_vuelta); dif('diésel', a.precio_galon, d.precio_galon);
     dif('espera', a.horas_espera, d.horas_espera, (z) => z === '—' ? z : z + ' h'); dif('tipo de cliente', PERFIL_TXT[a.perfil || 'turismo'], PERFIL_TXT[d.perfil]);
+    dif('extras ofrecidos', (a.extras || []).map(e => e.nombre).join(', ') || 'ninguno', (d.extras || []).map(e => e.nombre).join(', ') || 'ninguno');
     dif('trocha', a.trocha ? 'sí' : 'no', d.trocha ? 'sí' : 'no'); dif('salida', c.fecha_servicio, fila.fecha_servicio); dif('regreso', a.fecha_retorno, d.fecha_retorno);
     return L.length ? ' · ' + L.join(' · ') : '';
   }
-  const precioPlan = (c) => c.plan_elegido === 'premium' && c.precio_final_premium ? c.precio_final_premium : c.precio_final;
+  const precioPlan = (c) => c.plan_elegido === 'premium' && c.precio_final_premium ? c.precio_final_premium : r2s(num(c.precio_final) + sumaExtras(JSON.parse(c.datos || '{}')));
   const salida = (c) => c && ({ ...c, precio_acordado: precioPlan(c), datos: JSON.parse(c.datos || '{}'), resultado: JSON.parse(c.resultado || '{}'), incluye: JSON.parse(c.incluye || '[]'), parametros: undefined,
     politica_espera: politicaEspera(JSON.parse(c.parametros || '{}'), JSON.parse(c.datos || '{}')), adelanto_pct: adelantoDe(c),
     servicio_incluye: serviciosPara(JSON.parse(c.datos || '{}').perfil).estandar.incluye,
@@ -213,6 +247,9 @@ export function crearCotizador(h) {
     return { cotizaciones: L, resumen: { mes_n: delMes.length, mes_monto: delMes.reduce((s, c) => s + num(c.precio_final), 0),
       aceptadas: L.filter(c => c.estado === 'aceptada').length, monto_aceptado: L.filter(c => c.estado === 'aceptada').reduce((s, c) => s + num(c.precio_acordado), 0),
       premium: L.filter(c => c.plan_elegido === 'premium').length, estandar: L.filter(c => c.plan_elegido === 'estandar').length,
+      extras: (() => { const ac = L.filter(c => c.estado === 'aceptada' && (c.datos.extras || []).length), con = ac.filter(c => extrasElegidos(c.datos).length), por = {};
+        con.forEach(c => extrasElegidos(c.datos).forEach(e => { por[e.nombre] = (por[e.nombre] || 0) + 1; }));
+        return { ofrecidas: ac.length, con_extras: con.length, ingreso: r2s(con.reduce((t, c) => t + sumaExtras(c.datos), 0)), por_extra: por }; })(),
       tasa: dec.length ? Math.round(L.filter(c => c.estado === 'aceptada').length / dec.length * 100) : null, pendientes: L.filter(c => ['borrador', 'enviada'].includes(c.estado) && !c.vencida).length } };
   }
   async function cambiarEstado(env, yo, id, b) {
@@ -234,12 +271,22 @@ export function crearCotizador(h) {
     const r = await crearExcursion(env, yo, {
       titulo: `${TIPOS[c.tipo]} ${SERVICIOS[plan].nombre} ${c.origen} → ${c.destino}${c.cliente ? ' · ' + c.cliente : ''}`.slice(0, 80), tipo: 'contrato', cliente: c.cliente, cliente_tel: c.cliente_tel,
       origen: c.origen, destino: c.destino, salida: f.length === 10 ? f + 'T05:00' : f, retorno: d.fecha_retorno || undefined, monto_contrato: c.precio_acordado,
-      notas: `Desde ${c.codigo} · Servicio ${SERVICIOS[plan].nombre}: ${serviciosPara((c.datos || {}).perfil)[plan].incluye.join(', ')}. ${c.notas || ''}`.trim(),
+      notas: (`Desde ${c.codigo} · Servicio ${SERVICIOS[plan].nombre}: ${serviciosPara((c.datos || {}).perfil)[plan].incluye.join(', ')}.` +
+        (plan === 'estandar' && extrasElegidos(d).length ? ` Extras: ${extrasElegidos(d).map(e => `${e.nombre} (${soles(e.total)})`).join(', ')}. Por hacer: ${extrasElegidos(d).map(e => e.tarea || e.nombre).join(' · ')}.` : '') + ` ${c.notas || ''}`).trim(),
       asientos_total: 15, estado: 'borrador',
     });
     await env.DB.prepare("UPDATE cotizaciones SET estado='aceptada', excursion_id=?, actualizado_en=?, seq=? WHERE id=?").bind(r.id, ahoraLima(), await reservarSeq(env, 1), id).run();
-    await auditar(env, yo.nombre, 'cot_convertir', `${c.codigo} (${SERVICIOS[plan].nombre}) → excursión ${r.codigo}`);
+    await auditar(env, yo.nombre, 'cot_convertir', `${c.codigo} (${SERVICIOS[plan].nombre}${extrasElegidos(d).length ? ' + ' + extrasElegidos(d).map(e => e.nombre).join(' + ') : ''}) → excursión ${r.codigo}`);
     return { cotizacion: await detalle(env, id), excursion_id: r.id };
+  }
+  /** El cliente aceptó por WhatsApp: quien cotiza marca los extras que pidió. */
+  async function marcarExtras(env, yo, id, b) {
+    const c = await detalle(env, id);
+    if (c.excursion_id) throw new ErrorApi('Ya se convirtió en excursión: los extras se cambian en la excursión.');
+    const d = c.datos; d.extras_elegidos = (d.extras || []).filter(e => (Array.isArray(b.extras) ? b.extras.map(String) : []).includes(e.id)).map(e => e.id);
+    await env.DB.prepare('UPDATE cotizaciones SET datos=?, actualizado_en=?, seq=? WHERE id=?').bind(JSON.stringify(d), ahoraLima(), await reservarSeq(env, 1), id).run();
+    await auditar(env, yo.nombre, 'cot_extras', `${c.codigo} · el cliente pidió: ${extrasElegidos(d).map(e => e.nombre).join(', ') || 'ningún extra'}`);
+    return esMando(yo) ? detalleAdmin(env, id) : paraOperador(await detalle(env, id));
   }
   async function eliminar(env, yo, id) {
     exigirMando(yo);
@@ -263,7 +310,8 @@ export function crearCotizador(h) {
     return { codigo: s.codigo, tipo: TIPOS[s.tipo], cliente: s.cliente, origen: s.origen, destino: s.destino, fecha_servicio: s.fecha_servicio, fecha_retorno: s.datos.fecha_retorno || null, ida_vuelta: s.datos.ida_vuelta, modalidad: s.datos.modalidad || null, horas_tramo: s.resultado.horas_tramo || null,
       dias: s.datos.dias, noches: s.datos.noches, pasajeros: pax, horas_espera: s.datos.horas_espera, horas_manejo: s.resultado.horas_manejo || null, precio: s.precio_final,
       por_pasajero: pp(s.precio_final), tramos, incluye: s.incluye, planes, todos: planes.length > 1 ? SV.premium.incluye : SV.estandar.incluye, adelanto_pct: s.adelanto_pct, plan_elegido: s.plan_elegido || null, notas: s.notas, valida_hasta: s.valida_hasta,
-      vencida: s.vencida, estado: s.estado, politica_espera: s.politica_espera, whatsapp: wa ? tel(wa.valor) : '', preferido: sol ? await sol.preferenciaDe(env, c.id) : null };
+      vencida: s.vencida, estado: s.estado, politica_espera: s.politica_espera, whatsapp: wa ? tel(wa.valor) : '', preferido: sol ? await sol.preferenciaDe(env, c.id) : null,
+      extras: planes.length > 1 ? [] : (s.datos.extras || []).map(({ costo, tarea, sugerido, desde_dias, ...e }) => e), extras_elegidos: s.datos.extras_elegidos || [], precio_acordado: s.precio_acordado };
   }
 
 
@@ -275,10 +323,13 @@ export function crearCotizador(h) {
     if (s.excursion_id) throw new ErrorApi('Esta cotización ya fue confirmada. Escribe a Villa Azul para cualquier cambio.');
     if (s.vencida) throw new ErrorApi('Esta cotización ya venció. Pide una nueva a Villa Azul.');
     const plan = b.plan === 'premium' && c.precio_final_premium ? 'premium' : 'estandar';
-    await env.DB.prepare("UPDATE cotizaciones SET plan_elegido=?, elegido_en=?, estado='aceptada', actualizado_en=?, seq=? WHERE id=?").bind(plan, ahoraLima(), ahoraLima(), await reservarSeq(env, 1), c.id).run();
-    await auditar(env, 'cliente', 'cot_elegir', `${s.codigo} · eligió ${SERVICIOS[plan].nombre}`);
-    await avisar(env, { tipo: 'aceptacion', para: 'todos', titulo: `${s.cliente || 'El cliente'} aceptó ${s.codigo}: servicio ${SERVICIOS[plan].nombre}`, ir: 'cotizador:' + c.id,
-      detalle: `${TIPOS[s.tipo]} ${s.origen} → ${s.destino} · ${soles(plan === 'premium' ? s.precio_final_premium : s.precio_final)}${s.creado_por ? ' · cotizó ' + s.creado_por : ''}` });
+    // Extras: solo los que se ofrecieron, con el precio guardado (nunca el que mande el celular).
+    const d = s.datos; d.extras_elegidos = plan === 'estandar' && Array.isArray(b.extras) ? (d.extras || []).filter(e => b.extras.map(String).includes(e.id)).map(e => e.id) : [];
+    await env.DB.prepare("UPDATE cotizaciones SET plan_elegido=?, datos=?, elegido_en=?, estado='aceptada', actualizado_en=?, seq=? WHERE id=?").bind(plan, JSON.stringify(d), ahoraLima(), ahoraLima(), await reservarSeq(env, 1), c.id).run();
+    const ex = extrasElegidos(d), txt = SERVICIOS[plan].nombre + (ex.length ? ' + ' + ex.map(e => e.nombre).join(' + ') : ''), total = plan === 'premium' ? s.precio_final_premium : r2s(num(s.precio_final) + sumaExtras(d));
+    await auditar(env, 'cliente', 'cot_elegir', `${s.codigo} · eligió ${txt} · ${soles(total)}`);
+    await avisar(env, { tipo: 'aceptacion', para: 'todos', titulo: `${s.cliente || 'El cliente'} aceptó ${s.codigo}: ${txt}`, ir: 'cotizador:' + c.id,
+      detalle: `${TIPOS[s.tipo]} ${s.origen} → ${s.destino} · ${soles(total)}${s.creado_por ? ' · cotizó ' + s.creado_por : ''}` });
     return publica(env, tok);
   }
   /* ═════════ Calculador de kilómetros ═════════
@@ -469,7 +520,7 @@ export function crearCotizador(h) {
     // El operador ve dos precios del Estándar (recomendado y alto) y elige cuál enviar. Sin costos ni porcentajes.
     return { km: r.km, km_vacios: r.km_vacios, pct_vacios: r.pct_vacios, salidas: r.salidas, tramos: r.tramos, dias: r.dias, noches: r.noches, horas_manejo: r.horas_manejo,
       pasajeros: r.pasajeros, precio_galon: r.precio_galon, opciones: { alto: plan(r.estandar, 'alto'), recomendado: plan(r.estandar, 'recomendado'), descuento: plan(r.estandar, 'descuento') },
-      premium: num(par.premium_activo) === 1 ? { ...plan(r.premium, 'recomendado'), recargo_tramo: r.premium.recargo_tramo, recargo_pasajero: r.premium.recargo_pasajero } : null };
+      premium: null, extras: num(par.extras_activo) === 1 ? extrasDe(await catalogoExtras(env), r, par).map(sinCosto) : [] };
   }
   async function verOperador(env) {
     const v = await verParametros(env);
@@ -477,7 +528,7 @@ export function crearCotizador(h) {
     return { operador: true, lugares: v.lugares, rutas: v.rutas.map(r => ({ origen: r.origen, destino: r.destino, km: r.km, peajes_ida: r.peajes_ida, peajes_vuelta: r.peajes_vuelta, trocha: r.trocha })),
       tarifas: v.tarifas, precio_galon: v.parametros.precio_galon, velocidad_promedio: v.parametros.velocidad_promedio,
       espera: { tolerancia_min: v.parametros.tolerancia_min, espera_extra_hora: v.parametros.espera_extra_hora }, trocha_velocidad: v.parametros.trocha_velocidad,
-      premium_activo: v.parametros.premium_activo };
+      premium_activo: 0, extras_activo: v.parametros.extras_activo };
   }
   async function rutas(env, yo, req, url, crearExcursion) {
     const p = url.pathname, m = req.method, cuerpo = () => req.json().catch(() => ({}));
@@ -489,13 +540,14 @@ export function crearCotizador(h) {
       if (p === '/api/cotizador/distancia' && m === 'POST') return distancia(env, await cuerpo());
       if (p === '/api/cotizaciones' && m === 'GET') { const L = (await listar(env)).cotizaciones.filter(c => c.creado_por_id === yo.id).map(paraOperador); return { cotizaciones: L, resumen: { mes_n: L.length } }; }
       if (p === '/api/cotizaciones' && m === 'POST') return guardar(env, yo, null, await cuerpo());
-      const ro = p.match(/^\/api\/cotizaciones\/([\w-]+)(?:\/(estado))?$/);
+      const ro = p.match(/^\/api\/cotizaciones\/([\w-]+)(?:\/(estado|extras))?$/);
       if (ro) {
         const c = await detalle(env, ro[1]);
         if (c.creado_por_id !== yo.id) throw new ErrorApi('Esa cotización no es tuya.', 'SIN_PERMISO', 403);
         if (!ro[2] && m === 'GET') return paraOperador(c);
         if (!ro[2] && m === 'PATCH') return guardar(env, yo, ro[1], await cuerpo());
         if (ro[2] === 'estado' && m === 'POST') return cambiarEstado(env, yo, ro[1], await cuerpo());
+        if (ro[2] === 'extras' && m === 'POST') return marcarExtras(env, yo, ro[1], await cuerpo());
       }
       throw new ErrorApi('Esa acción la hace un administrador.', 'SIN_PERMISO', 403);
     }
@@ -508,11 +560,12 @@ export function crearCotizador(h) {
     const lq = p.match(/^\/api\/cotizador\/liquidacion\/([\w-]+)$/);
     if (lq && m === 'GET') return liquidacion(env, lq[1]);
     if (lq && m === 'POST') { const b = await cuerpo(); return liquidacion(env, lq[1], b, yo); }
-    const r = p.match(/^\/api\/cotizaciones\/([\w-]+)(?:\/(estado|convertir))?$/);
+    const r = p.match(/^\/api\/cotizaciones\/([\w-]+)(?:\/(estado|convertir|extras))?$/);
     if (r && !r[2] && m === 'GET') return detalleAdmin(env, r[1]);
     if (r && !r[2] && m === 'PATCH') return guardar(env, yo, r[1], await cuerpo());
     if (r && !r[2] && m === 'DELETE') return eliminar(env, yo, r[1]);
     if (r && r[2] === 'estado' && m === 'POST') return cambiarEstado(env, yo, r[1], await cuerpo());
+    if (r && r[2] === 'extras' && m === 'POST') return marcarExtras(env, yo, r[1], await cuerpo());
     if (r && r[2] === 'convertir' && m === 'POST') return convertir(env, yo, r[1], crearExcursion, await cuerpo());
     return undefined;
   }

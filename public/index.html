@@ -218,6 +218,22 @@ details.plegable .tabla td.n{white-space:nowrap;text-align:right;vertical-align:
 @media (max-width:520px){.otro-fila{grid-template-columns:minmax(0,1fr) 44px;padding-top:4px}.otro-fila>.campo:first-child{grid-column:1 / -1}.otro-fila .quitar{grid-column:2}}
 .nueva-ver{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px);padding:10px 12px 10px 16px;border-radius:14px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .nueva-ver .btn-mini{flex:none}
+.ex-cot{margin-top:14px}
+.ex-op{display:flex;gap:12px;align-items:center;padding:10px 12px;margin-top:8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;min-height:52px}
+.ex-op input{width:22px;height:22px;flex:none;accent-color:var(--brand,#1E4FD1)}
+.ex-op span{display:grid;gap:2px;min-width:0}
+.ex-op small{color:var(--muted);font-size:13px;line-height:1.4}
+.ex-op:has(input:checked){border-color:var(--brand,#1E4FD1)}
+.ex-det{margin-top:12px}
+.ex-det .chips{margin-top:8px}
+.ex-par{border:1px solid var(--line);border-radius:12px;padding:6px 12px 10px;margin:10px 0 0;min-width:0}
+.ex-par legend{display:flex;gap:10px;align-items:center;padding:0 6px;width:auto}
+.ex-par legend .quitar{min-height:36px;width:36px;padding:0;justify-content:center}
+.ex-act{display:flex;gap:6px;align-items:center;font-weight:700;font-size:14px}
+.ex-act input{width:20px;height:20px}
+.ex-g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.ex-g{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ex-g select{width:100%}
 .seg-nivel button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;white-space:nowrap}
 .seg-nivel button small{font-size:12px;font-weight:600;opacity:.8}
 .lc-c{display:none}

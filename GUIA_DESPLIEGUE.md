@@ -1,4 +1,4 @@
-# Villa Azul · v5.13.0 — Guía de despliegue
+# Villa Azul · v5.14.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,20 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.14.0 · Extras opcionales que elige el cliente
+
+Sube `src/` y `public/` a GitHub como siempre. No hay migración de base de datos.
+
+- **Ya no hay Premium fijo.** El cliente ve un solo precio (Estándar) y suma extras opcionales desde su enlace: el precio, el botón y el adelanto se actualizan al marcar.
+- **Quien cotiza elige qué extras ofrecer.** Se marcan solos: WiFi siempre; refrigerio desde 2 días de viaje. Se pueden prender o apagar en cada cotización.
+- **Parámetros → Extras opcionales:** lista editable (nombre, precio por pasajero, por viaje/día/tramo, costo, desde cuántos días, qué preparar). Interruptor «Extras opcionales activos».
+- **Mensaje de WhatsApp:** una línea «➕ Opcional: WiFi a bordo (+S/ 5) por pasajero en cada tramo. Lo elige en el enlace.»
+- **Si el cliente acepta por WhatsApp:** en el detalle se marcan los extras que pidió; el precio acordado los suma.
+- **Al crear la excursión:** los extras y lo que hay que preparar van en las notas.
+- **Indicador** en el Cotizador: % de clientes que eligen extras, ingreso extra y cuál se elige más.
+- Cada extra se redondea hacia arriba al sol por pasajero y tramo (S/ 1.50 → S/ 2).
+- Las cotizaciones antiguas con Premium siguen funcionando igual; al editarlas, el Premium se reemplaza por extras.
 
 ## Actualizar a la v5.13.0 · Revisar cotizaciones sin editar, Premium más accesible
 
