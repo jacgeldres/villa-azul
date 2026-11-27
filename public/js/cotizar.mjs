@@ -59,9 +59,11 @@ export const PARAMETROS_BASE = {
  *  precio: lo que paga cada pasajero (por viaje, por día o por tramo) · costo: lo que te cuesta (para la utilidad)
  *  desde_dias: se ofrece solo desde esos días de viaje (quien cotiza puede prenderlo igual) · tarea: lo que hay que preparar si lo eligen. */
 export const EXTRAS_BASE = [
-  { id: 'wifi', nombre: 'WiFi a bordo', precio: 10, costo: 0, unidad: 'viaje', desde_dias: 1, activo: 1, tarea: 'Cargar y probar el WiFi (Starlink) antes de salir' },
-  { id: 'refrigerio', nombre: 'Refrigerio (1 por día)', precio: 7.5, costo: 6, unidad: 'dia', desde_dias: 2, activo: 1, tarea: 'Comprar los refrigerios: 1 por pasajero por día' },
+  { id: 'wifi', nombre: 'WiFi a bordo', descripcion: 'Internet satelital de alta velocidad en toda la ruta, incluso sin señal de celular', precio: 10, costo: 0, unidad: 'viaje', desde_dias: 1, activo: 1, tarea: 'Cargar y probar el WiFi (Starlink) antes de salir' },
+  { id: 'refrigerio', nombre: 'Refrigerio (1 por día)', descripcion: 'Un snack y una bebida por pasajero cada día de viaje', precio: 7.5, costo: 6, unidad: 'dia', desde_dias: 2, activo: 1, tarea: 'Comprar los refrigerios: 1 por pasajero por día' },
 ];
+/** Detalle que ve el cliente. Los extras guardados antes de la v5.14.2 no lo tenían: se toma el de fábrica. */
+export function detalleExtra(e) { if (e && typeof e.descripcion === 'string') return e.descripcion; const b = EXTRAS_BASE.find(x => x.id === (e && e.id)); return b ? b.descripcion : ''; }
 export const UNIDADES_EXTRA = { viaje: 'por viaje', dia: 'por día', tramo: 'por tramo' };
 /** Precio de cada extra para un viaje ya calculado (r = calcular()). Se redondea por pasajero y tramo, igual que el Estándar,
  *  y cada extra por separado: así lo que ve el cliente suma exacto. Sin pasajeros no se pueden ofrecer extras por pasajero. */
@@ -72,7 +74,7 @@ export function extrasDe(catalogo, r, parametros) {
     const unidades = e.unidad === 'dia' ? dias : e.unidad === 'tramo' ? tramos : 1;
     const porPax = n(e.precio) * unidades, crudo = porPax / tramos;
     const porTramo = paso > 0 ? Math.ceil(r2(crudo) / paso) * paso : Math.ceil(crudo);
-    return { id: String(e.id), nombre: String(e.nombre), unidad: e.unidad, por_tramo: r2(porTramo), por_pasajero: r2(porTramo * tramos), total: r2(porTramo * tramos * pax),
+    return { id: String(e.id), nombre: String(e.nombre), descripcion: detalleExtra(e), unidad: e.unidad, por_tramo: r2(porTramo), por_pasajero: r2(porTramo * tramos), total: r2(porTramo * tramos * pax),
       costo: r2(n(e.costo) * unidades * pax), sugerido: dias >= (n(e.desde_dias) || 1), desde_dias: n(e.desde_dias) || 1, tarea: String(e.tarea || '') };
   });
 }

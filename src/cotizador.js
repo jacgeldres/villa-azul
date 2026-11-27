@@ -2,7 +2,7 @@
  * Villa Azul · Cotizador de excursión, taxi/expreso y transporte privado (v4.0)
  * Calcula con los costos reales de la empresa cuando existen y con supuestos editables cuando no.
  */
-import { calcular, PARAMETROS_BASE, SERVICIOS, serviciosPara, PERFILES, EXTRAS_BASE, extrasDe, UNIDADES_EXTRA, MODALIDADES, esBase, politicaEspera, bonoEspera, comidasPorHorario, montoComidas, COMIDAS } from '../public/js/cotizar.mjs';
+import { calcular, PARAMETROS_BASE, SERVICIOS, serviciosPara, PERFILES, EXTRAS_BASE, extrasDe, UNIDADES_EXTRA, detalleExtra, MODALIDADES, esBase, politicaEspera, bonoEspera, comidasPorHorario, montoComidas, COMIDAS } from '../public/js/cotizar.mjs';
 
 export const SQL_COT_V7 = [
   `CREATE TABLE IF NOT EXISTS cotizaciones (id TEXT PRIMARY KEY, token TEXT UNIQUE, numero INTEGER, tipo TEXT, cliente TEXT, cliente_tel TEXT, origen TEXT, destino TEXT,
@@ -71,7 +71,7 @@ export function crearCotizador(h) {
       let id = texto(e.id, 30).toLowerCase().replace(/[^a-z0-9_-]/g, '') || nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'extra' + i;
       while (vistos.has(id)) id += '2'; vistos.add(id);
       const precio = Math.max(0, Math.min(10000, num(e.precio))), costo = Math.max(0, Math.min(10000, num(e.costo)));
-      return { id, nombre, precio: r2s(precio), costo: r2s(costo), unidad: UNIDADES_EXTRA[e.unidad] ? e.unidad : 'viaje', desde_dias: Math.max(1, Math.min(30, Math.round(num(e.desde_dias) || 1))),
+      return { id, nombre, descripcion: texto(e.descripcion, 120), precio: r2s(precio), costo: r2s(costo), unidad: UNIDADES_EXTRA[e.unidad] ? e.unidad : 'viaje', desde_dias: Math.max(1, Math.min(30, Math.round(num(e.desde_dias) || 1))),
         activo: e.activo === false || e.activo === 0 || e.activo === '0' ? 0 : 1, tarea: texto(e.tarea, 120) };
     }).filter(Boolean);
   }
@@ -171,8 +171,10 @@ export function crearCotizador(h) {
     if (conPremium && finalP !== null && finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
     d.precio_manual = { estandar: final !== res.estandar.precios[nivel], premium: conPremium && finalP !== res.premium.precios[nivel] };
     const ahora = ahoraLima(), valida = new Date(Date.now() - 5 * 3600000 + num(par.validez_dias) * 864e5).toISOString().slice(0, 10);
+    const OBVIO = { combustible: 1, conductor: 1 };
     const PARA_CLIENTE = { combustible: 'Combustible', peajes: 'Peajes', conductor: 'Conductor profesional', viaticos: 'Alimentación del conductor', hospedaje: 'Hospedaje del conductor', cochera: 'Cochera de la van' };
-    const incluye = res.lineas.filter(l => PARA_CLIENTE[l.clave] || /^otro/.test(l.clave)).map(l => PARA_CLIENTE[l.clave] || l.concepto);
+    // Combustible y conductor van siempre: decirlo es relleno. Se dice lo que el cliente podría dudar (peajes, comida y hospedaje del conductor) y lo agregado a mano.
+    const incluye = res.lineas.filter(l => (PARA_CLIENTE[l.clave] && !OBVIO[l.clave]) || /^otro/.test(l.clave)).map(l => PARA_CLIENTE[l.clave] || l.concepto);
     const fila = { tipo: d.tipo, cliente: texto(b.cliente, 80), cliente_tel: tel(b.cliente_tel), origen, destino, fecha_servicio: texto(b.fecha_servicio, 16),
       datos: JSON.stringify(d), parametros: JSON.stringify(par), resultado: JSON.stringify(res), costo: res.costo, precio_minimo: res.precios.minimo, precio_recomendado: res.precios.recomendado,
       precio_premium: res.precios.premium, precio_final: final, precio_final_premium: finalP, notas: texto(b.notas, 500), incluye: JSON.stringify(incluye), actualizado_en: ahora };
@@ -225,7 +227,9 @@ export function crearCotizador(h) {
     return L.length ? ' · ' + L.join(' · ') : '';
   }
   const precioPlan = (c) => c.plan_elegido === 'premium' && c.precio_final_premium ? c.precio_final_premium : r2s(num(c.precio_final) + sumaExtras(JSON.parse(c.datos || '{}')));
-  const salida = (c) => c && ({ ...c, precio_acordado: precioPlan(c), datos: JSON.parse(c.datos || '{}'), resultado: JSON.parse(c.resultado || '{}'), incluye: JSON.parse(c.incluye || '[]'), parametros: undefined,
+  // Cotizaciones guardadas antes de la v5.14.2: se quita lo obvio al mostrarlas.
+  const sinObvio = (L) => L.filter(x => x !== 'Combustible' && x !== 'Conductor profesional');
+  const salida = (c) => c && ({ ...c, precio_acordado: precioPlan(c), datos: JSON.parse(c.datos || '{}'), resultado: JSON.parse(c.resultado || '{}'), incluye: sinObvio(JSON.parse(c.incluye || '[]')), parametros: undefined,
     politica_espera: politicaEspera(JSON.parse(c.parametros || '{}'), JSON.parse(c.datos || '{}')), adelanto_pct: adelantoDe(c),
     servicio_incluye: serviciosPara(JSON.parse(c.datos || '{}').perfil).estandar.incluye,
     codigo: 'COT-' + String(c.numero).padStart(4, '0'), vencida: c.estado !== 'aceptada' && c.valida_hasta && c.valida_hasta < ahoraLima().slice(0, 10) });
@@ -311,7 +315,7 @@ export function crearCotizador(h) {
       dias: s.datos.dias, noches: s.datos.noches, pasajeros: pax, horas_espera: s.datos.horas_espera, horas_manejo: s.resultado.horas_manejo || null, precio: s.precio_final,
       por_pasajero: pp(s.precio_final), tramos, incluye: s.incluye, planes, todos: planes.length > 1 ? SV.premium.incluye : SV.estandar.incluye, adelanto_pct: s.adelanto_pct, plan_elegido: s.plan_elegido || null, notas: s.notas, valida_hasta: s.valida_hasta,
       vencida: s.vencida, estado: s.estado, politica_espera: s.politica_espera, whatsapp: wa ? tel(wa.valor) : '', preferido: sol ? await sol.preferenciaDe(env, c.id) : null,
-      extras: planes.length > 1 ? [] : (s.datos.extras || []).map(({ costo, tarea, sugerido, desde_dias, ...e }) => e), extras_elegidos: s.datos.extras_elegidos || [], precio_acordado: s.precio_acordado };
+      extras: planes.length > 1 ? [] : (s.datos.extras || []).map(({ costo, tarea, sugerido, desde_dias, ...e }) => ({ ...e, descripcion: detalleExtra(e) })), extras_elegidos: s.datos.extras_elegidos || [], precio_acordado: s.precio_acordado };
   }
 
 

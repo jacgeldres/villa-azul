@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.14.1';
+var VERSION = '5.14.2';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -664,6 +664,7 @@ var NIVEL_TXT = {minimo:'Mínimo', descuento:'Con descuento', recomendado:'Recom
 var COT_PERFIL = {turismo:'Turistas', banda:'Banda u orquesta', grupo:'Otro grupo'};
 /* Costos que se repiten: [cómo lo ve el cliente en «Incluye», texto del botón]. */
 var OTROS_FRECUENTES = [['Traslado de carga o equipaje extra','Carga o equipaje extra'], ['Traslado de encomiendas o bultos','Encomiendas o bultos'], ['Entradas','Entradas'], ['Guía','Guía']];
+var EXTRAS_DESC = {wifi:'Internet satelital de alta velocidad en toda la ruta, incluso sin señal de celular', refrigerio:'Un snack y una bebida por pasajero cada día de viaje'};
 var BANDA_RE = /banda|m[uú]sic|orquesta|filarm|conjunto|agrupaci[oó]n/i;
 var COT_TIPO_CORTO = {excursion:'Excursión', taxi:'Taxi', privado:'Privado'};
 // Igual que en /js/cotizar.mjs (BASE y MODALIDADES): la cochera de la van y cómo se mueve en cada servicio.
@@ -1099,15 +1100,16 @@ function cotParametros(){
   h += '<div class="campo"><label for="pp_wa">WhatsApp de la empresa <small style="font-weight:500;color:var(--muted)">(recibe la elección del cliente)</small></label><input id="pp_wa" inputmode="tel" value="'+esc(String(P.whatsapp_empresa||'').replace(/^51/,''))+'"></div>'+botonesHoja('Guardar parámetros');
   abrirHoja(h);
   hoja.querySelectorAll('[data-sug]').forEach(function(b){ b.onclick=function(){ $('pp_'+b.dataset.sug).value = b.dataset.val; }; });
-  var leerEx = function(){ EX.forEach(function(e, i){ if(!$('ex_n'+i)) return; e.nombre = $('ex_n'+i).value; e.precio = $('ex_p'+i).value.replace(',','.'); e.costo = $('ex_c'+i).value.replace(',','.'); e.unidad = $('ex_u'+i).value; e.desde_dias = $('ex_d'+i).value; e.activo = $('ex_a'+i).checked ? 1 : 0; e.tarea = $('ex_t'+i).value; }); };
+  var leerEx = function(){ EX.forEach(function(e, i){ if(!$('ex_n'+i)) return; e.nombre = $('ex_n'+i).value; e.descripcion = $('ex_s'+i).value; e.precio = $('ex_p'+i).value.replace(',','.'); e.costo = $('ex_c'+i).value.replace(',','.'); e.unidad = $('ex_u'+i).value; e.desde_dias = $('ex_d'+i).value; e.activo = $('ex_a'+i).checked ? 1 : 0; e.tarea = $('ex_t'+i).value; }); };
   var pintarEx = function(){ $('pp_ex').innerHTML = EX.map(function(e, i){ return '<fieldset class="ex-par"><legend><label class="ex-act"><input type="checkbox" id="ex_a'+i+'"'+(Number(e.activo)?' checked':'')+'> Ofrecer</label><button type="button" class="btn-mini quitar" data-exq="'+i+'" aria-label="Quitar '+esc(e.nombre)+'">✕</button></legend>'+
       '<div class="campo"><label for="ex_n'+i+'">Nombre que ve el cliente</label><input id="ex_n'+i+'" value="'+esc(e.nombre)+'" maxlength="50"></div>'+
+      '<div class="campo"><label for="ex_s'+i+'">Detalle que ve el cliente</label><input id="ex_s'+i+'" value="'+esc(e.descripcion!=null?e.descripcion:(EXTRAS_DESC[e.id]||''))+'" maxlength="120" placeholder="Ej.: Internet en toda la ruta, incluso sin señal"></div>'+
       '<div class="ex-g"><div class="campo"><label for="ex_p'+i+'">Precio S/</label><input id="ex_p'+i+'" inputmode="decimal" class="num" value="'+esc(e.precio)+'"></div><div class="campo"><label for="ex_u'+i+'">Se cobra</label><select id="ex_u'+i+'">'+Object.keys(UN).map(function(u){ return '<option value="'+u+'"'+(e.unidad===u?' selected':'')+'>'+UN[u]+'</option>'; }).join('')+'</select></div>'+
       '<div class="campo"><label for="ex_c'+i+'">Te cuesta S/</label><input id="ex_c'+i+'" inputmode="decimal" class="num" value="'+esc(e.costo)+'"></div><div class="campo"><label for="ex_d'+i+'">Desde días</label><input id="ex_d'+i+'" inputmode="numeric" class="num" value="'+esc(e.desde_dias||1)+'"></div></div>'+
       '<div class="campo"><label for="ex_t'+i+'">Qué preparar si lo eligen</label><input id="ex_t'+i+'" value="'+esc(e.tarea||'')+'" maxlength="120"></div><p class="ayuda">Precio y costo por pasajero.</p></fieldset>'; }).join('') || '<p class="vacio">Sin extras.</p>';
     hoja.querySelectorAll('[data-exq]').forEach(function(b){ b.onclick = function(){ leerEx(); EX.splice(Number(b.dataset.exq),1); pintarEx(); }; }); };
   pintarEx();
-  $('pp_exadd').onclick = function(){ leerEx(); EX.push({nombre:'', precio:'', costo:'', unidad:'viaje', desde_dias:1, activo:1, tarea:''}); pintarEx(); $('ex_n'+(EX.length-1)).focus(); };
+  $('pp_exadd').onclick = function(){ leerEx(); EX.push({nombre:'', descripcion:'', precio:'', costo:'', unidad:'viaje', desde_dias:1, activo:1, tarea:''}); pintarEx(); $('ex_n'+(EX.length-1)).focus(); };
   $('ok').onclick = function(){ leerEx(); var body = {whatsapp_empresa:$('pp_wa').value, extras:EX.filter(function(e){ return String(e.nombre).trim(); })}; COT_PAR.forEach(function(g){ g[1].forEach(function(x){ body[x[0]] = x[2]==='switch' ? ($('pp_'+x[0]).checked?1:0) : $('pp_'+x[0]).value.replace(',','.'); }); });
     $('ok').disabled=true; api('/api/cotizador/parametros',{method:'POST',body:body}).then(function(r){ $('ok').disabled=false; if(!r.ok){ $('er').textContent=r.error; return; } S.cotP=r.data; hoja.close(); toast('Parámetros guardados'); if(S.cot.vista==='nueva') cotForm(S.cot.editar||null); }); };
 }
@@ -1150,7 +1152,7 @@ function mensajeCliente(c, url, F){
   // Sin precios: el cliente marca en el enlace y ve subir el pasaje.
   if(ex.length && !c.precio_final_premium){ var nx = ex.map(function(e){ var t = e.nombre.replace(/\s*\(.*\)$/,''), w = t.split(' ')[0]; return /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/.test(w) ? t.charAt(0).toLowerCase()+t.slice(1) : t; });
     L.push('', '➕ *Opcional:* puede sumar '+(nx.length<2 ? nx[0] : nx.slice(0,-1).join(', ')+' o '+nx[nx.length-1])+' a su viaje. Lo marca en el enlace y el precio se actualiza solo.'); }
-  var inc = (c.incluye||[]).concat(Array.isArray(c.servicio_incluye) ? c.servicio_incluye : F && F.serviciosPara ? F.serviciosPara(d.perfil).estandar.incluye : []);
+  var inc = (Array.isArray(c.servicio_incluye) ? c.servicio_incluye : F && F.serviciosPara ? F.serviciosPara(d.perfil).estandar.incluye : []).concat((c.incluye||[]).filter(function(x){ return x!=='Combustible' && x!=='Conductor profesional'; }));
   if(inc.length){ L.push('', '✅ *Incluye:*'); inc.forEach(function(x){ L.push('• '+x); }); }
   if((c.politica_espera||[]).length){ L.push('', '⏱️ *Tiempo de espera:*'); c.politica_espera.forEach(function(x){ L.push('• '+x); }); }
   var ad = Number(c.adelanto_pct)||0;

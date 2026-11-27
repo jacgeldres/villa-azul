@@ -53,9 +53,15 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 .ic.si{background:var(--ok)} .ic.x{background:var(--no)}
 .oculto-lector{position:absolute;left:-9999px}
 .plan-pie{position:relative;padding:34px 18px 22px;text-align:center;clip-path:polygon(0 22%,100% 0,100% 100%,0 100%);background:linear-gradient(135deg,var(--c2),var(--c1));min-height:72px}
-.elegir{display:inline-flex;align-items:center;justify-content:center;min-height:48px;min-width:170px;padding:10px 24px;border-radius:999px;border:none;background:#fff;color:var(--c1);font:800 16px var(--font);cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.18)}
-.elegir:focus-visible{outline:3px solid #F2B53A;outline-offset:3px}
-.elegir[disabled]{opacity:.8;cursor:default}
+.elegir{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:420px;min-height:58px;padding:12px 22px;border-radius:999px;border:none;background:linear-gradient(180deg,#FFD84D,#FFB800);color:#1B1400;font:800 17px/1.25 var(--font);cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.28),inset 0 -3px 0 rgba(0,0,0,.12);animation:invitar 2.4s ease-out 1.2s 3}
+.elegir:not([disabled])::before{content:"✓";display:grid;place-content:center;width:26px;height:26px;border-radius:50%;background:#1B1400;color:#FFD84D;font-size:15px;flex:none}
+.elegir:active{transform:translateY(1px)}
+.elegir:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.elegir[disabled]{background:rgba(255,255,255,.92);color:var(--c1);animation:none;box-shadow:0 4px 12px rgba(0,0,0,.15);cursor:default}
+.elegir .bt{display:grid;gap:1px;text-align:center}
+.elegir .bt small{font-size:13.5px;font-weight:700;opacity:.85}
+@keyframes invitar{0%{box-shadow:0 8px 22px rgba(0,0,0,.28),0 0 0 0 rgba(255,216,77,.75)}70%{box-shadow:0 8px 22px rgba(0,0,0,.28),0 0 0 16px rgba(255,216,77,0)}100%{box-shadow:0 8px 22px rgba(0,0,0,.28),0 0 0 0 rgba(255,216,77,0)}}
+@media (prefers-reduced-motion: reduce){.elegir{animation:none}}
 .tuyo{display:inline-block;color:#fff;font-weight:800;font-size:15px}
 .card{max-width:760px;margin:22px auto 0;background:var(--surface);border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(12,26,46,.08)}
 .card h3{margin:0 0 10px;font-size:17px;font-weight:800}
@@ -68,9 +74,9 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 .extras h4{margin:0;font-size:16px}
 .extras h4 small{font-weight:600;color:var(--muted);font-size:13px;margin-left:4px}
 .extras p{margin:4px 0 10px;color:var(--muted);font-size:14px}
-.extra{display:flex;gap:14px;align-items:center;padding:14px;margin-bottom:12px;border:2px dashed var(--brand);border-radius:16px;cursor:pointer;min-height:64px;background:rgba(30,79,209,.04);transition:border-color .15s, background .15s, box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.extra{display:flex;gap:14px;align-items:flex-start;padding:14px;margin-bottom:12px;border:2px dashed var(--brand);border-radius:16px;cursor:pointer;min-height:64px;background:rgba(30,79,209,.04);transition:border-color .15s, background .15s, box-shadow .15s;-webkit-tap-highlight-color:transparent}
 .extra:hover{background:rgba(30,79,209,.08)}
-.extra input{appearance:none;-webkit-appearance:none;margin:0;flex:none;width:30px;height:30px;border:3px solid var(--brand);border-radius:9px;background:var(--surface);display:grid;place-content:center;cursor:pointer;box-shadow:0 0 0 0 rgba(30,79,209,.45);animation:llamar 2.2s ease-out 3}
+.extra input{appearance:none;-webkit-appearance:none;margin:2px 0 0;flex:none;width:30px;height:30px;border:3px solid var(--brand);border-radius:9px;background:var(--surface);display:grid;place-content:center;cursor:pointer;box-shadow:0 0 0 0 rgba(30,79,209,.45);animation:llamar 2.2s ease-out 3}
 .extra input::after{content:"";width:14px;height:8px;border-left:3.5px solid #fff;border-bottom:3.5px solid #fff;transform:rotate(-45deg) scale(0);margin-top:-4px;transition:transform .15s}
 .extra input:checked{background:var(--brand);animation:none}
 .extra input:checked::after{transform:rotate(-45deg) scale(1)}
@@ -79,9 +85,8 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 .extra .ex-t{display:grid;gap:2px;flex:1;min-width:0}
 .extra b{font-size:16px}
 .extra small{color:var(--muted);font-size:13.5px;font-weight:600}
-.extra .ex-pill{flex:none;padding:7px 12px;border-radius:999px;background:var(--brand);color:#fff;font-weight:800;font-size:13.5px;white-space:nowrap}
+.extra .ex-pill{justify-self:start;margin-top:8px;padding:7px 14px;border-radius:999px;background:var(--brand);color:#fff;font-weight:800;font-size:13.5px;white-space:nowrap}
 .extra.si{border-style:solid;background:rgba(30,79,209,.1);box-shadow:0 2px 10px rgba(30,79,209,.15)}
-.extra.si small{color:var(--brand)}
 .extra.si .ex-pill{background:var(--ok);color:#fff}
 @keyframes llamar{0%{box-shadow:0 0 0 0 rgba(30,79,209,.5)}70%{box-shadow:0 0 0 10px rgba(30,79,209,0)}100%{box-shadow:0 0 0 0 rgba(30,79,209,0)}}
 [data-precio].cambio{animation:destello .7s ease-out}
@@ -136,16 +141,16 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
       : p.por_pasajero ? '<div class="precio">'+precioHtml(t.por_pasajero)+'</div><div class="pp">por pasajero</div><div class="pp total">Total del grupo: '+soles(t.precio)+'</div>'
       : '<div class="precio">'+precioHtml(t.precio)+'</div>'; }
   function textoBoton(p, mio, uno){ var ex = p.clave==='estandar' ? extrasSel().map(function(e){ return e.nombre; }) : [], t = totalCon(p);
-    if(mio && p.clave==='estandar' && (D.extras||[]).length && !mismaSel(SEL, D.extras_elegidos||[])) return 'Actualizar mi elección · '+soles(t.precio);
+    if(mio && p.clave==='estandar' && (D.extras||[]).length && !mismaSel(SEL, D.extras_elegidos||[])) return '<span class="bt"><span>Actualizar mi elección</span><small>'+soles(t.precio)+'</small></span>';
     if(mio) return uno ? 'Aceptada ✓' : 'Elegido ✓';
-    if(uno) return (ex.length ? 'Aceptar con '+nombresY(ex) : 'Aceptar la cotización')+' · '+soles(t.precio);
+    if(uno) return '<span class="bt"><span>'+esc(ex.length ? 'Aceptar con '+nombresY(ex) : 'Aceptar la cotización')+'</span><small>'+soles(t.precio)+' · total del grupo</small></span>'; // texto arriba, monto abajo
     return d0().plan_elegido ? 'Cambiar a '+esc(p.nombre) : 'Elegir '+esc(p.nombre); }
   function d0(){ return D; }
   function seccionExtras(abierta){ var L = D.extras||[]; if(!L.length) return '';
     if(!abierta && !(D.extras_elegidos||[]).length) return '';
     // Sin precio por extra: el cliente marca y ve subir el precio del pasaje arriba.
     return '<div class="extras"><h4>Mejora tu viaje <small>opcional</small></h4><p>Toca lo que quieras sumar a tu viaje.</p>'+L.map(function(e){ var si = SEL.indexOf(e.id)>=0;
-      return '<label class="extra'+(si?' si':'')+'"><input type="checkbox" data-ex="'+esc(e.id)+'"'+(si?' checked':'')+(abierta?'':' disabled')+'><span class="ex-t"><b>'+esc(e.nombre)+'</b><small>'+(si?'Agregado a tu viaje':'Toca para agregar')+'</small></span><span class="ex-pill" aria-hidden="true">'+(si?'✓ Agregado':'+ Agregar')+'</span></label>'; }).join('')+'</div>'; }
+      return '<label class="extra'+(si?' si':'')+'"><input type="checkbox" data-ex="'+esc(e.id)+'"'+(si?' checked':'')+(abierta?'':' disabled')+'><span class="ex-t"><b>'+esc(e.nombre)+'</b>'+(e.descripcion?'<small>'+esc(e.descripcion)+'</small>':'')+'<span class="ex-pill" aria-hidden="true">'+(si?'✓ Agregado':'+ Agregar')+'</span></span></label>'; }).join('')+'</div>'; }
   function pintar(){
     var d = D, abierta = !d.vencida && d.estado!=='rechazada';
     var chips = [];
@@ -171,7 +176,7 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
       h += '<article class="plan '+p.clave+(mio?' elegido':'')+'" aria-label="Servicio '+esc(p.nombre)+'">'+
         '<div class="plan-top">'+(uno?'':d.preferido===p.clave?'<span class="cinta">LO QUE PEDISTE</span>':p.clave==='premium'?'<span class="cinta">MÁS COMPLETO</span>':'')+'<h3>'+esc(p.nombre)+'</h3><div data-precio="'+p.clave+'">'+precioBloque(p)+'</div>'+difPremium(p)+'</div>'+
         (uno ? seccionExtras(abierta) : '')+
-        '<ul class="lista">'+d.todos.map(function(f){ var si = p.incluye.indexOf(f)>=0; return '<li class="'+(si?'':'no')+'"><span class="ic '+(si?'si':'x')+'" aria-hidden="true">'+(si?'✓':'✕')+'</span><span>'+esc(f)+'<span class="oculto-lector">'+(si?' (incluido)':' (no incluido)')+'</span></span></li>'; }).join('')+'</ul>'+
+        '<ul class="lista">'+d.todos.concat(d.incluye||[]).map(function(f){ var si = p.incluye.indexOf(f)>=0 || (d.incluye||[]).indexOf(f)>=0; return '<li class="'+(si?'':'no')+'"><span class="ic '+(si?'si':'x')+'" aria-hidden="true">'+(si?'✓':'✕')+'</span><span>'+esc(f)+'<span class="oculto-lector">'+(si?' (incluido)':' (no incluido)')+'</span></span></li>'; }).join('')+'</ul>'+
         '<div class="plan-pie">'+(abierta?'<button type="button" class="elegir" data-plan="'+p.clave+'"'+(mio && textoBoton(p, mio, uno).indexOf('Actualizar')<0?' disabled':'')+'>'+textoBoton(p, mio, uno)+'</button>':(mio?'<span class="tuyo">Tu elección</span>':''))+'</div></article>';
     });
     h += '</div>';
@@ -181,7 +186,7 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
       h += '<div class="estado ok">'+(uno?'Aceptaste la cotización'+esc(conE):'Elegiste el servicio <b>'+esc(pe.nombre)+'</b>')+' por '+soles(monto)+'. Villa Azul te confirmará la reserva.'+
         (d.whatsapp?'<br><a class="btn wa" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, '+(uno?'acepté':'elegí el servicio '+pe.nombre+' de')+' la cotización '+d.codigo+conE+' ('+d.origen+' → '+d.destino+') por '+soles(monto)+'.')+'">Avisar por WhatsApp</a>':'')+'</div>'; }
     else if(d.vencida) h += '<div class="estado mal">Esta cotización venció el '+esc(d.valida_hasta)+'. Pide una actualizada a Villa Azul.</div>';
-    h += '<section class="card"><h3>'+(uno?'Incluido en el precio':'Incluido en ambos servicios')+'</h3><div class="inc">'+d.incluye.map(function(x){ return '<span>'+esc(x)+'</span>'; }).join('')+'</div>'+(d.notas?'<p class="notas">'+esc(d.notas)+'</p>':'')+'</section>';
+    if(d.notas) h += '<section class="card"><h3>Notas</h3><p class="notas" style="margin-top:6px">'+esc(d.notas)+'</p></section>';
     if(d.adelanto_pct) h += '<section class="card espera"><h3>Para separar tu viaje</h3><ul><li>Adelanto del '+d.adelanto_pct+' % (<span id="adelanto">'+soles((uno?totalCon(d.planes[0]).precio:d.precio)*d.adelanto_pct/100)+'</span>) al confirmar.</li><li>El saldo, antes de salir.</li></ul></section>';
     if((d.politica_espera||[]).length) h += '<section class="card espera"><h3>Tiempo de espera</h3><ul>'+d.politica_espera.map(function(x){ return '<li>'+esc(x)+'</li>'; }).join('')+'</ul></section>';
     if(d.whatsapp) h += '<p style="text-align:center"><a class="btn" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(d.whatsapp)+'&text='+encodeURIComponent('Hola, tengo una consulta sobre la cotización '+d.codigo+'.')+'">Hacer una consulta</a></p>';
@@ -193,12 +198,12 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
     root.querySelectorAll('[data-ex]').forEach(function(x){ x.onchange = function(){ var id = x.dataset.ex, i = SEL.indexOf(id);
       if(x.checked && i<0) SEL.push(id); if(!x.checked && i>=0) SEL.splice(i,1);
       var fila = x.closest('.extra'); fila.classList.toggle('si', x.checked);
-      fila.querySelector('.ex-t small').textContent = x.checked ? 'Agregado a tu viaje' : 'Toca para agregar'; fila.querySelector('.ex-pill').textContent = x.checked ? '✓ Agregado' : '+ Agregar';
+      fila.querySelector('.ex-pill').textContent = x.checked ? '✓ Agregado' : '+ Agregar';
       var p = D.planes[0], mio = D.plan_elegido===p.clave, b = root.querySelector('[data-plan="'+p.clave+'"]'), caja = root.querySelector('[data-precio="'+p.clave+'"]');
       caja.innerHTML = precioBloque(p);
       // Un destello en el precio para que se note que cambió.
       caja.classList.remove('cambio'); void caja.offsetWidth; caja.classList.add('cambio');
-      if(b){ b.textContent = textoBoton(p, mio, true); b.disabled = mio && b.textContent.indexOf('Actualizar')<0; }
+      if(b){ b.innerHTML = textoBoton(p, mio, true); b.disabled = mio && b.textContent.indexOf('Actualizar')<0; }
       if($v('adelanto')) $v('adelanto').textContent = soles(totalCon(p).precio*D.adelanto_pct/100); }; });
     root.querySelectorAll('[data-plan]').forEach(function(b){ b.onclick = function(){
       if(PREVIA){ alert('Es una vista previa: el cliente acepta desde su propio enlace.'); return; }
