@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.12.0';
+var VERSION = '5.13.0';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -190,7 +190,27 @@ function sincronizar(forzarTodo){
 }
 window.addEventListener('online', function(){ S.online=true; sincronizar(); });
 window.addEventListener('offline', function(){ S.online=false; pintarSenal(); });
-document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') sincronizar(); });
+document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible'){ sincronizar(); revisarVersion(); } });
+/* ════════════ Versión nueva ════════════
+   Un celular con la app abierta desde hace días puede seguir con el código anterior (p. ej. un mensaje de WhatsApp viejo).
+   Si el servidor ya tiene otra versión, se ofrece actualizar con un toque: borra lo guardado y recarga. */
+var verRevisada = 0;
+function revisarVersion(){
+  if(Date.now() - verRevisada < 5*60e3 || !navigator.onLine) return; verRevisada = Date.now();
+  fetch('/api/estado', {cache:'no-store'}).then(function(r){ return r.json(); }).then(function(j){
+    var v = j && j.data && j.data.version; if(!v || v === VERSION || document.getElementById('nuevaVer')) return;
+    var b = document.createElement('div'); b.id = 'nuevaVer'; b.className = 'nueva-ver'; b.setAttribute('role','status');
+    b.innerHTML = '<span>Hay una versión nueva de Villa Azul (v'+esc(v)+').</span><button type="button" class="btn-mini">Actualizar</button>';
+    b.querySelector('button').onclick = actualizarApp; document.body.appendChild(b);
+  }).catch(function(){});
+}
+function actualizarApp(){
+  var fin = function(){ location.reload(); };
+  var limpiar = window.caches ? caches.keys().then(function(k){ return Promise.all(k.map(function(n){ return caches.delete(n); })); }) : Promise.resolve();
+  var sw = navigator.serviceWorker ? navigator.serviceWorker.getRegistrations().then(function(rs){ return Promise.all(rs.map(function(r){ return r.update().catch(function(){}); })); }) : Promise.resolve();
+  Promise.all([limpiar, sw]).then(fin, fin);
+}
+setTimeout(revisarVersion, 4000);
 setInterval(function(){ if(S.yo && S.outbox.some(function(o){return o.estado==='pendiente';})) sincronizar(); }, 30000);
 // Cada minuto, con la app abierta y con señal, se traen los avisos nuevos del equipo.
 setInterval(function(){ if(S.yo && navigator.onLine && document.visibilityState==='visible' && !S.sincronizando) sincronizar(); }, 60000);
@@ -642,6 +662,9 @@ var COT_EST = {borrador:['Borrador',''], enviada:['Enviada','en_ruta'], aceptada
 var PLAN_TXT = {estandar:'Estándar', premium:'Premium'};
 var NIVEL_TXT = {minimo:'Mínimo', descuento:'Con descuento', recomendado:'Recomendado', alto:'Alto'}, NIVEL_CORTO = {minimo:'Mín.', descuento:'Desc.', recomendado:'Recom.', alto:'Alto'};
 var COT_PERFIL = {turismo:'Turistas', banda:'Banda u orquesta', grupo:'Otro grupo'};
+/* Costos que se repiten: [cómo lo ve el cliente en «Incluye», texto del botón]. */
+var OTROS_FRECUENTES = [['Traslado de carga o equipaje extra','Carga o equipaje extra'], ['Traslado de encomiendas o bultos','Encomiendas o bultos'], ['Entradas','Entradas'], ['Guía','Guía']];
+var BANDA_RE = /banda|m[uú]sic|orquesta|filarm|conjunto|agrupaci[oó]n/i;
 var COT_TIPO_CORTO = {excursion:'Excursión', taxi:'Taxi', privado:'Privado'};
 // Igual que en /js/cotizar.mjs (BASE y MODALIDADES): la cochera de la van y cómo se mueve en cada servicio.
 var COT_BASE = 'Angasmarca';
@@ -652,7 +675,7 @@ function cotModalidad(d){ return d && COT_MOD[d.modalidad] ? d.modalidad : (d &&
 /** Etiqueta larga en pantallas normales y corta en las angostas (ver .lc-l / .lc-c en index.html). */
 function lc(largo, corto){ return largo===corto ? esc(largo) : '<span class="lc-l">'+esc(largo)+'</span><span class="lc-c">'+esc(corto)+'</span>'; }
 S.cot = {vista:'lista'};
-function formula(){ return S.cotFormula ? Promise.resolve(S.cotFormula) : import('/js/cotizar.mjs').then(function(m){ S.cotFormula = m; return m; }); }
+function formula(){ return S.cotFormula ? Promise.resolve(S.cotFormula) : import('/js/cotizar.mjs?v='+VERSION).then(function(m){ S.cotFormula = m; return m; }); }
 function vCotizador(){
   if(!navigator.onLine) return sinSenal(null, 'El cotizador trabaja con señal.');
   if(!S.cotL) $('vista').innerHTML = '<p class="vacio">Cargando cotizaciones…</p>';
@@ -687,7 +710,7 @@ function cotForm(c, pre){
   var P = S.cotP, OP = !!P.operador, dr = !c ? (borrador()||{}).extra || {} : {};
   var galonParam = OP ? P.precio_galon : P.parametros.precio_galon, vel = OP ? P.velocidad_promedio : P.parametros.velocidad_promedio;
   var x = c ? Object.assign({}, c.datos, {cliente:c.cliente, cliente_tel:String(c.cliente_tel||'').replace(/^51/,''), origen:c.origen, destino:c.destino, fecha_servicio:c.fecha_servicio, notas:c.notas})
-            : Object.assign({tipo:'excursion', modalidad:'ida_vuelta', trocha:true, dias:1, noches:0, pasajeros:15, origen:COT_BASE}, pre||{}, dr);
+            : Object.assign({tipo:'excursion', modalidad:'ida_vuelta', trocha:true, dias:1, noches:0, pasajeros:15, peajes_ida:0, peajes_vuelta:0, origen:COT_BASE}, pre||{}, dr);
   var v = function(k){ return esc(x[k]==null?'':x[k]); };
   var h = '<button type="button" class="enlace" id="cvol" style="padding:4px 0">'+(pre?'← Volver a '+esc(pre.codigo):'← Cotizaciones')+'</button><div class="saludo"><h2>'+(c?'Editar '+esc(c.codigo):pre?'Cotizar '+esc(pre.codigo)+' · '+esc(pre.cliente):'Nueva cotización')+'</h2></div>';
   if(pre) h += '<div class="card desde-sol"><b>Lo que pidió el cliente</b><p class="ayuda">Los datos ya están puestos. Revisa los km, ajusta los precios y guarda: luego la envías por WhatsApp desde la cotización.</p><dl class="ficha"><dt>Prefiere</dt><dd>'+esc(SOL_PREF[pre.servicio_pref]||'—')+'</dd>'+
@@ -702,8 +725,8 @@ function cotForm(c, pre){
     '<label class="interruptor-p" style="margin-top:12px"><input type="checkbox" id="qtroc"'+(x.trocha?' checked':'')+'><span><b>Ruta de sierra o trocha</b><small>Camino accidentado: la van rinde menos, va más lento y se gasta más. Sube el diésel, el desgaste y el pago por km del conductor.</small></span></label>'+
     '<span class="etq">Recorrido</span><div class="chips" role="group" aria-label="Recorrido">'+Object.keys(COT_MOD).map(function(m){ return '<button type="button" class="chip" data-md="'+m+'" aria-pressed="'+(cotModalidad(x)===m)+'">'+COT_MOD[m][0]+'</button>'; }).join('')+'</div><p class="ayuda" id="qmdh"></p>'+
     '<div class="dos"><div class="campo"><label for="qkm">Km de ida</label><input id="qkm" inputmode="decimal" class="num" value="'+v('km_ida')+'"></div><div class="campo"><label for="qkx">Km adicionales <small style="font-weight:500;color:var(--muted)">(paseos en destino)</small></label><input id="qkx" inputmode="decimal" class="num" value="'+v('km_extra')+'"></div></div>'+
-    '<div class="dos"><div class="campo"><label for="qpe">Peajes de ida S/</label><input id="qpe" inputmode="decimal" class="num" value="'+v('peajes_ida')+'"></div><div class="campo" id="bpv"><label for="qpv" id="qpvl">Peajes de vuelta S/</label><input id="qpv" inputmode="decimal" class="num" value="'+v('peajes_vuelta')+'"></div></div>'+
-    '<p class="ayuda tramos" id="qtr"></p><div id="bvac"><span class="etq">El grupo no sale de '+COT_BASE+' <small>(km que la van hace vacía para llegar y volver)</small></span><div class="dos"><div class="campo" style="margin-top:0"><label for="qb1" id="qb1l">De '+COT_BASE+' al origen</label><input id="qb1" inputmode="decimal" class="num" value="'+v('km_base_origen')+'"></div><div class="campo" style="margin-top:0"><label for="qb2" id="qb2l">Del destino a '+COT_BASE+'</label><input id="qb2" inputmode="decimal" class="num" value="'+v('km_destino_base')+'"></div></div><p class="ayuda" id="qvac"></p></div>'+
+    '<div class="dos"><div class="campo"><label for="qpe">Peajes de ida S/</label><input id="qpe" inputmode="decimal" class="num" value="'+v('peajes_ida')+'"></div><div class="campo" id="bpv"><label for="qpv" id="qpvl">Peajes de vuelta S/</label><input id="qpv" inputmode="decimal" class="num" value="'+v('peajes_vuelta')+'"></div></div><p class="ayuda" id="qpeh"></p>'+
+    '<p class="ayuda tramos" id="qtr"></p><div id="bvac"><span class="etq">El grupo no sale de '+COT_BASE+' <small>(km que la van hace vacía para ir a recogerlos y volver)</small></span><div class="dos"><div class="campo" style="margin-top:0"><label for="qb1" id="qb1l">De '+COT_BASE+' al origen</label><input id="qb1" inputmode="decimal" class="num" value="'+v('km_base_origen')+'"></div><div class="campo" style="margin-top:0" id="bb2"><label for="qb2" id="qb2l">Del destino a '+COT_BASE+'</label><input id="qb2" inputmode="decimal" class="num" value="'+v('km_destino_base')+'"></div></div><p class="ayuda" id="qvac"></p></div>'+
     '<div class="dos"><div class="campo" id="bdi"><label for="qdi">Días de servicio</label><input id="qdi" inputmode="numeric" class="num" value="'+v('dias')+'"></div><div class="campo" id="bno"><label for="qno">Noches fuera</label><input id="qno" inputmode="numeric" class="num" value="'+v('noches')+'"></div></div>'+
     '<span class="etq">Tipo de cliente</span><div class="chips" role="group" aria-label="Tipo de cliente">'+Object.keys(COT_PERFIL).map(function(k){ return '<button type="button" class="chip" data-pf="'+k+'" aria-pressed="'+((x.perfil||'turismo')===k)+'">'+COT_PERFIL[k]+'</button>'; }).join('')+'</div><p class="ayuda" id="qpfh"></p>'+
     '<div class="dos"><div class="campo" id="bho"><label for="qho">Horas de espera incluidas</label><input id="qho" inputmode="decimal" class="num" value="'+v('horas_espera')+'" placeholder="0"></div><div class="campo"><label for="qpa">Pasajeros</label><input id="qpa" inputmode="numeric" class="num" value="'+v('pasajeros')+'"></div></div><p class="ayuda" id="qpah"></p>'+
@@ -712,8 +735,10 @@ function cotForm(c, pre){
     '<div class="campo" id="bfr"><label for="qfr" id="qfrl">Regreso desde el destino</label><input id="qfr" type="datetime-local" value="'+v('fecha_retorno')+'"></div></div>'+
     '<p class="ayuda" id="qfrh"></p>'+
     '<div class="campo"><label for="qdg">Precio del diésel hoy <small style="font-weight:500;color:var(--muted)">(S/ por galón)</small></label><input id="qdg" inputmode="decimal" class="num" value="'+esc(x.precio_galon||galonParam)+'"><p class="ayuda aviso-diesel">Verifica el precio de hoy en el grifo antes de cotizar. Si cambió, corrígelo aquí: solo afecta a esta cotización.</p></div>'+
-    (OP?'':'<div class="campo"><label for="qbo">Bono del conductor para este viaje <small style="font-weight:500;color:var(--muted)">(S/, opcional)</small></label><input id="qbo" inputmode="decimal" class="num" value="'+esc(x.bono==null?'':x.bono)+'" placeholder="Automático"><p class="ayuda" id="qbs"></p></div>')+
-    '<span class="etq">'+(OP?'Gastos extra del viaje':'Otros costos de este viaje')+' <small>(entradas, guía…)</small></span><div id="qot"></div><button type="button" class="btn-mini" id="qadd">'+ico('mas')+(OP?' Agregar gasto':' Agregar costo')+'</button>'+
+    (OP?'':'<div class="campo"><span class="etq" style="margin-top:0">Pago del conductor</span><p class="ayuda" id="qbs" style="margin-top:4px"></p></div>')+
+    '<span class="etq">'+(OP?'Gastos extra del viaje':'Otros costos de este viaje')+' <small>(carga, encomiendas, entradas…)</small></span>'+
+    '<div class="chips chips-otros" role="group" aria-label="Agregar un costo frecuente">'+OTROS_FRECUENTES.map(function(t, i){ return '<button type="button" class="chip" data-otf="'+i+'">'+ico('mas')+' '+esc(t[1])+'</button>'; }).join('')+'</div>'+
+    '<div id="qot"></div><button type="button" class="btn-mini" id="qadd">'+ico('mas')+' Otro concepto</button><p class="ayuda" style="margin-top:6px">'+(OP?'Se suman al precio del cliente. Él los ve en «Incluye».':'Se suman al costo y llevan el margen elegido. El cliente los ve en «Incluye» con el nombre que escribas.')+'</p>'+
     '<div class="campo"><label for="qnt">Notas para el cliente</label><textarea id="qnt" maxlength="500">'+v('notas')+'</textarea></div></div>';
   h += '<div class="titulo-sec"><h3>Precio</h3></div><div id="qres" class="card"><p class="vacio">Escribe los km de ida o pulsa «Calcular km».</p></div>';
   h += '<p class="error" id="qerr" role="alert"></p><button type="button" class="btn ancho" id="qgu" style="margin-top:8px">'+(c?'Guardar cambios':'Guardar cotización')+'</button>';
@@ -763,8 +788,9 @@ function cotForm(c, pre){
   var manual = {estandar:!!c, premium:!!(c && c.precio_final_premium)};
   var soltar = function(){ ['estandar','premium'].forEach(function(k){ if(!escrito[k]) manual[k] = false; }); };
   var extra = function(){ if(c) return; var b=ls('va_borradores')||{}, k=claveBorr(); b[k]=b[k]||{t:Date.now(),v:{}}; b[k].extra={tipo:tipo, modalidad:md, perfil:perfil, otros:otros, nivel:nivel}; b[k].t=Date.now(); ls('va_borradores',b); };
-  var pintarOtros = function(){ $('qot').innerHTML = otros.map(function(o,i){ return '<div class="dos" style="align-items:end"><div class="campo"><label for="qoc'+i+'">Concepto</label><input id="qoc'+i+'" value="'+esc(o.concepto)+'"></div><div class="campo"><label for="qom'+i+'">Monto S/</label><input id="qom'+i+'" inputmode="decimal" class="num" value="'+esc(o.monto)+'"></div></div>'; }).join('');
-    otros.forEach(function(o,i){ $('qoc'+i).oninput=function(){ o.concepto=this.value; extra(); recalcular(); }; $('qom'+i).oninput=function(){ o.monto=this.value; extra(); recalcular(); }; }); };
+  var pintarOtros = function(){ $('qot').innerHTML = otros.map(function(o,i){ return '<div class="otro-fila"><div class="campo"><label for="qoc'+i+'">Concepto</label><input id="qoc'+i+'" value="'+esc(o.concepto)+'" maxlength="60"></div><div class="campo"><label for="qom'+i+'">Monto S/</label><input id="qom'+i+'" inputmode="decimal" class="num" value="'+esc(o.monto)+'"></div><button type="button" class="btn-mini quitar" data-qx="'+i+'" aria-label="Quitar '+esc(o.concepto||'costo')+'">✕</button></div>'; }).join('');
+    otros.forEach(function(o,i){ $('qoc'+i).oninput=function(){ o.concepto=this.value; extra(); recalcular(); }; $('qom'+i).oninput=function(){ o.monto=this.value; soltar(); extra(); recalcular(); }; });
+    $('qot').querySelectorAll('[data-qx]').forEach(function(b){ b.onclick = function(){ otros.splice(Number(b.dataset.qx), 1); soltar(); extra(); pintarOtros(); recalcular(); }; }); };
   var sinDias = function(){ return tipo==='taxi' || md==='dos_dias'; };
   // La espera se calcula sola: regreso − salida − un tramo de manejo. Si alguien escribe las horas a mano, se respeta.
   // Al editar se respetan las horas guardadas; se recalculan solo si cambias la salida o el regreso (o tocas «Usar»).
@@ -789,6 +815,8 @@ function cotForm(c, pre){
     $('qpvl').textContent = md==='solo_ida' ? 'Peajes del regreso vacío S/' : 'Peajes de vuelta S/';
     $('bfr').classList.toggle('oculto', md==='solo_ida');
     $('bvac').classList.toggle('oculto', desdeBase());
+    // «Del destino a la base» solo cuenta si la van se queda allá o regresa vacía otro día; si el destino es la base, no hay nada que poner.
+    $('bb2').classList.toggle('oculto', md==='ida_vuelta' || lugar($('qde').value)===lugar(COT_BASE));
     $('qmdh').textContent = COT_MOD[md][1] + (md==='dos_dias' ? ' Cuenta 2 jornadas del conductor.' : ''); pintarEspera(); };
   /** Lo que verá el cliente sobre la espera. Las horas incluidas van dentro del precio; lo adicional se cobra aparte a S/ fijo. */
   var pintarEspera = function(){ formula().then(function(F){ if(!$('qesp')) return;
@@ -797,7 +825,7 @@ function cotForm(c, pre){
   var datos = function(){ return {tipo:tipo, modalidad:md, perfil:perfil, trocha:$('qtroc').checked, ida_vuelta:md!=='solo_ida', km_ida:$('qkm').value, km_base_origen:desdeBase()?0:$('qb1').value, km_destino_base:desdeBase()?'':$('qb2').value, km_extra:$('qkx').value,
     origen:$('qor').value, destino:$('qde').value, fecha_retorno:md!=='solo_ida'?$('qfr').value:'', fecha_servicio:$('qfe').value,
     dias:sinDias()?1:$('qdi').value, noches:sinDias()?0:$('qno').value, horas_espera:tipo==='excursion'?0:$('qho').value, pasajeros:$('qpa').value, peajes_ida:$('qpe').value, peajes_vuelta:$('qpv').value, otros:otros,
-    precio_galon:$('qdg').value, bono:$('qbo')?$('qbo').value:undefined}; };
+    precio_galon:$('qdg').value}; };
   var linkMaps = function(){ var o=$('qor').value.trim(), d=$('qde').value.trim(); $('qmaps').href = (o&&d) ? 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent(o+', Perú')+'&destination='+encodeURIComponent(d+', Perú') : '#'; };
   var conocida = function(){ vacMan = {qb1:false, qb2:false}; visibles(); var o=$('qor').value.trim().toLowerCase(), de=$('qde').value.trim().toLowerCase(), r=P.rutas.filter(function(z){ return z.origen.toLowerCase()===o && z.destino.toLowerCase()===de; })[0], inv = !r && P.rutas.filter(function(z){ return z.origen.toLowerCase()===de && z.destino.toLowerCase()===o; })[0];
     if(r||inv){ var km = (r||inv).km, pi = r ? r.peajes_ida : inv.peajes_vuelta, pv = r ? r.peajes_vuelta : inv.peajes_ida;
@@ -819,26 +847,29 @@ function cotForm(c, pre){
       if(!r.ok || !$('qres')) return; var z = r.data; pintarTramos(z.km, z.km_vacios);
       var pie = function(pl){ return pl.por_pasajero ? soles(pl.por_pasajero)+' por pasajero'+(z.tramos>1&&pl.por_tramo?' · '+soles(pl.por_tramo)+' por tramo':'') : ''; };
       var opcion = function(nv){ var pl = z.opciones[nv]; return '<button type="button" class="plan-c plan-estandar opcion" role="radio" data-opn="'+nv+'" aria-checked="'+(nivel===nv)+'"><div class="plan-h"><b>Estándar · '+NIVEL_TXT[nv]+'</b><span class="marca-sel" aria-hidden="true">✓</span></div><p style="padding:10px 12px 0;margin:0"><b class="num" style="font-size:24px">'+soles0(pl.precio)+'</b></p><p class="ayuda">'+pie(pl)+'</p></button>'; };
-      var premCard = z.premium ? '<div class="plan-c plan-premium"><div class="plan-h"><b>Premium</b></div><p style="padding:10px 12px 0;margin:0"><b class="num" style="font-size:24px">'+soles0(z.premium.precio)+'</b></p><p class="ayuda">'+pie(z.premium)+'</p></div>' : '';
+      var premCard = function(){ if(!z.premium) return ''; var base = z.opciones[nivel], tot = base.precio + (z.premium.recargo_tramo||0) * (z.pasajeros||0) * (z.tramos||1);
+        return '<div class="plan-c plan-premium"><div class="plan-h"><b>Premium</b></div><p style="padding:10px 12px 0;margin:0"><b class="num" style="font-size:24px">'+soles0(tot)+'</b></p><p class="ayuda">'+(z.pasajeros?soles(tot/z.pasajeros)+' por pasajero'+(z.tramos>1?' · '+soles(tot/z.pasajeros/z.tramos)+' por tramo':''):'')+'</p><p class="ayuda" style="margin-top:-4px">El precio que elijas + '+soles(z.premium.recargo_tramo||0)+' por pasajero'+(z.tramos>1?' y tramo':'')+' (refrigerio y WiFi). El cliente elige en el enlace.</p></div>'; };
       $('qres').innerHTML = '<div class="kpis" style="margin-bottom:10px"><div class="kpi"><small>Recorrido</small><b class="num">'+z.km+' km</b><span class="d">≈ '+z.horas_manejo+' h de manejo'+(z.salidas>1?' · '+z.salidas+' salidas':'')+'</span></div><div class="kpi"><small>Km vacíos</small><b class="num">'+z.km_vacios+' km</b><span class="d">'+(z.km_vacios?z.pct_vacios+' % del recorrido':'Siempre con pasajeros')+'</span></div></div>'+
-        '<span class="etq">Precio que enviarás al cliente</span><div class="planes2" role="radiogroup" aria-label="Precio que enviarás">'+opcion('alto')+opcion('recomendado')+opcion('descuento')+'</div>'+(premCard?'<div class="planes2 uno" style="margin-top:10px">'+premCard+'</div>':'')+
+        '<span class="etq">Precio que enviarás al cliente</span><div class="planes2" role="radiogroup" aria-label="Precio que enviarás">'+opcion('alto')+opcion('recomendado')+opcion('descuento')+'</div>'+(z.premium?'<div class="planes2 uno" style="margin-top:10px" id="qprem">'+premCard()+'</div>':'')+
         '<p class="ayuda" style="margin-top:8px">Ofrece primero el <b>Alto</b>. Si piden rebaja, baja al <b>Recomendado</b>. Si insisten, <b>Con descuento</b> es lo mínimo que puedes dar. Por debajo, avisa a un administrador.</p>'+GUION_REBAJA;
-      $('qres').querySelectorAll('[data-opn]').forEach(function(b){ b.onclick = function(){ nivel = b.dataset.opn; extra(); $('qres').querySelectorAll('[data-opn]').forEach(function(z2){ z2.setAttribute('aria-checked', z2===b); }); }; }); }); }, 450);
+      $('qres').querySelectorAll('[data-opn]').forEach(function(b){ b.onclick = function(){ nivel = b.dataset.opn; extra(); $('qres').querySelectorAll('[data-opn]').forEach(function(z2){ z2.setAttribute('aria-checked', z2===b); }); if($('qprem')) $('qprem').innerHTML = premCard(); }; }); }); }, 450);
   };
   var recalcular = function(){ if(OP) return recalcularOp(); formula().then(function(F){
     autoVacios(); autoEspera(); var dd = datos(); if(!(Number(String(dd.km_ida).replace(',','.'))>0)){ $('qres').innerHTML='<p class="vacio">Escribe los km de ida o pulsa «Calcular km».</p>'; return; }
     var r = F.calcular(P.parametros, dd); S.cot.res = r; pintarTramos(r.km, r.km_vacios);
     var monto = function(cl){ return (r.estandar.lineas.filter(function(l){ return l.clave===cl; })[0]||{}).monto||0; };
     var ayudaPlan = function(pr, pl){ return (r.pasajeros?soles(pr/r.pasajeros)+' por pasajero'+(r.tramos>1?' ('+soles(pr/r.pasajeros/r.tramos)+' por tramo)':'')+' · ':'')+'margen '+(pr?Math.round((pr-pl.costo)/pr*100):0)+' %'; };
-    if($('qbs')) $('qbs').textContent = r.bono_sugerido ? 'Sugerido por ser viaje largo: S/ '+r.bono_sugerido+'. Déjalo vacío para usarlo, o escribe otro monto (0 = sin bono).' : 'Viaje corto: sin bono automático. Escribe un monto si este viaje lo amerita.';
+    if($('qbs')) $('qbs').innerHTML = 'Ya va en el costo: <b>'+soles0(monto('conductor'))+'</b> por los km recorridos'+(monto('nocturno')?' + <b>'+soles0(monto('nocturno'))+'</b> de bono nocturno':'')+(monto('bono')?' + <b>'+soles0(monto('bono'))+'</b> de bono por viaje largo':'')+'. El pago final (espera real, comidas, algo extra) se ajusta en la <b>Liquidación</b> después del viaje.';
     ['estandar','premium'].forEach(function(k){ if(!manual[k]) precios[k] = r[k].precios[nivel]; });
+    // Premium = Estándar + extras: si el Estándar se escribió a mano y el Premium no, el Premium lo acompaña.
+    if(manual.estandar && !manual.premium && r.premium.recargo != null) precios.premium = Math.round(((Number(String(precios.estandar).replace(',','.'))||0) + r.premium.recargo)*100)/100;
     var tar = P.tarifas.filter(function(t){ return t.origen.toLowerCase()===$('qor').value.trim().toLowerCase() && t.destino.toLowerCase()===$('qde').value.trim().toLowerCase(); })[0];
     // Si el precio está escrito a mano y no coincide con el nivel elegido, se avisa y se ofrece usar el calculado (nada cambia solo).
     var avisoManual = function(k, pr){ var calc = r[k].precios[nivel]; if(!manual[k] || !pr || pr===calc) return '';
       return '<p class="aviso-precio">'+(escrito[k] || !c ? 'Precio escrito a mano.' : 'Es el precio guardado de la cotización.')+' Con los datos de hoy, el nivel <b>'+NIVEL_TXT[nivel]+'</b> da <b>'+soles0(calc)+'</b>. <button type="button" class="btn-mini" data-usar="'+k+'">Usar '+soles0(calc)+'</button></p>'; };
     var card = function(k){ var pl = r[k], pr = Number(String(precios[k]).replace(',','.'))||0;
       return '<div class="plan-c plan-'+k+'"><div class="plan-h"><b>'+PLAN_TXT[k]+'</b><small>Costo '+soles0(pl.costo)+'</small></div><div class="campo" style="margin-top:8px"><label for="qp_'+k+'">Precio al cliente</label><input id="qp_'+k+'" inputmode="decimal" class="num" value="'+esc(precios[k])+'"></div>'+
-        '<p class="ayuda">'+ayudaPlan(pr, pl)+'</p>'+avisoManual(k, pr)+'</div>'; };
+        '<p class="ayuda">'+ayudaPlan(pr, pl)+'</p>'+(k==='premium' && r.premium.recargo_tramo ? '<p class="ayuda" style="margin-top:-4px">Precio por defecto: Estándar + <b>'+soles(r.premium.recargo_tramo)+'</b> por pasajero'+(r.tramos>1?' y tramo':'')+' (refrigerio y WiFi). Puedes escribir menos.</p>' : '')+avisoManual(k, pr)+'</div>'; };
     var prE = Number(String(precios.estandar).replace(',','.'))||0;
     // Indicadores del precio Estándar: se recalculan al escribir otro precio.
     var indicadores = function(pr){ var c0 = r.estandar.costo, pp = r.pasajeros ? pr/r.pasajeros : 0, minG = pp ? Math.ceil(c0/pp) : 0;
@@ -858,17 +889,34 @@ function cotForm(c, pre){
       '<tr><td><b>Total Estándar</b></td><td class="n"><b>'+soles(r.estandar.costo)+'</b></td></tr><tr><td><b>Total Premium</b></td><td class="n"><b>'+soles(r.premium.costo)+'</b></td></tr></tbody></table></details>';
     $('qres').querySelectorAll('[data-nv]').forEach(function(b){ b.onclick=function(){ nivel=b.dataset.nv; manual={estandar:false, premium:false}; escrito={estandar:false, premium:false}; extra(); recalcular(); }; });
     $('qres').querySelectorAll('[data-usar]').forEach(function(b){ b.onclick = function(){ manual[b.dataset.usar] = false; escrito[b.dataset.usar] = false; recalcular(); }; });
-    ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; escrito[k]=true; precios[k]=this.value; var pr = Number(String(this.value).replace(',','.'))||0; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(pr, r[k]); if(k==='estandar') $('qind').innerHTML = indicadores(pr); }; });
+    ['estandar','premium'].forEach(function(k){ if($('qp_'+k)) $('qp_'+k).oninput=function(){ manual[k]=true; escrito[k]=true; precios[k]=this.value; var pr = Number(String(this.value).replace(',','.'))||0; this.closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(pr, r[k]); if(k==='estandar'){ $('qind').innerHTML = indicadores(pr);
+        if(!escrito.premium && $('qp_premium') && r.premium.recargo != null){ precios.premium = Math.round((pr + r.premium.recargo)*100)/100; $('qp_premium').value = precios.premium; $('qp_premium').closest('.plan-c').querySelector('.ayuda').textContent = ayudaPlan(precios.premium, r.premium); } } }; });
   }); };
   pintarOtros(); visibles(); linkMaps();
   restaurarBorrador(); recalcular();
   $('vista').querySelectorAll('[data-ct]').forEach(function(b){ b.onclick=function(){ tipo=b.dataset.ct; $('vista').querySelectorAll('[data-ct]').forEach(function(z){ z.setAttribute('aria-pressed', z===b); }); visibles(); extra(); recalcular(); }; });
-  var verPerfil = function(){ var inc = {turismo:'Incluye paradas para fotos.', banda:'Incluye espacio y cuidado para sus instrumentos, y salida puntual para su presentación.', grupo:'Incluye paradas cuando el grupo lo necesite.'}; $('qpfh').textContent = inc[perfil]; };
-  $('vista').querySelectorAll('[data-pf]').forEach(function(b){ b.onclick = function(){ perfil = b.dataset.pf; $('vista').querySelectorAll('[data-pf]').forEach(function(z){ z.setAttribute('aria-pressed', z===b); }); verPerfil(); extra(); }; });
+  var verPerfil = function(){ var inc = {turismo:'Incluye paradas para fotos.', banda:'Incluye espacio y cuidado para sus instrumentos, y salida puntual para su presentación.', grupo:'Incluye paradas cuando el grupo lo necesite.'};
+    $('qpfh').innerHTML = esc(inc[perfil]) + (perfil!=='banda' && BANDA_RE.test($('qcl').value) ? ' <span class="warn">El nombre del cliente parece una banda: ¿elegir «Banda u orquesta»?</span>' : ''); };
+  $('vista').querySelectorAll('[data-pf]').forEach(function(b){ b.onclick = function(){ perfil = b.dataset.pf; perfilTocado = true; $('vista').querySelectorAll('[data-pf]').forEach(function(z){ z.setAttribute('aria-pressed', z===b); }); verPerfil(); extra(); }; });
   verPerfil();
   // La van lleva como máximo 15 pasajeros.
   var verCupo = function(){ var n = Number($('qpa').value)||0; $('qpah').innerHTML = n>15 ? '<span class="warn">La van lleva como máximo 15 pasajeros: con '+n+' no entran todos sentados. Corrige el número o coordina con un administrador.</span>' : ''; };
   $('qpa').addEventListener('input', verCupo); verCupo();
+  // Peajes: en 0 si no hay caseta. Avisa si parece un error (ruta corta o el número de pasajeros en el campo de peajes).
+  var verPeajes = function(){ var pi = Number(String($('qpe').value).replace(',','.'))||0, pv = Number(String($('qpv').value).replace(',','.'))||0, k = Number(String($('qkm').value).replace(',','.'))||0, n = Number($('qpa').value)||0;
+    var t = 'Déjalo en 0 si en la ruta no hay peaje.';
+    if((pi||pv) && n && (pi===n || pv===n)) t = '<span class="warn">El peaje es igual al número de pasajeros ('+n+'). ¿Se escribió en el campo equivocado? Si no hay peaje, va en 0.</span>';
+    else if((pi||pv) && k && k < 40) t = '<span class="warn">¿Hay peaje en esta ruta de '+k+' km? Si no hay caseta, déjalo en 0.</span>';
+    $('qpeh').innerHTML = t; };
+  ['qpe','qpv','qkm','qpa'].forEach(function(id){ $(id).addEventListener('input', verPeajes); }); verPeajes();
+  // Diésel distinto al de Parámetros: se dice con números para que se note el error de tipeo.
+  var verDiesel = function(){ var dg = Number(String($('qdg').value).replace(',','.'))||0, pg = Number(galonParam)||0, el = $('qdg').parentNode.querySelector('.aviso-diesel');
+    $('qdg').classList.toggle('cambiado', dg !== pg);
+    el.innerHTML = dg && pg && dg !== pg ? '<span class="warn">En Parámetros el diésel está a S/ '+pg+'. ¿Hoy está a S/ '+dg+' en el grifo? Si no, corrígelo.</span>' : 'Verifica el precio de hoy en el grifo antes de cotizar. Si cambió, corrígelo aquí: solo afecta a esta cotización.'; };
+  $('qdg').addEventListener('input', verDiesel); verDiesel();
+  // Si el nombre del cliente parece una banda, se elige «Banda u orquesta» (en una nueva) o se avisa (al editar).
+  var perfilTocado = !!c || !!x.perfil;
+  $('qcl').addEventListener('input', function(){ if(!perfilTocado && perfil!=='banda' && BANDA_RE.test($('qcl').value)){ perfil = 'banda'; $('vista').querySelectorAll('[data-pf]').forEach(function(z){ z.setAttribute('aria-pressed', z.dataset.pf==='banda'); }); extra(); } verPerfil(); });
   $('qtroc').addEventListener('change', function(){ soltar(); espMan = false; autoEspera(); recalcular(); });
   $('vista').querySelectorAll('[data-md]').forEach(function(b){ b.onclick=function(){ md=b.dataset.md; $('vista').querySelectorAll('[data-md]').forEach(function(z){ z.setAttribute('aria-pressed', z===b); }); visibles(); extra(); recalcular(); }; });
   ['qb1','qb2'].forEach(function(id){ $(id).addEventListener('input', function(){ vacMan[id] = $(id).value.trim()!==''; }); });
@@ -879,11 +927,11 @@ function cotForm(c, pre){
   var CAMPOS_COSTO = ['qkm','qkx','qpe','qpv','qdi','qno','qho','qpa','qdg','qb1','qb2','qbo','qfe','qfr','qor','qde'];
   $('vista').addEventListener('input', function(e){ if(CAMPOS_COSTO.indexOf(e.target.id)>=0) soltar(); }, true);
   $('vista').addEventListener('click', function(e){ if(e.target.closest && e.target.closest('[data-ct],[data-md]')) soltar(); }, true);
-  $('qor').addEventListener('input', function(){ visibles(); recalcular(); }); $('qde').addEventListener('input', recalcular);
-  $('qdg').addEventListener('input', function(){ $('qdg').classList.toggle('cambiado', Number(String($('qdg').value).replace(',','.')) !== Number(galonParam)); });
+  $('qor').addEventListener('input', function(){ visibles(); recalcular(); }); $('qde').addEventListener('input', function(){ visibles(); recalcular(); });
   $('qor').addEventListener('change', conocida); $('qde').addEventListener('change', conocida); $('qor').addEventListener('input', linkMaps); $('qde').addEventListener('input', linkMaps);
   $('qcalc').onclick = calcularKm;
-  $('qadd').onclick = function(){ otros.push({concepto:'', monto:''}); extra(); pintarOtros(); };
+  $('qadd').onclick = function(){ otros.push({concepto:'', monto:''}); extra(); pintarOtros(); $('qoc'+(otros.length-1)).focus(); };
+  $('vista').querySelectorAll('[data-otf]').forEach(function(b){ b.onclick = function(){ var t = OTROS_FRECUENTES[Number(b.dataset.otf)]; otros.push({concepto:t[0], monto:''}); extra(); pintarOtros(); $('qom'+(otros.length-1)).focus(); }; });
   $('cvol').onclick = function(){ if(pre){ S.sol = {vista:'detalle', id:pre.solicitud_id, filtro:'activas'}; ir('solicitudes', true); } else cotLista(); };
   if(pre && !$('qkm').value){ conocida(); if(!$('qkm').value) calcularKm(); }
   if($('apar')) $('apar').onclick = function(e){ e.preventDefault(); cotParametros(); };
@@ -921,7 +969,7 @@ function cotDetalle(id){
     h += '<div class="kpis '+(OP?'':'k4')+'">'+ind+'</div>'+(c.precio_final_premium?'<div class="kpis" style="margin-top:10px">'+tarj('premium', c.precio_final_premium, cP)+'</div>':'');
     h += '<div class="card" style="margin-top:12px"><dl class="ficha"><dt>Salida</dt><dd>'+esc(c.fecha_servicio?horaHumana(c.fecha_servicio):'Por definir')+'</dd>'+
       (d.fecha_retorno?'<dt>'+(md0==='dos_dias'?'Recojo':'Regreso')+'</dt><dd>'+esc(horaHumana(d.fecha_retorno))+'</dd>':'')+
-      (Number(d.horas_espera)?'<dt>Espera incluida</dt><dd>'+d.horas_espera+' h</dd>':'')+'<dt>Recorrido</dt><dd>'+c.resultado.km+' km'+(c.resultado.km_vacios?' ('+c.resultado.km_vacios+' vacíos)':'')+(c.resultado.salidas>1?' · '+c.resultado.salidas+' salidas':'')+(c.resultado.horas_manejo?' · ≈ '+c.resultado.horas_manejo+' h de manejo':'')+' · '+c.resultado.dias+' día(s) · '+c.resultado.noches+' noche(s)</dd><dt>Pasajeros</dt><dd>'+(pax||'—')+'</dd><dt>Válida hasta</dt><dd>'+esc(fechaExc(c.valida_hasta, true))+(c.vencida?' · vencida':'')+'</dd>'+(c.notas?'<dt>Notas</dt><dd>'+esc(c.notas)+'</dd>':'')+'</dl></div>';
+      (Number(d.horas_espera)?'<dt>Espera incluida</dt><dd>'+d.horas_espera+' h</dd>':'')+'<dt>Recorrido</dt><dd>'+c.resultado.km+' km'+(c.resultado.km_vacios?' ('+c.resultado.km_vacios+' vacíos)':'')+(c.resultado.salidas>1?' · '+c.resultado.salidas+' salidas':'')+(c.resultado.horas_manejo?' · ≈ '+c.resultado.horas_manejo+' h de manejo':'')+' · '+c.resultado.dias+' día(s) · '+c.resultado.noches+' noche(s)</dd><dt>Pasajeros</dt><dd>'+(pax||'—')+'</dd><dt>Válida hasta</dt><dd>'+esc(fechaExc(c.valida_hasta, true))+(c.vencida?' · vencida':'')+'</dd>'+(c.notas?'<dt>Notas</dt><dd>'+esc(c.notas)+'</dd>':'')+'</dl></div>'+revisionCot(c, OP);
     h += '<div class="compartir"><b>Enlace para el cliente</b><p class="ayuda">'+(c.precio_final_premium?'El cliente ve los dos servicios con sus precios y elige uno.':'El cliente ve su precio por pasajero y acepta desde su celular.')+' Nunca ve tus costos ni tu margen.</p><code>'+esc(url)+'</code><div class="botones">'+(c.cliente_tel?'<a class="btn" id="cwa" target="_blank" rel="noopener" href="https://api.whatsapp.com/send?phone='+esc(c.cliente_tel)+'&text='+encodeURIComponent('Hola'+(c.cliente?' '+c.cliente:'')+', le envío su cotización '+c.codigo+' de Villa Azul: '+url)+'">Enviar por WhatsApp</a>':'')+'<button type="button" class="btn sec" id="cmsg">Copiar mensaje</button><button type="button" class="btn sec" id="ccp">Copiar enlace</button><a class="btn sec" target="_blank" rel="noopener" href="'+esc(url)+'">Ver como cliente</a></div></div>';
     h += '<div class="acciones">';
     if(OP){
@@ -953,6 +1001,54 @@ function cotDetalle(id){
     if($('celi')) $('celi').onclick = function(){ if(!confirm('¿Eliminar '+c.codigo+'?')) return; api('/api/cotizaciones/'+c.id,{method:'DELETE'}).then(function(r2){ if(!r2.ok){ toast(r2.error,true); return; } toast('Cotización eliminada'); S.cot={vista:'lista'}; vCotizador(); }); };
   });
 }
+/* ════════════ Revisar una cotización sin entrar a editarla ════════════
+   Alertas de lo que suele salir mal al cotizar, lo que escribió quien cotizó, el desglose y el historial de cambios.
+   El operador ve solo las alertas que no hablan de costos ni márgenes. */
+function alertasCot(c, OP){
+  var d = c.datos||{}, R = c.resultado||{}, A = [], pax = Number(d.pasajeros)||0, pi = Number(d.peajes_ida)||0, pv = Number(d.peajes_vuelta)||0, k = Number(d.km_ida)||0;
+  var P = S.cotP||{}, pg = Number(OP ? P.precio_galon : P.parametros && P.parametros.precio_galon)||0;
+  if((pi||pv) && pax && (pi===pax || pv===pax)) A.push(['mal', 'Peaje de S/ '+(pi===pax?pi:pv)+', igual al número de pasajeros: ¿se escribió en el campo equivocado? Si no hay peaje, va en 0.']);
+  else if((pi||pv) && k && k < 40) A.push(['warn', 'Peajes de S/ '+pi+' + S/ '+pv+' en una ruta de '+k+' km: ¿hay caseta? Si no, van en 0.']);
+  if(d.precio_galon && pg && Number(d.precio_galon) !== pg) A.push(['warn', 'Diésel a S/ '+d.precio_galon+' por galón; en Parámetros está a S/ '+pg+'. Confirma el precio del grifo.']);
+  if(pax > 15) A.push(['warn', pax+' pasajeros: la van lleva 15 sentados.']);
+  if((d.perfil||'turismo')!=='banda' && BANDA_RE.test(c.cliente||'')) A.push(['warn', 'El cliente parece una banda, pero está como «'+COT_PERFIL[d.perfil||'turismo']+'»: en «Incluye» le saldrá '+(d.perfil==='grupo'?'«Paradas cuando el grupo lo necesite»':'«Paradas para fotos»')+'.']);
+  if(!OP && R.estandar){ var pf = Number(c.precio_final)||0, pr = R.estandar.precios||{};
+    if(pf < c.costo) A.push(['mal', 'El precio ('+soles0(pf)+') no cubre el costo ('+soles0(c.costo)+').']);
+    else if(pr.minimo && pf < pr.minimo) A.push(['mal', 'Precio por debajo del Mínimo ('+soles0(pr.minimo)+').']);
+    else if(pr.descuento && pf < pr.descuento) A.push(['warn', 'Precio por debajo de «Con descuento» ('+soles0(pr.descuento)+'): lo dejó así un administrador.']);
+    if(c.precio_final_premium && R.premium){ var ext = Math.round((R.premium.costo - R.estandar.costo)*100)/100, dif = Number(c.precio_final_premium) - pf;
+      if(ext > 0 && dif < ext) A.push(['warn', 'El Premium suma solo '+soles0(dif)+' sobre el Estándar y sus extras cuestan '+soles0(ext)+'.']); } }
+  return A;
+}
+function revisionCot(c, OP){
+  var A = alertasCot(c, OP), h = '';
+  h += A.length ? '<div class="card revisar"><b>'+ico('aviso')+' Revisar antes de enviar</b><ul>'+A.map(function(a){ return '<li class="'+a[0]+'">'+esc(a[1])+'</li>'; }).join('')+'</ul></div>' : '';
+  if(OP) return h;
+  var d = c.datos||{}, R = c.resultado||{}, md = cotModalidad(d), si = function(b){ return b ? 'Sí' : 'No'; }, s0 = function(v){ return v==null||v==='' ? '—' : esc(v); };
+  var fila = function(t, v){ return '<dt>'+t+'</dt><dd>'+v+'</dd>'; };
+  var datos = fila('Tipo', esc(COT_TIPO[c.tipo]||c.tipo))+fila('Recorrido', esc(COT_MOD[md][0]))+fila('Ruta de sierra o trocha', si(d.trocha))+
+    fila('Km de ida', s0(d.km_ida))+(Number(d.km_extra)?fila('Km adicionales', s0(d.km_extra)):'')+(Number(d.km_base_origen)?fila('Km vacíos para recogerlos', s0(d.km_base_origen)):'')+
+    (md!=='ida_vuelta' && d.km_destino_base!=null ? fila('Km vacíos del destino a '+COT_BASE, s0(d.km_destino_base)) : '')+
+    fila('Peajes', 'ida S/ '+s0(d.peajes_ida||0)+' · vuelta S/ '+s0(d.peajes_vuelta||0))+fila('Diésel', d.precio_galon ? 'S/ '+esc(d.precio_galon)+' por galón' : 'el de Parámetros')+
+    (c.tipo!=='excursion' ? fila('Horas de espera', s0(d.horas_espera||0)+' h') : '')+fila('Pasajeros', s0(d.pasajeros))+fila('Tipo de cliente', esc(COT_PERFIL[d.perfil||'turismo']))+
+    (md!=='dos_dias' && c.tipo!=='taxi' ? fila('Días · noches fuera', s0(d.dias||1)+' · '+s0(d.noches||0)) : '')+
+    ((d.otros||[]).length ? fila('Otros costos', d.otros.map(function(o){ return esc(o.concepto||'Otro')+' S/ '+esc(o.monto); }).join('<br>')) : '')+
+    (d.bono!=null && d.bono!=='' ? fila('Bono escrito a mano', 'S/ '+esc(d.bono)) : '')+
+    fila('Nivel elegido', esc(NIVEL_TXT[d.nivel]||'Recomendado'))+fila('Precio escrito a mano', d.precio_manual ? si(d.precio_manual.estandar)+(c.precio_final_premium?' · Premium '+si(d.precio_manual.premium).toLowerCase():'') : '—')+
+    fila('Cotizó', esc(c.creado_por||'—')+' · '+esc(fechaExc(String(c.creado_en||'').slice(0,10), true)));
+  h += '<details class="card plegable" open><summary>Datos que ingresó '+esc(c.creado_por||'quien cotizó')+'</summary><dl class="ficha">'+datos+'</dl></details>';
+  var E = R.estandar, Pm = R.premium;
+  if(E && E.lineas){ var extras = Pm && Pm.lineas ? Pm.lineas.filter(function(l){ return l.clave==='snacks'||l.clave==='wifi'; }) : [];
+    h += '<details class="card plegable"><summary>Desglose de costos · '+soles0(E.costo)+'</summary><table class="tabla"><tbody>'+E.lineas.concat(c.precio_final_premium?extras:[]).map(function(l){ var soloP = l.clave==='snacks'||l.clave==='wifi';
+      return '<tr><td>'+esc(l.concepto)+(soloP?' <span class="chip-est abierta">solo Premium</span>':'')+'<br><small class="ayuda">'+esc(l.detalle)+'</small></td><td class="n">'+soles(l.monto)+'</td></tr>'; }).join('')+
+      '<tr><td><b>Total Estándar</b></td><td class="n"><b>'+soles(E.costo)+'</b></td></tr>'+(c.precio_final_premium && Pm?'<tr><td><b>Total Premium</b></td><td class="n"><b>'+soles(Pm.costo)+'</b></td></tr>':'')+
+      (E.precios?'<tr><td colspan="2"><small class="ayuda">Con estos datos: Mínimo '+soles0(E.precios.minimo)+(E.precios.descuento?' · Con descuento '+soles0(E.precios.descuento):'')+' · Recomendado '+soles0(E.precios.recomendado)+' · Alto '+soles0(E.precios.alto)+'</small></td></tr>':'')+'</tbody></table></details>'; }
+  var ACC = {cot_crear:'Creó', cot_editar:'Editó', cot_estado:'Cambió el estado', cot_convertir:'Creó la excursión', cot_elegir:'Elección del cliente', cot_eliminar:'Eliminó'};
+  if((c.historial||[]).length) h += '<details class="card plegable"><summary>Historial de cambios ('+c.historial.length+')</summary><ul class="hist-cot">'+c.historial.map(function(x){
+    var det = String(x.detalle||'').replace(c.codigo, '').replace(/^\s*·\s*/, '');
+    return '<li><small>'+esc(fechaExc(String(x.timestamp).slice(0,10), true))+' · '+esc(String(x.timestamp).slice(11,16))+'</small><b>'+esc(ACC[x.accion]||x.accion)+' · '+esc(x.usuario)+'</b>'+(det?'<span>'+esc(det)+'</span>':'')+'</li>'; }).join('')+'</ul></details>';
+  return h;
+}
 var COT_PAR = [
   ['Combustible', [['precio_galon','Precio del diésel','S/ por galón · cámbialo cuando suba o baje'],['rendimiento_km_gal','Rendimiento de la Hiace','km por galón']]],
   ['Conductor', [['conductor_km','Pago al conductor','S/ por km · hoy S/ 120 ÷ 372 km = 0.3226'],['comida_desayuno','Desayuno del conductor','S/ por comida'],['comida_almuerzo','Almuerzo del conductor','S/ por comida'],['comida_cena','Cena del conductor','S/ por comida'],['viatico_dia','Alimentación sin horario','S/ por día · cuando el viaje no tiene hora de salida y regreso'],['hospedaje_noche','Hospedaje','S/ por noche fuera']]],
@@ -961,7 +1057,7 @@ var COT_PAR = [
   ['Sierra / trocha (se aplica al marcar «Ruta de sierra o trocha»)', [['trocha_rendimiento_km_gal','Rendimiento en trocha','km por galón · medido: 124 km con ~5 gal'],['trocha_velocidad','Velocidad en trocha','km/h · medido: 61 km en 3 h'],['trocha_factor_desgaste','Desgaste en trocha','× el desgaste normal · 1.6 = 60 % más'],['trocha_factor_conductor','Pago por km en trocha','× la tarifa por km · 1.5 = 50 % más']]],
   ['Pago del conductor por espera y noche', [['bono_espera_hora','Bono de espera','S/ por hora de espera · lo recibe el conductor'],['bono_nocturno','Bono nocturno','S/ si llega a la base entre las 22:00 y las 05:00'],['tanque_litros','Tanque de la van','litros · para calcular el diésel con la aguja']]],
   ['Bono del conductor (viajes largos)', [['bono_desde_km','Desde cuántos km recorridos','km ida + vuelta · 0 = sin bono automático'],['bono_por_dia','Bono por día de servicio','S/ · se suma solo en viajes largos']]],
-  ['Servicio Premium', [['snack_pax_dia','Refrigerio','S/ por pasajero por día'],['wifi_pax_viaje','WiFi a bordo','S/ por pasajero por viaje · igual si dura 1 o 4 días · sin margen encima']]],
+  ['Servicio Premium (Premium = precio Estándar + estos extras)', [['snack_pax_dia','Refrigerio','S/ por pasajero por día'],['wifi_pax_viaje','WiFi a bordo','S/ por pasajero por viaje · igual si dura 1 o 4 días · sin margen encima'],['margen_extras','Margen del refrigerio','% · hoy 20 · solo sobre el refrigerio, no sobre todo el viaje']]],
   ['Servicio y reserva', [['premium_activo','Servicio Premium','switch'],['adelanto_pct','Adelanto para separar','% del precio · lo ve el cliente'],['redondeo_tramo','Redondeo del precio por pasajero y tramo','S/ · siempre hacia arriba · 1 = soles enteros (21.20 → 22) · 5 = de 5 en 5 · 0.5 = a S/ 0.50 · 0 = total a S/ 10']]],
   ['Precios · margen sobre el precio', [['margen_minimo','Margen mínimo','% · hoy 30 · solo administradores'],['margen_descuento','Margen con descuento','% · hoy 35 · lo mínimo que puede ofrecer el operador'],['margen_objetivo','Margen recomendado','% · hoy 40'],['margen_premium','Margen alto (precio de lista)','% · hoy 45 · deja espacio para rebajar al recomendado'],['validez_dias','Validez de la cotización','días']]]
 ];
@@ -1012,7 +1108,7 @@ function mensajeCliente(c, url, F){
   else if(pax){ L.push('💰 *Por pasajero: '+solesCorto(pp(c.precio_final))+'*'); L.push('     (total del grupo '+solesCorto(c.precio_final)+')'); }
   else L.push('💰 *Precio del servicio: '+solesCorto(c.precio_final)+'*');
   L.push('', '✨ *Servicio privado:* la van es solo para su grupo, sale a la hora que ustedes digan'+(md==='ida_vuelta'&&Number(d.horas_espera)?' y los espera hasta el regreso':'')+'.');
-  var inc = (c.incluye||[]).concat(F && F.serviciosPara ? F.serviciosPara(d.perfil).estandar.incluye : []);
+  var inc = (c.incluye||[]).concat(Array.isArray(c.servicio_incluye) ? c.servicio_incluye : F && F.serviciosPara ? F.serviciosPara(d.perfil).estandar.incluye : []);
   if(inc.length){ L.push('', '✅ *Incluye:*'); inc.forEach(function(x){ L.push('• '+x); }); }
   if((c.politica_espera||[]).length){ L.push('', '⏱️ *Tiempo de espera:*'); c.politica_espera.forEach(function(x){ L.push('• '+x); }); }
   var ad = Number(c.adelanto_pct)||0;

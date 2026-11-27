@@ -193,6 +193,31 @@ main{width:100%;max-width:760px;margin:0 auto;padding:18px 16px calc(96px + env(
 .guion summary{font-weight:700;cursor:pointer}
 .guion ol{margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.5}
 .guion li{margin:6px 0}
+.revisar{margin-top:12px;border-color:var(--warn);background:var(--warn-soft)}
+.revisar>b{display:flex;gap:8px;align-items:center;color:var(--warn)}
+.revisar>b svg{width:18px;height:18px;flex:none}
+.revisar ul{margin:8px 0 0;padding-left:20px;font-size:14px;line-height:1.5}
+.revisar li{margin:4px 0}
+.revisar li.mal{color:var(--bad);font-weight:700}
+details.plegable{margin-top:12px}
+details.plegable>summary{font-weight:700;cursor:pointer;min-height:28px;display:list-item}
+details.plegable .ficha{margin-top:10px}
+details.plegable .tabla{margin-top:8px}
+.hist-cot{list-style:none;margin:8px 0 0;padding:0}
+.hist-cot li{display:grid;gap:2px;padding:9px 0;border-top:1px solid var(--line);font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.hist-cot li:first-child{border-top:none}
+.hist-cot small{color:var(--muted)}
+.hist-cot span{color:var(--muted)}
+.hist-cot li>*{display:block}
+details.plegable .tabla td.n{white-space:nowrap;text-align:right;vertical-align:top}
+.chips-otros{margin-bottom:6px}
+.chips-otros .chip{min-height:40px;padding:8px 12px;font-size:14px;display:inline-flex;gap:4px;align-items:center}
+.chips-otros .chip svg{width:16px;height:16px}
+.otro-fila{display:grid;grid-template-columns:minmax(0,1fr) 104px 44px;gap:8px;align-items:end}
+.otro-fila .quitar{min-height:44px;width:44px;justify-content:center;margin-bottom:0}
+@media (max-width:520px){.otro-fila{grid-template-columns:minmax(0,1fr) 44px;padding-top:4px}.otro-fila>.campo:first-child{grid-column:1 / -1}.otro-fila .quitar{grid-column:2}}
+.nueva-ver{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;display:flex;gap:10px;align-items:center;max-width:calc(100% - 32px);padding:10px 12px 10px 16px;border-radius:14px;background:var(--ink);color:var(--bg);font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.nueva-ver .btn-mini{flex:none}
 .seg-nivel button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;white-space:nowrap}
 .seg-nivel button small{font-size:12px;font-weight:600;opacity:.8}
 .lc-c{display:none}

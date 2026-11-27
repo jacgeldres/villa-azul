@@ -42,6 +42,7 @@ export const PARAMETROS_BASE = {
   desgaste_km: 0.35,           // llantas, aceite y mantenimiento por km
   snack_pax_dia: 6,            // Premium: 1 refrigerio por pasajero por día
   wifi_pax_viaje: 10,          // Premium: WiFi por pasajero por viaje (igual si dura 1 o 4 días). Precio fijo: no lleva margen encima
+  margen_extras: 20,           // Premium: % de margen solo sobre el refrigerio. Premium = precio Estándar + extras (no se vuelve a cobrar margen sobre todo el viaje)
   bono_desde_km: 0,            // bono automático del conductor desde estos km recorridos (0 = apagado)
   bono_por_dia: 0,             // S/ de bono por día de servicio en viajes largos
   premium_activo: 0,           // 1 = se ofrece el servicio Premium; 0 = solo Estándar
@@ -199,7 +200,19 @@ export function calcular(parametros, d) {
     const cada = (div) => div ? Object.fromEntries(Object.entries(precios).map(([k, v]) => [k, r2(v / div)])) : null;
     return { lineas, costo, precios, por_pasajero: cada(pax), por_tramo: cada(pasajes) };
   };
-  const estandar = plan(lim(base)), premium = plan(lim(base.concat(extra)));
+  const estandar = plan(lim(base));
+  // Premium = el mismo precio Estándar del nivel elegido + los extras (refrigerio con su margen propio, WiFi a precio fijo).
+  // Así el Premium no vuelve a cobrar el margen alto sobre todo el viaje: solo suma lo que cuestan los extras.
+  const lx = lim(extra), me = Math.min(90, n(p.margen_extras)) / 100;
+  const extrasPrecio = r2(lx.reduce((s, l) => s + (l.clave === 'wifi' ? l.monto : l.monto / (1 - me)), 0));
+  const recargoTramo = pasajes ? (paso > 0 ? Math.ceil(r2(extrasPrecio / pasajes) / paso) * paso : Math.ceil(extrasPrecio / pasajes)) : 0;
+  const recargo = pasajes ? r2(recargoTramo * pasajes) : Math.ceil(extrasPrecio / 10) * 10;
+  const premium = (() => {
+    const lineas = lim(base.concat(extra)), costo = r2(lineas.reduce((s, l) => s + l.monto, 0));
+    const precios = Object.fromEntries(Object.entries(estandar.precios).map(([k, v]) => [k, r2(v + recargo)]));
+    const cada = (div) => div ? Object.fromEntries(Object.entries(precios).map(([k, v]) => [k, r2(v / div)])) : null;
+    return { lineas, costo, precios, por_pasajero: cada(pax), por_tramo: cada(pasajes), recargo, recargo_tramo: recargoTramo, recargo_pasajero: pax ? r2(recargo / pax) : 0 };
+  })();
   return {
     km, km_pasajeros: kmPax, km_vacios: kmVacio, pct_vacios: km ? Math.round(kmVacio / km * 100) : 0, salidas, tramos: M.tramos, modalidad: md,
     dias, noches, pasajeros: pax, galones: r2(galones), precio_galon: galon, bono, bono_sugerido: bonoSugerido,

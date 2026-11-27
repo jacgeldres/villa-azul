@@ -17,12 +17,15 @@ for (const [t,d] of Object.entries(casos)) { const r = calcular(P,d);
 // comprobaciones
 const h = calcular(P, casos['dejar y recoger (Huamachuco)']);
 if (!(h.km === 248 && h.km_vacios === 124 && h.salidas === 2)) { console.error("FALLA:", 'km Huamachuco'); process.exit(1); }
-if (!(h.estandar.precios.recomendado === 848 && h.premium.precios.recomendado === 1088 && h.estandar.por_pasajero.recomendado === 106)) { console.error("FALLA:", 'precios Huamachuco'); process.exit(1); }
-for (const pl of [h.estandar, h.premium]) for (const [nv, m] of [['minimo',30],['recomendado',40],['alto',45]]) {
+if (!(h.estandar.precios.recomendado === 848 && h.premium.precios.recomendado === 1056 && h.estandar.por_pasajero.recomendado === 106)) { console.error("FALLA:", 'precios Huamachuco'); process.exit(1); }
+for (const pl of [h.estandar]) for (const [nv, m] of [['minimo',30],['recomendado',40],['alto',45]]) {
   const wifi = (pl.lineas.find(l=>l.clave==='wifi')||{monto:0}).monto, pr = pl.precios[nv];
   if (!((pr - pl.costo) / (pr - wifi) >= m/100 - 1e-9)) { console.error("FALLA:", 'margen '+nv); process.exit(1); } }
 const t = calcular(P, casos['Trujillo días distintos']); if (!(t.estandar.lineas.find(l=>l.clave==='peajes').monto === 17.6)) { console.error("FALLA:", 'peajes x2'); process.exit(1); }
 const l = calcular(P, casos['legado solo ida']); if (!(l.km === 62 && l.km_vacios === 0)) { console.error("FALLA:", 'legado'); process.exit(1); }
+// Premium = Estándar + extras: refrigerio con 20 % de margen y WiFi a precio fijo, redondeado al sol por pasajero y tramo
+for (const nv of ['minimo','descuento','recomendado','alto']) { const dif = h.premium.precios[nv] - h.estandar.precios[nv];
+  if (dif !== 208 || h.premium.recargo_tramo !== 13) { console.error('FALLA: recargo Premium', nv, dif); process.exit(1); } }
 console.log('OK comprobaciones');
 // Regla de espera que ve el cliente
 import { politicaEspera } from '../public/js/cotizar.mjs';

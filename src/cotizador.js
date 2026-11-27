@@ -53,8 +53,9 @@ export function crearCotizador(h) {
   const paraOperador = (c) => c && ({ id: c.id, token: c.token, codigo: c.codigo, numero: c.numero, tipo: c.tipo, cliente: c.cliente, cliente_tel: c.cliente_tel, origen: c.origen, destino: c.destino,
     fecha_servicio: c.fecha_servicio, precio_final: c.precio_final, precio_final_premium: c.precio_final_premium, precio_acordado: c.precio_acordado, plan_elegido: c.plan_elegido, estado: c.estado,
     valida_hasta: c.valida_hasta, vencida: c.vencida, notas: c.notas, excursion_id: c.excursion_id, creado_por: c.creado_por, creado_por_id: c.creado_por_id, creado_en: c.creado_en,
-    datos: (({ bono, otros, ...resto }) => resto)(c.datos || {}), politica_espera: c.politica_espera, adelanto_pct: c.adelanto_pct, incluye: c.incluye,
+    datos: (({ bono, otros, ...resto }) => resto)(c.datos || {}), politica_espera: c.politica_espera, adelanto_pct: c.adelanto_pct, incluye: c.incluye, servicio_incluye: c.servicio_incluye,
     resultado: { km: c.resultado.km, km_vacios: c.resultado.km_vacios || 0, salidas: c.resultado.salidas || 1, dias: c.resultado.dias, noches: c.resultado.noches, horas_manejo: c.resultado.horas_manejo, pasajeros: c.resultado.pasajeros } });
+  const r2s = (x) => Math.round(x * 100) / 100;
   const num = (v) => { const x = Number(String(v ?? '').replace(',', '.')); return isFinite(x) ? x : 0; };
   const adelantoDe = (c) => { const p = JSON.parse(c.parametros || '{}'); return p.adelanto_pct !== undefined ? num(p.adelanto_pct) : PARAMETROS_BASE.adelanto_pct; };
   const texto = (v, max = 100) => String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max);
@@ -134,9 +135,8 @@ export function crearCotizador(h) {
     const final = b.precio_final !== undefined && b.precio_final !== '' ? Math.round(num(b.precio_final) * 100) / 100 : res.estandar.precios[nivel];
     // Mientras el Premium no esté activo (Parámetros → Precios), la cotización solo lleva Estándar.
     const conPremium = num(par.premium_activo) === 1;
-    let finalP = !conPremium ? null : b.precio_final_premium !== undefined && b.precio_final_premium !== '' ? Math.round(num(b.precio_final_premium) * 100) / 100 : res.premium.precios[nivel];
-    // Si subiste a mano el Estándar y no tocaste el Premium, el Premium sube igual: Estándar + lo que cuestan los extras.
-    if (conPremium && (b.precio_final_premium === undefined || b.precio_final_premium === '') && finalP < final) finalP = Math.ceil((final + res.premium.costo - res.estandar.costo) / 10) * 10;
+    // Premium = el precio Estándar que se envía + los extras (refrigerio y WiFi). Si se escribe a mano, se respeta.
+    const finalP = !conPremium ? null : b.precio_final_premium !== undefined && b.precio_final_premium !== '' ? Math.round(num(b.precio_final_premium) * 100) / 100 : r2s(final + res.premium.recargo);
     if (!(final > 0) || (conPremium && !(finalP > 0))) throw new ErrorApi('Precio final no válido.');
     if (conPremium && finalP < final) throw new ErrorApi('El Premium no puede costar menos que el Estándar.');
     d.precio_manual = { estandar: final !== res.estandar.precios[nivel], premium: conPremium && finalP !== res.premium.precios[nivel] };
@@ -154,7 +154,7 @@ export function crearCotizador(h) {
       fila.seq = await reservarSeq(env, 1);
       const k = Object.keys(fila);
       await env.DB.batch([env.DB.prepare(`UPDATE cotizaciones SET ${k.map(x => `${x}=?`).join(', ')} WHERE id=?`).bind(...k.map(x => fila[x]), id), rk]);
-      await auditar(env, yo.nombre, 'cot_editar', `COT-${String(c.numero).padStart(4, '0')} · S/ ${final}`);
+      await auditar(env, yo.nombre, 'cot_editar', `COT-${String(c.numero).padStart(4, '0')} · S/ ${final}` + cambiosCot(c, fila, d));
       return op ? paraOperador(await detalle(env, id)) : detalle(env, id);
     }
     if (b.plan_elegido === undefined) fila.plan_elegido = null;
@@ -176,13 +176,35 @@ export function crearCotizador(h) {
     }
     return detalle(env, fila.id);
   }
+  /** Qué cambió al editar: queda en la auditoría y se ve en el historial de la cotización. */
+  const PERFIL_TXT = { turismo: 'Turistas', banda: 'Banda u orquesta', grupo: 'Otro grupo' }, NIVEL_TXT = { minimo: 'Mínimo', descuento: 'Con descuento', recomendado: 'Recomendado', alto: 'Alto' };
+  function cambiosCot(c, fila, d) {
+    const a = JSON.parse(c.datos || '{}'), L = [];
+    const v = (x) => x === null || x === undefined || x === '' ? '—' : x, dif = (t, x, y, f = (z) => z) => { if (String(v(x)) !== String(v(y))) L.push(`${t} ${f(v(x))} → ${f(v(y))}`); };
+    dif('precio', c.precio_final, fila.precio_final, (z) => z === '—' ? z : 'S/ ' + z);
+    dif('Premium', c.precio_final_premium, fila.precio_final_premium, (z) => z === '—' ? z : 'S/ ' + z);
+    dif('nivel', NIVEL_TXT[a.nivel] || a.nivel, NIVEL_TXT[d.nivel] || d.nivel);
+    dif('pasajeros', a.pasajeros, d.pasajeros); dif('km de ida', a.km_ida, d.km_ida); dif('km vacíos', a.km_base_origen, d.km_base_origen);
+    dif('peaje ida', a.peajes_ida, d.peajes_ida); dif('peaje vuelta', a.peajes_vuelta, d.peajes_vuelta); dif('diésel', a.precio_galon, d.precio_galon);
+    dif('espera', a.horas_espera, d.horas_espera, (z) => z === '—' ? z : z + ' h'); dif('tipo de cliente', PERFIL_TXT[a.perfil || 'turismo'], PERFIL_TXT[d.perfil]);
+    dif('trocha', a.trocha ? 'sí' : 'no', d.trocha ? 'sí' : 'no'); dif('salida', c.fecha_servicio, fila.fecha_servicio); dif('regreso', a.fecha_retorno, d.fecha_retorno);
+    return L.length ? ' · ' + L.join(' · ') : '';
+  }
   const precioPlan = (c) => c.plan_elegido === 'premium' && c.precio_final_premium ? c.precio_final_premium : c.precio_final;
   const salida = (c) => c && ({ ...c, precio_acordado: precioPlan(c), datos: JSON.parse(c.datos || '{}'), resultado: JSON.parse(c.resultado || '{}'), incluye: JSON.parse(c.incluye || '[]'), parametros: undefined,
     politica_espera: politicaEspera(JSON.parse(c.parametros || '{}'), JSON.parse(c.datos || '{}')), adelanto_pct: adelantoDe(c),
+    servicio_incluye: serviciosPara(JSON.parse(c.datos || '{}').perfil).estandar.incluye,
     codigo: 'COT-' + String(c.numero).padStart(4, '0'), vencida: c.estado !== 'aceptada' && c.valida_hasta && c.valida_hasta < ahoraLima().slice(0, 10) });
   async function detalle(env, id) {
     const c = await env.DB.prepare('SELECT * FROM cotizaciones WHERE id=?').bind(id).first(); if (!c) throw new ErrorApi('Cotización no encontrada', 'NO_EXISTE', 404);
     return salida(c);
+  }
+  /** Para administradores: la cotización con su historial (quién la creó, editó, envió o eligió y qué cambió). */
+  async function detalleAdmin(env, id) {
+    const c = await detalle(env, id);
+    const h = (await env.DB.prepare("SELECT timestamp, usuario, accion, detalle FROM auditoria WHERE accion LIKE 'cot_%' AND (detalle = ? OR detalle LIKE ?) ORDER BY timestamp DESC, seq DESC LIMIT 40")
+      .bind(c.codigo, c.codigo + ' %').all()).results;
+    return { ...c, historial: h };
   }
   async function listar(env) {
     const L = (await env.DB.prepare('SELECT * FROM cotizaciones ORDER BY numero DESC LIMIT 200').all()).results.map(salida);
@@ -447,7 +469,7 @@ export function crearCotizador(h) {
     // El operador ve dos precios del Estándar (recomendado y alto) y elige cuál enviar. Sin costos ni porcentajes.
     return { km: r.km, km_vacios: r.km_vacios, pct_vacios: r.pct_vacios, salidas: r.salidas, tramos: r.tramos, dias: r.dias, noches: r.noches, horas_manejo: r.horas_manejo,
       pasajeros: r.pasajeros, precio_galon: r.precio_galon, opciones: { alto: plan(r.estandar, 'alto'), recomendado: plan(r.estandar, 'recomendado'), descuento: plan(r.estandar, 'descuento') },
-      premium: num(par.premium_activo) === 1 ? plan(r.premium, 'recomendado') : null };
+      premium: num(par.premium_activo) === 1 ? { ...plan(r.premium, 'recomendado'), recargo_tramo: r.premium.recargo_tramo, recargo_pasajero: r.premium.recargo_pasajero } : null };
   }
   async function verOperador(env) {
     const v = await verParametros(env);
@@ -487,7 +509,7 @@ export function crearCotizador(h) {
     if (lq && m === 'GET') return liquidacion(env, lq[1]);
     if (lq && m === 'POST') { const b = await cuerpo(); return liquidacion(env, lq[1], b, yo); }
     const r = p.match(/^\/api\/cotizaciones\/([\w-]+)(?:\/(estado|convertir))?$/);
-    if (r && !r[2] && m === 'GET') return detalle(env, r[1]);
+    if (r && !r[2] && m === 'GET') return detalleAdmin(env, r[1]);
     if (r && !r[2] && m === 'PATCH') return guardar(env, yo, r[1], await cuerpo());
     if (r && !r[2] && m === 'DELETE') return eliminar(env, yo, r[1]);
     if (r && r[2] === 'estado' && m === 'POST') return cambiarEstado(env, yo, r[1], await cuerpo());

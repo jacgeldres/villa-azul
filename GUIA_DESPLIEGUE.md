@@ -1,4 +1,4 @@
-# Villa Azul · v5.12.0 — Guía de despliegue
+# Villa Azul · v5.13.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,21 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.13.0 · Revisar cotizaciones sin editar, Premium más accesible
+
+Sube `src/` y `public/` a GitHub como siempre. No hay migración de base de datos.
+
+- **Ver una cotización sin editarla** (toca la tarjeta en la lista). Los administradores ven:
+  - **Revisar antes de enviar:** peaje igual al número de pasajeros o en ruta corta, diésel distinto al de Parámetros, más de 15 pasajeros, cliente que parece banda marcado como Turistas, precio bajo el costo, el Mínimo o «Con descuento», Premium que no cubre sus extras.
+  - **Datos que ingresó** quien cotizó, **desglose de costos** e **historial de cambios** (quién editó y qué cambió: precio, peajes, diésel, tipo de cliente…).
+- **Peajes empiezan en 0**, con aviso si el número parece un error.
+- **Km vacíos:** ya no aparece «De Angasmarca a Angasmarca»; el segundo campo solo sale cuando la van regresa vacía otro día.
+- **Bono del conductor fuera del formulario.** El pago por km, el bono nocturno y el de viaje largo se suman solos; el pago final se ajusta en la Liquidación.
+- **Otros costos:** botones para carga o equipaje extra, encomiendas o bultos, entradas y guía, y ✕ para quitar.
+- **Premium = precio Estándar + extras** (refrigerio con 20 % de margen y WiFi a precio fijo), redondeado por pasajero y tramo. Nuevo parámetro «Margen del refrigerio». El cliente ve «Solo S/ X más por pasajero en cada tramo».
+- **Mensaje de WhatsApp:** lo que incluye viene del servidor, así sale «Banda u orquesta» aunque el celular tenga la app anterior.
+- **Aviso de versión nueva** con botón «Actualizar» cuando el celular quedó con el código anterior.
 
 ## Actualizar a la v5.12.0 · Tres precios para Jorge y clientes banda
 
