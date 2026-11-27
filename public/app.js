@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.14.0';
+var VERSION = '5.14.1';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -1147,8 +1147,9 @@ function mensajeCliente(c, url, F){
   else L.push('💰 *Precio del servicio: '+solesCorto(c.precio_final)+'*');
   L.push('', '✨ *Servicio privado:* la van es solo para su grupo, sale a la hora que ustedes digan'+(md==='ida_vuelta'&&Number(d.horas_espera)?' y los espera hasta el regreso':'')+'.');
   var ex = d.extras||[];
-  if(ex.length && !c.precio_final_premium){ var porX = tramos>1 ? ' por pasajero en cada tramo' : ' por pasajero';
-    L.push('', '➕ *Opcional:* '+ex.map(function(e){ return e.nombre+' (+'+solesCorto(e.por_tramo)+')'; }).join(ex.length>2?', ':' o ')+porX+'. Lo elige en el enlace.'); }
+  // Sin precios: el cliente marca en el enlace y ve subir el pasaje.
+  if(ex.length && !c.precio_final_premium){ var nx = ex.map(function(e){ var t = e.nombre.replace(/\s*\(.*\)$/,''), w = t.split(' ')[0]; return /^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+$/.test(w) ? t.charAt(0).toLowerCase()+t.slice(1) : t; });
+    L.push('', '➕ *Opcional:* puede sumar '+(nx.length<2 ? nx[0] : nx.slice(0,-1).join(', ')+' o '+nx[nx.length-1])+' a su viaje. Lo marca en el enlace y el precio se actualiza solo.'); }
   var inc = (c.incluye||[]).concat(Array.isArray(c.servicio_incluye) ? c.servicio_incluye : F && F.serviciosPara ? F.serviciosPara(d.perfil).estandar.incluye : []);
   if(inc.length){ L.push('', '✅ *Incluye:*'); inc.forEach(function(x){ L.push('• '+x); }); }
   if((c.politica_espera||[]).length){ L.push('', '⏱️ *Tiempo de espera:*'); c.politica_espera.forEach(function(x){ L.push('• '+x); }); }

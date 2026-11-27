@@ -68,12 +68,26 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
 .extras h4{margin:0;font-size:16px}
 .extras h4 small{font-weight:600;color:var(--muted);font-size:13px;margin-left:4px}
 .extras p{margin:4px 0 10px;color:var(--muted);font-size:14px}
-.extra{display:flex;gap:12px;align-items:center;padding:12px 14px;margin-bottom:10px;border:1.5px solid var(--line);border-radius:14px;cursor:pointer;min-height:56px;transition:border-color .15s, background .15s}
-.extra input{width:22px;height:22px;flex:none;accent-color:#1E4FD1}
-.extra span{display:grid;gap:2px}
-.extra b{font-size:15.5px}
+.extra{display:flex;gap:14px;align-items:center;padding:14px;margin-bottom:12px;border:2px dashed var(--brand);border-radius:16px;cursor:pointer;min-height:64px;background:rgba(30,79,209,.04);transition:border-color .15s, background .15s, box-shadow .15s;-webkit-tap-highlight-color:transparent}
+.extra:hover{background:rgba(30,79,209,.08)}
+.extra input{appearance:none;-webkit-appearance:none;margin:0;flex:none;width:30px;height:30px;border:3px solid var(--brand);border-radius:9px;background:var(--surface);display:grid;place-content:center;cursor:pointer;box-shadow:0 0 0 0 rgba(30,79,209,.45);animation:llamar 2.2s ease-out 3}
+.extra input::after{content:"";width:14px;height:8px;border-left:3.5px solid #fff;border-bottom:3.5px solid #fff;transform:rotate(-45deg) scale(0);margin-top:-4px;transition:transform .15s}
+.extra input:checked{background:var(--brand);animation:none}
+.extra input:checked::after{transform:rotate(-45deg) scale(1)}
+.extra input:focus-visible{outline:3px solid var(--brand);outline-offset:3px}
+.extra input:disabled{opacity:.6;animation:none}
+.extra .ex-t{display:grid;gap:2px;flex:1;min-width:0}
+.extra b{font-size:16px}
 .extra small{color:var(--muted);font-size:13.5px;font-weight:600}
-.extra.si{border-color:#1E4FD1;background:rgba(30,79,209,.07)}
+.extra .ex-pill{flex:none;padding:7px 12px;border-radius:999px;background:var(--brand);color:#fff;font-weight:800;font-size:13.5px;white-space:nowrap}
+.extra.si{border-style:solid;background:rgba(30,79,209,.1);box-shadow:0 2px 10px rgba(30,79,209,.15)}
+.extra.si small{color:var(--brand)}
+.extra.si .ex-pill{background:var(--ok);color:#fff}
+@keyframes llamar{0%{box-shadow:0 0 0 0 rgba(30,79,209,.5)}70%{box-shadow:0 0 0 10px rgba(30,79,209,0)}100%{box-shadow:0 0 0 0 rgba(30,79,209,0)}}
+[data-precio].cambio{animation:destello .7s ease-out}
+@keyframes destello{0%{transform:scale(1)}30%{transform:scale(1.06)}100%{transform:scale(1)}}
+@media (prefers-reduced-motion: reduce){.extra input,[data-precio].cambio{animation:none}}
+@media (prefers-color-scheme: dark){.extra .ex-pill{color:#0B1220}.extra input::after{border-color:#0B1220}.extra.si .ex-pill{color:#fff}}
 .pp.dif{display:inline-block;margin-top:10px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.18);font-size:14px;opacity:1}
 .previa{position:sticky;top:0;z-index:30;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;justify-content:space-between;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;background:#FFF4D6;color:#5A4300;font-size:14px;border-bottom:1px solid #EBD38E}
 .previa a{font-weight:800;color:#1E4FD1;text-decoration:none;white-space:nowrap}
@@ -129,9 +143,9 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
   function d0(){ return D; }
   function seccionExtras(abierta){ var L = D.extras||[]; if(!L.length) return '';
     if(!abierta && !(D.extras_elegidos||[]).length) return '';
-    var por = D.tramos>1 ? ' por pasajero en cada tramo' : ' por pasajero';
-    return '<div class="extras"><h4>Mejora tu viaje <small>opcional</small></h4><p>Marca lo que quieras sumar. El precio de arriba se actualiza.</p>'+L.map(function(e){ var si = SEL.indexOf(e.id)>=0;
-      return '<label class="extra'+(si?' si':'')+'"><input type="checkbox" data-ex="'+esc(e.id)+'"'+(si?' checked':'')+(abierta?'':' disabled')+'><span><b>'+esc(e.nombre)+'</b><small>+ '+soles(e.por_tramo)+por+'</small></span></label>'; }).join('')+'</div>'; }
+    // Sin precio por extra: el cliente marca y ve subir el precio del pasaje arriba.
+    return '<div class="extras"><h4>Mejora tu viaje <small>opcional</small></h4><p>Toca lo que quieras sumar a tu viaje.</p>'+L.map(function(e){ var si = SEL.indexOf(e.id)>=0;
+      return '<label class="extra'+(si?' si':'')+'"><input type="checkbox" data-ex="'+esc(e.id)+'"'+(si?' checked':'')+(abierta?'':' disabled')+'><span class="ex-t"><b>'+esc(e.nombre)+'</b><small>'+(si?'Agregado a tu viaje':'Toca para agregar')+'</small></span><span class="ex-pill" aria-hidden="true">'+(si?'✓ Agregado':'+ Agregar')+'</span></label>'; }).join('')+'</div>'; }
   function pintar(){
     var d = D, abierta = !d.vencida && d.estado!=='rechazada';
     var chips = [];
@@ -177,9 +191,13 @@ h2.t{text-align:center;font-size:19px;font-weight:800;margin:0 0 14px;color:#EAF
     if($v('volverApp')) $v('volverApp').onclick = function(e){ if(history.length > 1){ e.preventDefault(); history.back(); } };
     // Marcar un extra actualiza el precio, el botón y el adelanto sin repintar (no se pierde el lugar ni el foco).
     root.querySelectorAll('[data-ex]').forEach(function(x){ x.onchange = function(){ var id = x.dataset.ex, i = SEL.indexOf(id);
-      if(x.checked && i<0) SEL.push(id); if(!x.checked && i>=0) SEL.splice(i,1); x.closest('.extra').classList.toggle('si', x.checked);
-      var p = D.planes[0], mio = D.plan_elegido===p.clave, b = root.querySelector('[data-plan="'+p.clave+'"]');
-      root.querySelector('[data-precio="'+p.clave+'"]').innerHTML = precioBloque(p);
+      if(x.checked && i<0) SEL.push(id); if(!x.checked && i>=0) SEL.splice(i,1);
+      var fila = x.closest('.extra'); fila.classList.toggle('si', x.checked);
+      fila.querySelector('.ex-t small').textContent = x.checked ? 'Agregado a tu viaje' : 'Toca para agregar'; fila.querySelector('.ex-pill').textContent = x.checked ? '✓ Agregado' : '+ Agregar';
+      var p = D.planes[0], mio = D.plan_elegido===p.clave, b = root.querySelector('[data-plan="'+p.clave+'"]'), caja = root.querySelector('[data-precio="'+p.clave+'"]');
+      caja.innerHTML = precioBloque(p);
+      // Un destello en el precio para que se note que cambió.
+      caja.classList.remove('cambio'); void caja.offsetWidth; caja.classList.add('cambio');
       if(b){ b.textContent = textoBoton(p, mio, true); b.disabled = mio && b.textContent.indexOf('Actualizar')<0; }
       if($v('adelanto')) $v('adelanto').textContent = soles(totalCon(p).precio*D.adelanto_pct/100); }; });
     root.querySelectorAll('[data-plan]').forEach(function(b){ b.onclick = function(){

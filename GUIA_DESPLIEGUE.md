@@ -1,4 +1,4 @@
-# Villa Azul · v5.14.0 — Guía de despliegue
+# Villa Azul · v5.14.1 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,14 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.14.1 · Extras sin precio a la vista
+
+Sube `public/` y `src/` a GitHub. No hay migración.
+
+- En el enlace, cada extra ya no muestra su precio: el cliente lo marca y ve subir el pasaje (el precio destella al cambiar).
+- Casilla grande con borde de color, botón «+ Agregar» / «✓ Agregado» y un pulso suave al abrir, para que se note dónde tocar.
+- El mensaje de WhatsApp dice «puede sumar WiFi a bordo o refrigerio a su viaje», sin montos.
 
 ## Actualizar a la v5.14.0 · Extras opcionales que elige el cliente
 
