@@ -12,8 +12,9 @@ import { SQL_COT_V7, SQL_COT_V8, SQL_COT_V9, SQL_COT_V13, SQL_COT_V14, SQL_COT_V
 import { crearPanel } from './panel.js';
 import { SQL_SOL_V10, WHATSAPP_EMPRESA, crearSolicitudes } from './solicitudes.js';
 import { SQL_FLOTA_V11, SQL_FLOTA_V12, crearFlota } from './flota.js';
+import { SQL_COMB_V18, REF_TABLERO } from './combustible.js';
 
-const VERSION = '5.14.2';
+const VERSION = '5.15.0';
 const SCHEMA = 12;
 const PBKDF2_ITER = 10000;          // el plan gratuito da 10 ms de CPU por petición: más vueltas no caben
 const SESION_DIAS = 30;
@@ -203,6 +204,18 @@ async function migrar(env) {
   if (v < 17) {
     // v5.9: precio por pasajero y tramo en soles enteros.
     await env.DB.batch([env.DB.prepare(SQL_COT_V17[0]).bind(await reservarSeq(env, 1)), env.DB.prepare("INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema', '17')")]);
+  }
+  if (v < 18) {
+    // v5.15: bitácora de tanqueo y rendimiento real. La foto del tablero (26-nov-2026: 7.6 km/L, 124,991 km) es el punto de partida.
+    await env.DB.batch(SQL_COMB_V18.map(q => env.DB.prepare(q)));
+    await FLOTA.siembraV18(env);
+    // El cotizador calculaba con 35 km/gal; el tablero marca 7.6 km/L = 28.8 km/gal. Solo si nadie lo cambió a mano.
+    const rend = await env.DB.prepare("SELECT valor FROM config WHERE clave = 'cot_rendimiento_km_gal'").first();
+    const s0 = await reservarSeq(env, 2), st = [env.DB.prepare("INSERT OR IGNORE INTO config (clave, valor, seq) VALUES ('cot_rend_auto','1',?)").bind(s0)];
+    if (!rend || Number(rend.valor) === 35) st.push(env.DB.prepare("INSERT OR REPLACE INTO config (clave, valor, seq) VALUES ('cot_rendimiento_km_gal','28.8',?)").bind(s0 + 1));
+    st.push(env.DB.prepare("INSERT OR REPLACE INTO meta (clave, valor) VALUES ('schema', '18')"));
+    await env.DB.batch(st);
+    if (!rend || Number(rend.valor) === 35) await auditar(env, 'Sistema', 'cot_parametros', `rendimiento_km_gal=28.8 (antes ${rend ? rend.valor : '35 de fábrica'}) · tablero ${REF_TABLERO.kml} km/L × 3.785 al ${REF_TABLERO.fecha.slice(0, 10)}`);
   }
   listo = true;
 }
@@ -519,6 +532,7 @@ const CATALOGOS = ['cuentas', 'cat_ingresos', 'cat_egresos', 'rutas', 'tarifas',
 async function aplicarOp(env, yo, op) {
   if (op.tipo === 'exc.mov') { exigirMando(yo); return EXC.movimiento(env, yo, op.datos || {}); }
   if (op.tipo === 'chk.crear') return FLOTA.crearInspeccion(env, yo, op.datos || {});
+  if (op.tipo === 'tanq.crear') return FLOTA.crearTanqueo(env, yo, op.datos || {});
   if (op.tipo !== 'mov.crear') throw new ErrorApi('Operación desconocida');
   const d = op.datos || {};
   if (!RE_UUID.test(String(d.uuid || ''))) throw new ErrorApi('Identificador no válido');
@@ -653,7 +667,8 @@ const CAJA = crearCaja({ ErrorApi, ahoraLima, reservarSeq, auditar, exigirMando,
 const SOL = crearSolicitudes({ ErrorApi, ahoraLima, reservarSeq, auditar, exigirMando, avisar });
 const COT = crearCotizador({ ErrorApi, ahoraLima, reservarSeq, auditar, exigirMando, avisar, sol: SOL });
 const PANEL = crearPanel({ ErrorApi, ahoraLima, exigirMando, saldosCuentas: CAJA.saldosCuentas });
-const FLOTA = crearFlota({ ErrorApi, ahoraLima, reservarSeq, auditar, exigirMando, esMando, prepararFoto, avisar });
+// El tanqueo registra su gasto en caja con las mismas reglas que un registro normal (caja cerrada, concepto activo, regularización).
+const FLOTA = crearFlota({ ErrorApi, ahoraLima, reservarSeq, auditar, exigirMando, esMando, prepararFoto, avisar, crearMov: (env, yo, datos) => aplicarOp(env, yo, { tipo: 'mov.crear', datos }) });
 const responder = (r) => r instanceof Response ? r : ok(r);
 
 /* ═════════════ Rutas ═════════════ */

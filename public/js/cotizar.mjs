@@ -15,7 +15,8 @@ export const MODALIDADES = {
   dos_dias: { nombre: 'Dejar y recoger otro día', corto: 'Otro día', salidas: 2, tramos: 2, ayuda: 'Día 1: deja al grupo y regresa vacía. Día del retorno: va vacía a recogerlo y lo trae.' },
 };
 export const PARAMETROS_BASE = {
-  rendimiento_km_gal: 35,      // km por galón de la Hiace
+  rendimiento_km_gal: 28.8,    // km por galón de la Hiace (v5.15: tablero 7.6 km/L × 3.785 al 26-nov-2026; antes 35). Con 3 tanques medidos se usa el real
+  rend_auto: 1,                // 1 = cotizar con el rendimiento real de la bitácora de tanqueo cuando haya 3 tanques llenos medidos
   precio_galon: 17,            // S/ por galón de diésel
   conductor_km: 0.3226,        // S/ por km manejado: S/ 120 ÷ 372 km (Angasmarca–Trujillo ida y vuelta)
   velocidad_promedio: 31,      // km/h reales: 186 km en 6 h

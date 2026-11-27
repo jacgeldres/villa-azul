@@ -10,6 +10,7 @@
  *  · Enviar sin señal es seguro: cada inspección lleva su propio id y llegar dos veces no la duplica.
  */
 import PLANTILLA from '../public/js/plantilla-checklist.json';
+import { crearCombustible } from './combustible.js';
 
 const ITEMS = {};
 PLANTILLA.categorias.forEach(c => c.items.forEach(([k, n, p]) => { ITEMS[k] = { cat: c.id, categoria: c.nombre, nombre: n, prioridad: p }; }));
@@ -120,11 +121,16 @@ export function crearFlota(h) {
     const r = await env.DB.prepare(`SELECT k, f FROM (
         SELECT km k, fecha f FROM chk_inspecciones WHERE placa = ? AND estado = 'activa' AND COALESCE(km_alerta,'') IN ('','menor') AND id <> ?
         UNION ALL SELECT km, fecha FROM flota_mant WHERE placa = ? AND anulado = 0
-        UNION ALL SELECT MAX(COALESCE(km_inicio,0), COALESCE(km_fin,0)), replace(COALESCE(NULLIF(retorno,''), salida),'T',' ') FROM excursiones WHERE COALESCE(km_inicio,0) > 0 OR COALESCE(km_fin,0) > 0)
-      WHERE f < ? ORDER BY k DESC LIMIT 1`).bind(placa, excepto || '', placa, tope).first();
-    const u = await env.DB.prepare("SELECT km, fecha, tipo FROM chk_inspecciones WHERE placa = ? AND estado = 'activa' AND COALESCE(km_alerta,'') IN ('','menor') ORDER BY fecha DESC LIMIT 1").bind(placa).first();
+        UNION ALL SELECT MAX(COALESCE(km_inicio,0), COALESCE(km_fin,0)), replace(COALESCE(NULLIF(retorno,''), salida),'T',' ') FROM excursiones WHERE COALESCE(km_inicio,0) > 0 OR COALESCE(km_fin,0) > 0
+        UNION ALL SELECT km, fecha FROM flota_tanqueos WHERE placa = ? AND estado = 'activa' AND COALESCE(km_alerta,'') IN ('','menor') AND id <> ?)
+      WHERE f < ? ORDER BY k DESC LIMIT 1`).bind(placa, excepto || '', placa, placa, excepto || '', tope).first();
+    // v5.15: los tanqueos también son lecturas del odómetro (con la foto del tablero).
+    const u = await env.DB.prepare(`SELECT km, fecha, tipo FROM (SELECT km, fecha, tipo FROM chk_inspecciones WHERE placa = ? AND estado = 'activa' AND COALESCE(km_alerta,'') IN ('','menor')
+        UNION ALL SELECT km, fecha, 'tanqueo' FROM flota_tanqueos WHERE placa = ? AND estado = 'activa' AND COALESCE(km_alerta,'') IN ('','menor')) ORDER BY fecha DESC LIMIT 1`).bind(placa, placa).first();
     return { km: Number(r && r.k) || 0, fecha_ref: r ? String(r.f || '').slice(0, 10) : null, ultima_lectura: u ? { km: u.km, fecha: u.fecha, tipo: u.tipo } : null };
   }
+
+  const COMB = crearCombustible({ ...h, odometro, parametros });
 
   function estadoDoc(d, p, ref) {
     const t = DOC_TIPOS[d.tipo] || DOC_TIPOS.otro;
@@ -201,6 +207,7 @@ export function crearFlota(h) {
     const p = await parametros(env), placa = p.placa, mando = esMando(yo);
     const [u, odo, docs, nov] = await Promise.all([unidad(env, placa), odometro(env, placa), documentos(env, placa, p), novedadesAbiertas(env, placa, p)]);
     const mant = await mantenimiento(env, placa, p, odo.km, mando);
+    const comb = await COMB.paraEstado(env);
     const insp = (await env.DB.prepare(`SELECT i.*, e.titulo titulo_exc FROM chk_inspecciones i LEFT JOIN excursiones e ON e.id = i.excursion_id
       WHERE i.placa = ? AND i.estado = 'activa' ${mando ? '' : 'AND i.operador_id = ?'} ORDER BY i.fecha DESC LIMIT 12`).bind(...(mando ? [placa] : [placa, yo.id])).all()).results.map(resumenInsp);
     const ultima = await env.DB.prepare("SELECT * FROM chk_inspecciones WHERE placa = ? AND estado = 'activa' ORDER BY fecha DESC LIMIT 1").bind(placa).first();
@@ -251,6 +258,9 @@ export function crearFlota(h) {
     if (mando) {
       const sinRev = (await env.DB.prepare("SELECT COUNT(*) n FROM chk_inspecciones WHERE placa=? AND estado='activa' AND revisado_en IS NULL AND COALESCE(origen,'app') <> 'v7' AND (aptitud IN ('no','fallas') OR COALESCE(km_alerta,'')<>'')").bind(placa).first()).n;
       if (sinRev) alertas.push({ nivel: 'warn', titulo: `${sinRev} ${sinRev === 1 ? 'inspección' : 'inspecciones'} por revisar`, detalle: 'Con fallas o con kilometraje dudoso.', ir: 'inspecciones' });
+      const tq = (await env.DB.prepare("SELECT SUM(CASE WHEN km_alerta='salto' THEN 1 ELSE 0 END) km, SUM(CASE WHEN COALESCE(mov_error,'')<>'' THEN 1 ELSE 0 END) g FROM flota_tanqueos WHERE placa=? AND estado='activa' AND tipo='carga'").bind(placa).first()) || {};
+      if (tq.km) alertas.push({ nivel: 'warn', titulo: `${tq.km} ${tq.km === 1 ? 'tanqueo' : 'tanqueos'} con kilometraje dudoso`, detalle: 'No cuentan para el rendimiento ni el mantenimiento hasta validarlos.', ir: 'combustible' });
+      if (tq.g) alertas.push({ nivel: 'warn', titulo: `${tq.g} ${tq.g === 1 ? 'tanqueo' : 'tanqueos'} sin gasto en caja`, detalle: 'La caja estaba cerrada o faltó el concepto: regístralo a mano.', ir: 'combustible' });
     }
     const orden = { bad: 0, warn: 1, info: 2 }; alertas.sort((a, b) => orden[a.nivel] - orden[b.nivel]);
     return { placa, unidad: u, parametros: p, odometro: odo, veredicto, zonas, alertas, documentos: docs.docs, documentos_faltan: docs.faltan, mantenimiento: mant,
@@ -258,7 +268,7 @@ export function crearFlota(h) {
         abierta_en: n.abierta_en, ultima_en: n.ultima_en, veces: n.veces, ultima_nota: n.ultima_nota, foto_id: n.foto_id, dias_abierta: n.dias_abierta, reincide: !!n.reincide_de, taller_nota: n.taller_nota,
         plazo: n.plazo, dias_plazo: n.dias_plazo, atrasada: n.atrasada, escalada: n.escalada, compromiso: n.compromiso })),
       inspecciones: insp, ultima: ultima ? resumenInsp(ultima) : null, hoy: { pre: hoyR.filter(x => x.tipo === 'pre').pop() || null },
-      viajes, plantilla: PLANTILLA.version, ahora: ahoraLima() };
+      viajes, combustible: comb, plantilla: PLANTILLA.version, ahora: ahoraLima() };
   }
 
   /* ═════════════ Guardar una inspección (llega por la cola sin señal) ═════════════ */
@@ -819,7 +829,8 @@ export function crearFlota(h) {
     // Fotos de documentos y mantenimientos: todo el equipo (Jorge las muestra en un control). Evidencias de checklist: el autor y los administradores.
     const ok = (await env.DB.prepare('SELECT 1 FROM flota_docs WHERE foto_id = ? UNION ALL SELECT 1 FROM flota_mant WHERE foto_id = ? LIMIT 1').bind(id, id).first())
       || (await env.DB.prepare(`SELECT 1 FROM chk_inspecciones WHERE fotos LIKE ? ${esMando(yo) ? '' : 'AND operador_id = ?'} LIMIT 1`).bind(...(esMando(yo) ? ['%' + id + '%'] : ['%' + id + '%', yo.id])).first())
-      || (esMando(yo) && await env.DB.prepare('SELECT 1 FROM chk_novedades WHERE foto_id = ? LIMIT 1').bind(id).first());
+      || (esMando(yo) && await env.DB.prepare('SELECT 1 FROM chk_novedades WHERE foto_id = ? LIMIT 1').bind(id).first())
+      || await COMB.puedeVerFoto(env, yo, id);
     if (!ok) throw new ErrorApi('Archivo no encontrado', 'NO_EXISTE', 404);
     const f = await env.DB.prepare('SELECT mime, datos FROM comprobantes WHERE id = ?').bind(id).first();
     if (!f) throw new ErrorApi('Archivo no encontrado', 'NO_EXISTE', 404);
@@ -831,6 +842,7 @@ export function crearFlota(h) {
     if (!p.startsWith('/api/flota')) return undefined;
     const cuerpo = () => req.json().catch(() => ({}));
     if (p === '/api/flota/estado' && m === 'GET') return estado(env, yo);
+    const cb = await COMB.rutas(env, yo, req, url); if (cb !== undefined) return cb;
     if (p === '/api/flota/novedades/lote' && m === 'POST') return loteNovedades(env, yo, await cuerpo());
     if (p === '/api/flota/importar-v7' && m === 'POST') return importarV7(env, yo, await cuerpo());
     if (p === '/api/flota/inspecciones' && m === 'GET') return listar(env, yo, url);
@@ -860,5 +872,5 @@ export function crearFlota(h) {
     return undefined;
   }
 
-  return { rutas, crearInspeccion, revisarAlertas, exigirSalida, enlazar, checklistDe, sembrarV7, PARAM_DEF };
+  return { rutas, crearInspeccion, crearTanqueo: COMB.crear, siembraV18: COMB.siembraV18, revisarAlertas, exigirSalida, enlazar, checklistDe, sembrarV7, PARAM_DEF };
 }

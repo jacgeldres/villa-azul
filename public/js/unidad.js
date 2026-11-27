@@ -1,5 +1,5 @@
-/* Villa Azul · Unidad (v5.0)
-   Checklist pre y post ruta de la Hiace, novedades, documentos a bordo, mantenimiento e indicadores.
+/* Villa Azul · Unidad (v5.0 · v5.15 tanqueo)
+   Checklist pre y post ruta de la Hiace, novedades, documentos a bordo, mantenimiento, combustible e indicadores.
    Se carga antes de app.js; app.js le entrega sus utilidades con window.VAUnidad(ctx).
    Funciona sin señal: el estado y las fotos de los documentos quedan guardados en el teléfono,
    y el checklist se guarda en la cola hasta que vuelva la señal. */
@@ -38,7 +38,8 @@ var P = {
   llave: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4Z"/>',
   camara: '<path d="M4 8h3l2-3h6l2 3h3v11H4Z"/><circle cx="12" cy="13" r="3.5"/>',
   ojo: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
-  reloj: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', compartir: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>'
+  reloj: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  surtidor: '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M7 7h4v4H7z"/><path d="M14 9h2a2 2 0 0 1 2 2v5.5a1.5 1.5 0 0 0 3 0V8l-3-3"/>', compartir: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.4M8.2 13.2l7.6 4.4"/>'
 };
 function ic(n, cls) { if (!P[n]) return V.ico(n); return '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + P[n] + '</svg>'; }
 var CICON = { mot: 'motor', neu: 'rueda', fre: 'freno', ele: 'luz', car: 'carga', int: 'asiento', eme: 'botiquin', rut: 'ruta', doc: 'doc', acc: 'wifi' };
@@ -243,6 +244,7 @@ function enlazarComunes(cont) {
   cont.querySelectorAll('[data-mant="nuevo"]').forEach(function (b) { b.onclick = function () { formMant(); }; });
   cont.querySelectorAll('[data-empezar]').forEach(function (b) { b.onclick = function () { empezar(b.getAttribute('data-empezar'), b.getAttribute('data-viaje')); }; });
   var bn = cont.querySelector('#unotif'); if (bn) bn.onclick = pedirPermiso;
+  cont.querySelectorAll('[data-tanquear]').forEach(function (b) { b.onclick = empezarTanqueo; });
   var bi = cont.querySelector('#uimpv7'); if (bi) bi.onclick = hojaImportarV7;
 }
 function enCola() { return (S.outbox || []).filter(function (o) { return o.tipo === 'chk.crear'; }).map(function (o) { var d = o.datos, n = { c: 0, o: 0, f: 0 }; Object.keys(d.items || {}).forEach(function (k) { n[d.items[k].e]++; }); return { id: d.id, tipo: d.tipo, fecha: d.fecha, lugar: d.lugar, km: d.km, operador: S.yo.nombre, conformes: n.c, observaciones: n.o, fallas: n.f, aptitud: d._aptitud || 'obs', rechazo: o.estado === 'rechazado' ? o.error : '' }; }); }
@@ -262,6 +264,8 @@ function viajesHtml(d) {
 function vista() {
   if (U.modo === 'checklist') return plantilla().then(pintarChecklist, errorPlantilla);
   if (U.modo === 'resultado') return pintarResultado();
+  if (U.modo === 'tanqueo') return (U.d ? Promise.resolve() : cargar()).then(pintarTanqueo);
+  if (U.modo === 'tanq_ok') return pintarTqOk();
   if (!U.d) $('vista').innerHTML = '<p class="vacio">Revisando la unidad…</p>';
   else pintar();
   return Promise.all([plantilla().catch(function () { return null; }), cargar()]).then(function () {
@@ -273,12 +277,12 @@ function errorPlantilla(e) { U.modo = null; $('vista').innerHTML = vacio(esc(e.m
 function pintar() {
   if (U.modo) return;
   if (!mando()) return pintarOperador();
-  var tabs = [['estado', 'Estado'], ['inspecciones', 'Inspecciones'], ['novedades', 'Novedades'], ['documentos', 'Documentos'], ['mantenimiento', 'Mantenimiento'], ['indicadores', 'Indicadores']];
+  var tabs = [['estado', 'Estado'], ['inspecciones', 'Inspecciones'], ['novedades', 'Novedades'], ['documentos', 'Documentos'], ['mantenimiento', 'Mantenimiento'], ['combustible', 'Combustible'], ['indicadores', 'Indicadores']];
   var nNov = (U.d.novedades || []).length;
   var h = '<div class="tabs" role="tablist" style="margin-top:0">' + tabs.map(function (t) { return '<button type="button" role="tab" data-utab="' + t[0] + '" aria-selected="' + (U.tab === t[0]) + '">' + t[1] + (t[0] === 'novedades' && nNov ? ' <span class="u-n">' + nNov + '</span>' : '') + '</button>'; }).join('') + '</div><div id="upanel"></div>';
   $('vista').innerHTML = h;
   $('vista').querySelectorAll('[data-utab]').forEach(function (b) { b.onclick = function () { U.tab = b.getAttribute('data-utab'); V.recordarVista(); pintar(); }; });
-  ({ estado: tabEstado, inspecciones: tabInspecciones, novedades: tabNovedades, documentos: tabDocumentos, mantenimiento: tabMantenimiento, indicadores: tabIndicadores }[U.tab] || tabEstado)();
+  ({ estado: tabEstado, inspecciones: tabInspecciones, novedades: tabNovedades, documentos: tabDocumentos, mantenimiento: tabMantenimiento, combustible: tabCombustible, indicadores: tabIndicadores }[U.tab] || tabEstado)();
 }
 /* La próxima salida con hora: desde cuándo vale el checklist y cuánto falta. */
 function proximaSalida(d) {
@@ -306,7 +310,7 @@ function enlazarBorrador() {
 }
 function pintarOperador() {
   var d = U.d, cola = enCola();
-  var h = hero(d) + borradorAviso() + botonesChecklist(d);
+  var h = hero(d) + borradorAviso() + botonesChecklist(d) + botonTanqueo();
   var al = (d.alertas || []).filter(function (a) { return a.nivel !== 'info' || a.ir === 'checklist'; });
   if (al.length) h += '<div class="titulo-sec"><h3>Atención</h3></div><div class="u-alertas">' + al.map(filaAlerta).join('') + '</div>';
   h += viajesHtml(d);
@@ -986,13 +990,19 @@ function abrir(tab, id) {
   U.modo = U.modo === 'checklist' ? U.modo : null;
   if (tab === 'insp') { U.tab = 'inspecciones'; V.ir('unidad', true); setTimeout(function () { hojaInspeccion(id); }, 250); return; }
   if (tab === 'checklist') { U.tab = 'estado'; V.ir('unidad', true); return; }
-  if (['documentos', 'mantenimiento', 'novedades', 'inspecciones', 'indicadores'].indexOf(tab) >= 0) U.tab = mando() ? tab : 'estado';
+  if (['documentos', 'mantenimiento', 'novedades', 'inspecciones', 'indicadores', 'combustible'].indexOf(tab) >= 0) U.tab = mando() ? tab : 'estado';
   V.ir('unidad', true);
   if (!mando()) setTimeout(function () { var el = $('u-' + tab); if (el) el.scrollIntoView({ behavior: 'smooth' }); }, 600);
 }
 function alSincronizar(res) {
+  var q = (res || []).filter(function (x) { return x.tipo === 'tanq.crear'; });
+  q.forEach(function (x) {
+    if (!x.ok) return;
+    if (x.mov_error) { toast('Tanqueo guardado, pero el gasto no entró a tu caja: ' + x.mov_error + ' Avisa a la oficina.', true); if (x.mov_local && V.quitarMovLocal) V.quitarMovLocal(x.mov_local); }
+    else if (!x.duplicado) toast('Tanqueo enviado' + (x.ciclo && x.ciclo.valido ? ' · rindió ' + x.ciclo.kmgal + ' km/gal' : ''));
+  });
   var r = (res || []).filter(function (x) { return x.tipo === 'chk.crear'; });
-  if (!r.length) return;
+  if (!r.length && !q.length) return;
   r.forEach(function (x) { if (x.ok) toast('Checklist enviado: ' + (APT[x.aptitud] || APT.obs).corto.toLowerCase()); });
   cargar().then(function () { if (enVista() && !U.modo && !V.hoja().open) pintar(); });
 }
@@ -1038,14 +1048,335 @@ function tarjetaExc(excId, el) {
 }
 function modulo() { var d = U.d; if (!d) return 'Checklist, documentos y mantenimiento'; var n = (d.alertas || []).filter(function (a) { return a.nivel !== 'info'; }).length; return (APT[d.veredicto] || APT.sin_datos).corto + (n ? ' · ' + plural(n, 'alerta', 'alertas') : ' · al día'); }
 
+
+/* ════════════ v5.15 · Tanqueo: tanque lleno a tanque lleno ════════════
+   Jorge registra cada carga con botones grandes: ¿lleno o parcial? → foto del tablero y km → boleta → reset del tablero.
+   El gasto en caja se registra en el mismo paso (no se anota dos veces). Funciona sin señal: va a la cola. */
+var KMGAL = 3.785411784;
+function comb() { return (U.d && U.d.combustible) || {}; }
+function colaTq() { return (S.outbox || []).filter(function (o) { return o.tipo === 'tanq.crear'; }).map(function (o) { return o.datos; }); }
+function claveTq() { return 'tq_borr:' + (S.yo ? S.yo.id : ''); }
+var tTq = null;
+function guardarTq() { clearTimeout(tTq); tTq = setTimeout(function () { if (U.tq) { U.tq.t = Date.now(); V.kvSet(claveTq(), U.tq); } }, 300); }
+function enRuta() { return ((U.d || {}).viajes || []).filter(function (v) { return v.estado === 'en_ruta'; })[0] || null; }
+function n2(v) { var x = Number(String(v == null ? '' : v).replace(',', '.')); return isFinite(x) ? x : 0; }
+function r1(x) { return Math.round(x * 10) / 10; }
+function r2(x) { return Math.round(x * 100) / 100; }
+/** El último tanque lleno conocido, contando lo que aún está en la cola del teléfono. */
+function ultimoLleno() {
+  var ab = comb().abierto ? { km: comb().abierto.km, gal: comb().abierto.gal_despues || 0, fecha: comb().abierto.fecha } : null;
+  colaTq().sort(function (a, b) { return a.fecha < b.fecha ? -1 : 1; }).forEach(function (q) {
+    if (q.lleno) ab = { km: n2(q.km), gal: 0, fecha: q.fecha }; else if (ab) ab.gal += n2(q.galones);
+  });
+  return ab;
+}
+function ultimoTqTxt() {
+  var cola = colaTq(), u = cola.length ? cola[cola.length - 1] : comb().ultimo;
+  if (!u) return comb().referencia ? 'Aún sin tanqueos · referencia del tablero: ' + comb().referencia.kml + ' km/L' : 'Cada vez que cargas: foto del tablero, boleta y reset';
+  return 'Último: ' + diaHora(u.fecha).toLowerCase() + ' · ' + km(u.km) + ' · ' + (u.lleno ? 'lleno' + (u.reseteo ? ', reseteado' : ', sin reset') : 'parcial') + (cola.length ? ' · por enviar' : '');
+}
+function botonTanqueo() {
+  return '<button type="button" class="btn ancho u-btn-chk u-btn-tq" data-tanquear>' + ic('surtidor') + '<span>Registrar tanqueo<small>' + esc(ultimoTqTxt()) + '</small></span></button>';
+}
+function empezarTanqueo() {
+  var nuevo = function () {
+    U.tq = { id: V.uuid(), mov_uuid: V.uuid(), paso: 1, lleno: null, km: '', kml: '', sin_kml: false, galones: '', monto: '', medio: enRuta() ? 'oficina' : 'efectivo', grifo: '', reseteo: null, foto_tablero: null, foto_boleta: null, fecha: '', t: Date.now() };
+  };
+  V.kvGet(claveTq()).then(function (b) {
+    if (b && b.id && Date.now() - (b.t || 0) < 12 * 3600e3 && confirm('Tienes un tanqueo a medio registrar (paso ' + b.paso + ').\n\nAceptar: continuarlo · Cancelar: empezar de nuevo')) U.tq = b;
+    else nuevo();
+    U.modo = 'tanqueo'; if (S.vista === 'unidad') vista(); else V.ir('unidad', true); window.scrollTo(0, 0);
+  });
+}
+function salirTq(borrar) { clearTimeout(tTq); if (borrar) V.kvSet(claveTq(), null); U.modo = null; U.tq = null; U.tqRes = null; vista(); window.scrollTo(0, 0); }
+function pasosTq(t) { return t.lleno === 0 ? 3 : 4; }
+function fotoBtn(t, cual, titulo, ayuda) {
+  var f = t['foto_' + cual];
+  return '<button type="button" class="tq-foto' + (f ? ' lista' : '') + '" data-tqfoto="' + cual + '">' + (f ? '<img alt="" src="data:' + f.mime + ';base64,' + f.data + '">' : ic('camara')) +
+    '<span>' + (f ? '✓ Foto lista · tocar para cambiar' : titulo) + '<small>' + esc(ayuda) + '</small></span></button>';
+}
+function pintarTanqueo() {
+  var t = U.tq; if (!t) return salirTq();
+  var N = pasosTq(t), d = U.d || {};
+  var h = '<div class="tq-cab"><button type="button" class="enlace" id="tqx" style="padding:4px 0">← ' + (t.paso > 1 ? 'Atrás' : 'Salir') + '</button><span class="tq-pasos" aria-hidden="true">' +
+    Array.apply(null, Array(N)).map(function (_, i) { return '<i class="' + (i < t.paso ? 'si' : '') + '"></i>'; }).join('') + '</span><b>Paso ' + t.paso + ' de ' + N + '</b></div>';
+  if (t.paso === 1) {
+    h += '<h2 class="tq-t">¿Cómo cargaste?</h2><p class="tq-sub">Para medir cuánto rinde la van, llena siempre hasta que la pistola corte sola.</p><div class="tq-grande">' +
+      '<button type="button" class="tq-op" data-lleno="1" aria-pressed="' + (t.lleno === 1) + '"><span class="tq-emo">' + ic('surtidor') + '</span><b>Tanque lleno</b><small>Hasta que la pistola cortó sola</small></button>' +
+      '<button type="button" class="tq-op" data-lleno="0" aria-pressed="' + (t.lleno === 0) + '"><span class="tq-emo">½</span><b>Solo una parte</b><small>Carga parcial · ese día no se resetea el tablero</small></button></div>';
+  } else if (t.paso === 2) {
+    var ul = ultimoLleno();
+    h += '<h2 class="tq-t">El tablero</h2><p class="tq-sub">' + (t.lleno ? '<b>Antes de resetear</b>, toma la foto: que se vean el ODO y los km/L de «Tras reinicio».' : 'Toma la foto donde se vea el ODO.') + '</p>' +
+      fotoBtn(t, 'tablero', 'Foto del tablero', t.lleno ? 'ODO y km/L de «Tras reinicio»' : 'Que se vea el ODO') +
+      '<label class="etq" for="tqkm">Kilometraje (ODO)</label><div class="monto"><input id="tqkm" inputmode="numeric" autocomplete="off" class="num" placeholder="' + esc(String((ul && ul.km) || (d.odometro || {}).km || '125000')) + '" value="' + esc(t.km) + '"><span>km</span></div><p class="ayuda" id="tqkmt"></p>' +
+      (t.lleno ? '<label class="etq" for="tqkml">km/L que marca «Tras reinicio»</label><div class="monto"><input id="tqkml" inputmode="decimal" autocomplete="off" class="num" placeholder="7.6" value="' + esc(t.kml) + '"' + (t.sin_kml ? ' disabled' : '') + '><span>km/L</span></div>' +
+        '<div class="chips" style="margin-top:8px"><button type="button" class="chip" id="tqnokml" aria-pressed="' + !!t.sin_kml + '">No se ve / no sé</button></div>' : '') +
+      (mando() ? '<div class="campo"><label for="tqfe">Fecha y hora <small style="font-weight:500;color:var(--muted)">(solo si registras uno atrasado)</small></label><input id="tqfe" type="datetime-local" value="' + esc((t.fecha || V.ahoraLima()).slice(0, 16).replace(' ', 'T')) + '"></div>' : '') +
+      '<button type="button" class="btn ancho tq-sig" id="tqsig">Siguiente</button>';
+  } else if (t.paso === 3) {
+    var er = enRuta(), grifos = U.grifos || [];
+    h += '<h2 class="tq-t">La boleta</h2><p class="tq-sub">Copia los galones y el total tal como salen en la boleta.</p>' +
+      '<label class="etq" for="tqgal" style="margin-top:0">Galones</label><div class="monto"><input id="tqgal" inputmode="decimal" autocomplete="off" class="num" placeholder="0.00" value="' + esc(t.galones) + '"><span>gal</span></div>' +
+      '<label class="etq" for="tqmon">Total pagado</label><div class="monto"><span>S/</span><input id="tqmon" inputmode="decimal" autocomplete="off" class="num" placeholder="0.00" value="' + esc(t.monto) + '"></div><p class="tq-precio" id="tqpre"></p>' +
+      '<span class="etq">¿Cómo se pagó?</span><div class="tq-medios" role="group" aria-label="Medio de pago">' +
+      [['efectivo', '💵', 'Efectivo de mi caja'], ['yape', '📱', 'Yape'], ['oficina', '🏢', 'Lo paga la oficina']].map(function (m) { return '<button type="button" data-tqmed="' + m[0] + '" aria-pressed="' + (t.medio === m[0]) + '"><span>' + m[1] + '</span>' + m[2] + '</button>'; }).join('') + '</div>' +
+      '<p class="ayuda" id="tqmedt"></p>' + (er ? '<p class="ayuda"><b>' + esc(er.titulo) + '</b> está en ruta: si el combustible es de esa excursión, elige «Lo paga la oficina».</p>' : '') +
+      (grifos.length ? '<span class="etq">Grifo</span><div class="chips">' + grifos.map(function (g) { return '<button type="button" class="chip" data-tqgr="' + esc(g) + '" aria-pressed="' + (t.grifo === g) + '">' + esc(g) + '</button>'; }).join('') + '</div>' : '') +
+      '<div class="campo"><label for="tqgri">' + (grifos.length ? 'Otro grifo' : 'Nombre del grifo') + ' <small style="font-weight:500;color:var(--muted)">(opcional)</small></label><input id="tqgri" maxlength="40" autocomplete="off" value="' + (grifos.indexOf(t.grifo) < 0 ? esc(t.grifo) : '') + '" placeholder="Ej. Grifo Repsol Shorey"></div>' +
+      fotoBtn(t, 'boleta', 'Foto de la boleta', 'Queda como comprobante del gasto') +
+      '<button type="button" class="btn ancho tq-sig" id="tqsig">' + (t.lleno ? 'Siguiente: resetear' : 'Guardar tanqueo') + '</button>';
+  } else {
+    h += '<h2 class="tq-t">Ahora resetea el tablero</h2><p class="tq-sub">Así el próximo tanque se mide desde cero.</p>' +
+      '<ol class="tq-reset"><li>Con las flechas del volante, ve a la pantalla <b>«Tras reinicio»</b>.</li><li>Mantén presionado <b>OK</b> hasta que marque <b>0.0 km/L</b>.</li></ol>' +
+      '<div class="tq-tablero" aria-hidden="true"><small>Tras reinicio</small><b>0.0<i>km/L</i></b></div>' +
+      '<button type="button" class="btn ancho tq-listo" data-reset="1">✓ Listo, ya marca 0.0</button><button type="button" class="btn sec ancho" data-reset="0">No pude resetearlo</button>';
+  }
+  $('vista').innerHTML = '<div class="entrar tq">' + h + '<input type="file" id="tqfile" accept="image/*" capture="environment" hidden></div>';
+  enlazarTanqueo();
+}
+function enlazarTanqueo() {
+  var t = U.tq, v = $('vista'), ir = function (p) { t.paso = p; guardarTq(); pintarTanqueo(); window.scrollTo(0, 0); };
+  $('tqx').onclick = function () {
+    if (t.paso > 1) return ir(t.paso - 1);
+    if ((t.km || t.galones || t.foto_tablero) && !confirm('¿Salir? El tanqueo queda guardado a medias en este teléfono para continuarlo después.')) return;
+    if (t.km || t.galones || t.foto_tablero) { guardarTq(); salirTq(false); } else salirTq(true);
+  };
+  v.querySelectorAll('[data-lleno]').forEach(function (b) { b.onclick = function () { t.lleno = +b.getAttribute('data-lleno'); if (!t.lleno) t.reseteo = null; ir(2); }; });
+  v.querySelectorAll('[data-tqfoto]').forEach(function (b) { b.onclick = function () { U.tqFoto = b.getAttribute('data-tqfoto'); $('tqfile').value = ''; $('tqfile').click(); }; });
+  $('tqfile').onchange = function () {
+    var file = this.files[0], cual = U.tqFoto; if (!file || !cual) return;
+    V.comprimirFoto(file).then(function (x) { if (x.mime === 'application/pdf') throw new Error('Toma una foto, no un PDF.'); t['foto_' + cual] = x; guardarTq(); pintarTanqueo(); }).catch(function (e) { toast(e.message, true); });
+  };
+  if (t.paso === 2) {
+    var kmv = function () {
+      t.km = $('tqkm').value.replace(/\D/g, ''); guardarTq();
+      var r = revisarKm(t.km), ul = ultimoLleno(), el = $('tqkmt');
+      var extra = t.km && ul && ul.km && +t.km > ul.km && ul.km !== ultimaLectura().km ? ' · ' + km(+t.km - ul.km) + ' desde el último tanque lleno' : '';
+      el.textContent = t.km ? r.t.replace(' · +0 km', '') + extra : (ultimaLectura().km ? 'Último registrado: ' + km(ultimaLectura().km) : '');
+      el.classList.toggle('alerta', !!r.aviso);
+    };
+    $('tqkm').oninput = kmv; kmv();
+    if ($('tqkml')) $('tqkml').oninput = function () { t.kml = this.value; guardarTq(); };
+    if ($('tqnokml')) $('tqnokml').onclick = function () { t.sin_kml = !t.sin_kml; if (t.sin_kml) t.kml = ''; guardarTq(); pintarTanqueo(); };
+    if ($('tqfe')) $('tqfe').onchange = function () { t.fecha = this.value ? this.value.replace('T', ' ') + ':00' : ''; guardarTq(); };
+    $('tqsig').onclick = function () {
+      var r = revisarKm(t.km); if (!r.ok) { $('tqkm').focus(); return toast(r.t, true); }
+      if (r.aviso && !confirm(r.t + '\n\n¿El kilometraje ' + km(t.km) + ' es correcto?')) return $('tqkm').focus();
+      if (t.lleno && !t.sin_kml) { var k = n2(t.kml); if (!k) { $('tqkml').focus(); return toast('Escribe los km/L del tablero o toca «No se ve / no sé»', true); } if (k < 2 || k > 30) { $('tqkml').focus(); return toast('Revisa los km/L: suele estar entre 6 y 10', true); } }
+      if (t.fecha && t.fecha > V.ahoraLima()) return toast('La fecha no puede estar en el futuro', true);
+      if (!t.foto_tablero && !confirm('¿Seguir sin foto del tablero?\n\nCon la foto se puede comprobar el km si hay una duda.')) return;
+      ir(3);
+    };
+  }
+  if (t.paso === 3) {
+    var precio = function () {
+      t.galones = $('tqgal').value; t.monto = $('tqmon').value; guardarTq();
+      var g = n2(t.galones), m = n2(t.monto), el = $('tqpre');
+      if (!(g > 0 && m > 0)) { el.textContent = ''; el.className = 'tq-precio'; return null; }
+      var p = m / g, raro = p < 12 || p > 30;
+      el.textContent = (raro ? '⚠ ' : '✓ ') + 'S/ ' + p.toFixed(2) + ' por galón' + (raro ? ' · revisa galones y total' : '');
+      el.className = 'tq-precio ' + (raro ? 'bad' : 'ok'); return p;
+    };
+    var medTxt = function () { $('tqmedt').textContent = t.medio === 'oficina' ? 'No se registra en tu caja: lo registra la oficina (o la excursión).' : 'Se registra solo como gasto de Combustible en tu caja (' + (t.medio === 'yape' ? 'Yape' : 'efectivo') + '). No lo anotes otra vez.'; };
+    $('tqgal').oninput = precio; $('tqmon').oninput = precio; precio(); medTxt();
+    v.querySelectorAll('[data-tqmed]').forEach(function (b) { b.onclick = function () { t.medio = b.getAttribute('data-tqmed'); v.querySelectorAll('[data-tqmed]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); medTxt(); guardarTq(); }; });
+    v.querySelectorAll('[data-tqgr]').forEach(function (b) { b.onclick = function () { t.grifo = b.getAttribute('data-tqgr'); $('tqgri').value = ''; v.querySelectorAll('[data-tqgr]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); }); guardarTq(); }; });
+    $('tqgri').oninput = function () { var g = this.value.trim(); t.grifo = g; if (g) v.querySelectorAll('[data-tqgr]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); guardarTq(); };
+    $('tqsig').onclick = function () {
+      var g = n2(t.galones), m = n2(t.monto), p = precio();
+      if (!(g >= 0.5 && g <= 30)) { $('tqgal').focus(); return toast('Escribe los galones de la boleta', true); }
+      if (!(m > 0)) { $('tqmon').focus(); return toast('Escribe el total pagado', true); }
+      if (p < 8 || p > 40) return toast('Sale S/ ' + p.toFixed(2) + ' por galón: revisa galones y total', true);
+      if ((p < 12 || p > 30) && !confirm('Sale S/ ' + p.toFixed(2) + ' por galón. ¿Los datos están bien?')) return;
+      if (!t.foto_boleta && t.medio !== 'oficina' && !confirm('¿Guardar sin foto de la boleta?\n\nEl gasto quedará sin comprobante en tu caja.')) return;
+      if (t.lleno) ir(4); else enviarTq();
+    };
+  }
+  if (t.paso === 4) v.querySelectorAll('[data-reset]').forEach(function (b) { b.onclick = function () { t.reseteo = +b.getAttribute('data-reset'); guardarTq(); enviarTq(); }; });
+}
+function catCombustible() {
+  var L = ((S.cat && S.cat.cat_egresos) || []).filter(function (c) { return c.activo; });
+  var c = L.filter(function (x) { return /combust|di[eé]sel|petr[oó]le|gasolin/i.test(x.clave + ' ' + x.nombre); })[0];
+  return c ? c.clave : '';
+}
+function enviarTq() {
+  var t = U.tq, d = U.d || {}; if (!t || U.tqEnviando) return;
+  U.tqEnviando = true;
+  var fecha = t.fecha || V.ahoraLima(), cat = catCombustible(), conCaja = t.medio !== 'oficina';
+  var cuenta = conCaja && V.cuentaSugerida ? V.cuentaSugerida(t.medio) : '';
+  var g = r2(n2(t.galones)), m = r2(n2(t.monto)), er = enRuta();
+  var datos = { id: t.id, fecha: fecha, km: +t.km, galones: g, monto: m, lleno: t.lleno ? 1 : 0, reseteo: t.lleno ? (t.reseteo ? 1 : 0) : null, tablero_kml: t.lleno && !t.sin_kml ? n2(t.kml) : null,
+    medio: t.medio, grifo: t.grifo || '', excursion_id: er ? er.id : null, mov_uuid: conCaja ? t.mov_uuid : null, categoria: cat, cuenta: cuenta, foto_tablero: t.foto_tablero, foto_boleta: t.foto_boleta };
+  // Rendimiento del tanque que se cierra (si hay un tanque lleno anterior): se muestra al instante, aun sin señal.
+  var ul = ultimoLleno(), ciclo = null;
+  if (t.lleno && ul && ul.km && +t.km > ul.km) { var gt = ul.gal + g, kk = +t.km - ul.km, kg = kk / gt; if (kk >= 30 && kg >= 15 && kg <= 50) ciclo = { km: kk, galones: r2(gt), kmgal: r1(kg), kml: r2(kg / KMGAL) }; }
+  var desc = 'Tanqueo ' + g + ' gal · ' + km(+t.km) + (t.lleno ? ' · tanque lleno' : ' · carga parcial') + (t.grifo ? ' · ' + t.grifo : '');
+  var local = conCaja && cat && V.movLocal ? V.movLocal({ uuid: t.mov_uuid, fecha: fecha, tipo: 'egreso', categoria: cat, monto: m, medio_pago: t.medio, cuenta: cuenta, descripcion: desc, placa: d.placa || '', galones: g, tiene_foto: !!t.foto_boleta }) : Promise.resolve();
+  if (t.grifo) { U.grifos = [t.grifo].concat((U.grifos || []).filter(function (x) { return x !== t.grifo; })).slice(0, 4); V.kvSet('tq_grifos', U.grifos); }
+  local.then(function () { return V.encolarOp({ tipo: 'tanq.crear', datos: datos }); }).then(function () {
+    clearTimeout(tTq); V.kvSet(claveTq(), null);
+    U.tqRes = { lleno: t.lleno, reseteo: t.reseteo, medio: t.medio, monto: m, galones: g, ciclo: ciclo, sinCat: conCaja && !cat };
+    U.tq = null; U.modo = 'tanq_ok'; U.tqEnviando = false; pintarTqOk(); window.scrollTo(0, 0);
+  }, function (e) { U.tqEnviando = false; toast((e && e.message) || 'No se pudo guardar en el teléfono', true); });
+}
+function pintarTqOk() {
+  var r = U.tqRes || {}, h = '<div class="entrar tq tq-ok"><div class="tq-check">✓</div><h2 class="tq-t">Tanqueo guardado</h2><p class="tq-sub">' + (navigator.onLine ? 'Enviándose a la oficina…' : 'Sin señal: se enviará solo cuando vuelva.') + '</p>';
+  if (r.ciclo) h += '<div class="tq-rend"><small>Este tanque rindió</small><b class="num">' + r.ciclo.kmgal + ' km/gal</b><span>' + r.ciclo.kml + ' km/L · ' + km(r.ciclo.km) + ' con ' + r.ciclo.galones + ' gal</span></div>';
+  else if (r.lleno) h += '<p class="tq-nota">Desde este tanque lleno empieza la medición. En el próximo tanque lleno verás cuánto rindió.</p>';
+  else h += '<p class="tq-nota">Carga parcial anotada. <b>No resetees el tablero</b> hasta el próximo tanque lleno.</p>';
+  if (r.lleno && !r.reseteo) h += '<p class="tq-nota warn">Sin reset, el próximo tanque no tendrá el dato del tablero. Resetéalo apenas puedas (mantén OK en «Tras reinicio»).</p>';
+  if (r.medio !== 'oficina') h += r.sinCat ? '<p class="tq-nota warn">No hay concepto «Combustible» en este teléfono: la oficina registrará el gasto.</p>' : '<p class="tq-nota ok">Gasto de ' + V.soles(r.monto) + ' registrado en tu caja (' + (r.medio === 'yape' ? 'Yape' : 'efectivo') + '). No lo anotes otra vez.</p>';
+  h += '<button type="button" class="btn ancho tq-sig" id="tqfin">Listo</button></div>';
+  $('vista').innerHTML = h;
+  $('tqfin').onclick = function () { salirTq(false); };
+}
+/* ── Panel de combustible (administradores) ── */
+function tabCombustible() {
+  $('upanel').innerHTML = '<div class="entrar">' + botonTanqueo() + '<div id="ucomb" style="margin-top:6px"><p class="vacio">Calculando el rendimiento…</p></div></div>';
+  enlazarComunes($('upanel'));
+  if (!navigator.onLine) { $('ucomb').innerHTML = vacio('El rendimiento se calcula con señal.'); return; }
+  api('/api/flota/combustible').then(function (r) { if (!$('ucomb')) return; if (!r.ok) { $('ucomb').innerHTML = vacio(esc(r.error)); return; } U.comb = r.data; pintarCombustible(r.data); });
+}
+function soles3(x) { return 'S/ ' + Number(x || 0).toFixed(2); }
+function pintarCombustible(c) {
+  var R = c.resumen, C = c.cotizador, M = c.mes, P = c.pendientes, pg = (c.precio_reciente && c.precio_reciente.valor) || C.precio_galon;
+  var h = '';
+  var al = [];
+  if (P.km_dudoso) al.push({ nivel: 'warn', titulo: plural(P.km_dudoso, 'tanqueo con kilometraje dudoso', 'tanqueos con kilometraje dudoso'), detalle: 'Ábrelo y valida o corrige el km: mientras tanto no cuenta para el rendimiento.' });
+  if (P.sin_gasto) al.push({ nivel: 'warn', titulo: plural(P.sin_gasto, 'tanqueo sin gasto en caja', 'tanqueos sin gasto en caja'), detalle: 'La caja del día estaba cerrada o faltó el concepto: regístralo a mano en Registrar.' });
+  if (al.length) h += '<div class="u-alertas" style="margin-top:12px">' + al.map(filaAlerta).join('') + '</div>';
+  h += '<div class="kpis k4" style="margin-top:12px">' +
+    '<div class="kpi"><small>Rendimiento real</small><b class="num">' + (R ? R.kmgal + ' km/gal' : '—') + '</b><span class="d">' + (R ? R.kml + ' km/L · ' + plural(R.n, 'tanque', 'tanques') : 'Falta el primer tanque medido') + '</span></div>' +
+    '<div class="kpi"><small>Diésel por km</small><b class="num">' + (R && R.soles_km ? soles3(R.soles_km) : C.usa ? soles3(pg / C.usa) : '—') + '</b><span class="d">' + (R && R.precio_gal ? soles3(R.precio_gal) + ' por galón' : 'Estimado con ' + C.usa + ' km/gal') + '</span></div>' +
+    '<div class="kpi"><small>Tablero vs real</small><b class="num">' + (R && R.desvio_tablero !== null ? (R.desvio_tablero > 0 ? '+' : '') + R.desvio_tablero + '%' : '—') + '</b><span class="d">' + (R && R.desvio_tablero !== null ? (R.desvio_tablero > 0 ? 'El tablero marca de más' : R.desvio_tablero < 0 ? 'El tablero marca de menos' : 'El tablero acierta') : 'Se sabe al resetear en cada tanque lleno') + '</span></div>' +
+    '<div class="kpi"><small>Diésel este mes</small><b class="num">' + V.soles(M.soles) + '</b><span class="d">' + M.galones + ' gal · ' + plural(M.cargas, 'carga', 'cargas') + (M.proyeccion && M.cargas ? ' · cierre ~' + V.soles(M.proyeccion) : '') + '</span></div></div>';
+  // El cotizador
+  var vie = 372, antes = vie / C.anterior * C.precio_galon, ahora = vie / C.usa * C.precio_galon;
+  h += '<div class="titulo-sec"><h3>Con qué cotiza el sistema</h3></div><div class="card c-cot"><small style="color:var(--muted);font-weight:700">Rendimiento que usa el cotizador</small><b class="num">' + C.usa + ' km/gal <span style="font-size:15px;color:var(--muted);font-weight:700">· ' + (C.fuente === 'real' && R ? R.kml : r2(C.usa / KMGAL)) + ' km/L</span></b>' +
+    '<p class="ayuda" style="margin:0">' + (C.fuente === 'real' ? 'Rendimiento <b>real</b> de los últimos ' + plural(R.n, 'tanque lleno', 'tanques llenos') + ' (' + km(R.km) + '). Se actualiza solo con cada tanque lleno.' + (R.atipicos ? ' ' + plural(R.atipicos, 'tanque muy distinto quedó', 'tanques muy distintos quedaron') + ' fuera del promedio.' : '')
+      : (C.auto ? 'Valor de Parámetros (28.8 = tablero 7.6 km/L del 26-nov). Faltan <b>' + plural(C.faltan, 'tanque lleno medido', 'tanques llenos medidos') + '</b> para cotizar con el dato real.' : 'El automático está apagado en Parámetros del cotizador: se usa el valor fijo.')) + '</p>' +
+    '<div class="c-cmp"><span></span><span>km/gal</span><span>Diésel Trujillo i/v</span>' +
+    '<span>Antes</span><b class="num">' + C.anterior + '</b><b class="num">' + V.soles(antes) + '</b>' +
+    '<span class="ahora">Ahora</span><b class="num">' + C.usa + '</b><b class="num">' + V.soles(ahora) + '</b></div>' +
+    '<p class="ayuda">Angasmarca–Trujillo ida y vuelta (372 km) con diésel a ' + soles3(C.precio_galon) + ' (Parámetros)' + (c.precio_reciente && Math.abs(c.precio_reciente.valor - C.precio_galon) / C.precio_galon > 0.04 ? '. <b>Ojo:</b> en el grifo está a ' + soles3(c.precio_reciente.valor) + ': actualízalo en Parámetros del cotizador.' : '.') + ' Trocha: ' + C.trocha + ' km/gal.</p></div>';
+  // Gráfico
+  var val = (c.ciclos || []).filter(function (x) { return x.valido; }).slice(-12);
+  h += '<div class="titulo-sec"><h3>Rendimiento por tanque</h3><span class="rol">' + val.length + '</span></div><div class="card">' + (val.length ? graficoComb(val, C.usa) : '<p class="vacio">Aparece desde el segundo tanque lleno. ' + (c.abierto ? 'El tanque en curso empezó el ' + esc(dia(c.abierto.fecha)) + ' a los ' + km(c.abierto.km) + '.' : 'El primero solo marca el punto de partida.') + '</p>') + '</div>';
+  if (c.abierto) h += '<p class="ayuda">Tanque en curso: desde ' + esc(diaHora(c.abierto.fecha)).toLowerCase() + ', a los ' + km(c.abierto.km) + (c.abierto.cargas_despues ? ' · después ' + plural(c.abierto.cargas_despues, 'carga parcial', 'cargas parciales') + ' (' + c.abierto.gal_despues + ' gal)' : '') + (c.abierto.reseteo ? '' : ' · <b>no se reseteó el tablero</b>') + '.</p>';
+  // Historial
+  h += '<div class="titulo-sec"><h3>Tanqueos</h3><span class="rol">' + (c.cargas || []).length + '</span></div><div class="card u-lista">' + ((c.cargas || []).length ? c.cargas.map(filaTq).join('') : '<p class="vacio">Aún no hay tanqueos. Jorge los registra desde su pestaña «Checklist» → «Registrar tanqueo».</p>') + '</div>';
+  if (c.referencia) h += '<p class="ayuda">Referencia: el ' + esc(dia(c.referencia.fecha)) + ' el tablero marcaba ' + c.referencia.kml + ' km/L (' + c.referencia.kmgal + ' km/gal) a los ' + km(c.referencia.km) + '. Ese fue el punto de partida del control.</p>';
+  if (c.km_dia) h += '<p class="ayuda">Uso de la van en los últimos 30 días: unos ' + km(c.km_dia) + ' por día.</p>';
+  $('ucomb').innerHTML = h;
+  enlazarAlertas($('ucomb'));
+  enlazarGrafico($('ucomb'), val);
+  $('ucomb').querySelectorAll('[data-tq]').forEach(function (b) { b.onclick = function () { hojaTq(b.getAttribute('data-tq')); }; });
+}
+function filaTq(x) {
+  var cy = x.ciclo, fl = '';
+  if (x.km_alerta === 'salto') fl += '<span class="u-flagq bad">km dudoso</span>';
+  if (+x.lleno && !+x.reseteo) fl += '<span class="u-flagq">sin reset</span>';
+  if (x.mov_error) fl += '<span class="u-flagq bad">sin gasto en caja</span>';
+  if (x.corregido) fl += '<span class="u-flagq">corregido</span>';
+  return '<div class="u-mfila" data-tq="' + esc(x.id) + '" role="button" tabindex="0" style="cursor:pointer"><span class="u-insp-t ' + (+x.lleno ? 'pre' : 'post') + '">' + (+x.lleno ? 'LLENO' : 'PARCIAL') + '</span>' +
+    '<span class="u-insp-c"><b>' + esc(diaHora(x.fecha)) + ' · ' + km(x.km) + fl + '</b><small>' + x.galones + ' gal · ' + V.soles(x.monto) + ' (' + soles3(x.precio_gal) + '/gal)' + (x.grifo ? ' · ' + esc(x.grifo) : '') + ' · ' + esc(x.operador || '') + '</small></span>' +
+    '<span class="u-tq-r num">' + (cy ? (cy.valido ? '<b>' + cy.kmgal + '</b><small>km/gal</small>' : '<small title="' + esc(cy.motivo) + '">no cuenta</small>') : '') + '</span></div>';
+}
+function hojaTq(id) {
+  var x = ((U.comb || {}).cargas || []).filter(function (y) { return y.id === id; })[0]; if (!x) return;
+  var cy = x.ciclo, med = { efectivo: 'Efectivo', yape: 'Yape', oficina: 'Lo paga la oficina' }[x.medio] || '—';
+  var h = '<h2 id="hoja-t">' + (+x.lleno ? 'Tanque lleno' : 'Carga parcial') + ' · ' + esc(diaHora(x.fecha)) + '</h2><p class="desc">' + esc(x.operador || '') + (x.grifo ? ' · ' + esc(x.grifo) : '') + '</p>' +
+    (x.km_alerta === 'salto' ? '<p class="u-aviso-doc">' + ic('exc') + 'El km es mucho mayor que el último confiable: valida o corrige para que cuente.</p>' : '') +
+    '<dl class="ficha"><dt>Odómetro</dt><dd>' + km(x.km) + (x.km_alerta === 'menor' ? ' · menor que el último registrado' : '') + '</dd><dt>Galones</dt><dd>' + x.galones + ' gal</dd><dt>Total</dt><dd>' + V.soles(x.monto) + ' · ' + soles3(x.precio_gal) + ' por galón</dd>' +
+    (+x.lleno ? '<dt>Tablero</dt><dd>' + (x.tablero_kml ? x.tablero_kml + ' km/L antes de resetear' : 'sin dato') + ' · ' + (+x.reseteo ? 'reseteado ✓' : 'no se reseteó') + '</dd>' : '') +
+    '<dt>Pago</dt><dd>' + med + (x.mov_uuid ? ' · registrado en caja' : x.mov_error ? ' · no se registró: ' + esc(x.mov_error) : '') + '</dd>' +
+    (cy ? '<dt>Tanque medido</dt><dd>' + km(cy.km) + ' con ' + cy.galones + ' gal' + (cy.cargas > 1 ? ' (' + cy.cargas + ' cargas)' : '') + ' · ' + (cy.valido ? '<b>' + cy.kmgal + ' km/gal</b> (' + cy.kml + ' km/L)' + (cy.tablero_kmgal ? ' · tablero ' + cy.tablero_kmgal + ' km/gal (' + (cy.desvio_tablero > 0 ? '+' : '') + cy.desvio_tablero + '%)' : '') : 'no cuenta: ' + esc(cy.motivo)) + '</dd>' : '') +
+    (x.corregido ? '<dt>Corrección</dt><dd>' + esc(x.corregido) + '</dd>' : '') + (x.nota ? '<dt>Nota</dt><dd>' + esc(x.nota) + '</dd>' : '') + '</dl>' +
+    '<div class="botones">' + (x.foto_tablero ? '<button type="button" class="btn-mini" id="tqvt">' + ic('camara') + ' Foto del tablero</button>' : '') + (x.foto_boleta ? '<button type="button" class="btn-mini" id="tqvb">' + ic('camara') + ' Foto de la boleta</button>' : '') + '</div>' +
+    '<div class="acciones">' + (x.km_alerta === 'salto' ? '<button type="button" class="btn ancho" id="tqval">El km está bien: validar</button>' : '') + '<button type="button" class="btn sec ancho" id="tqcor">' + ic('lapiz') + 'Corregir datos</button><button type="button" class="btn sec ancho" id="tqanu" style="color:var(--bad)">Anular</button><button type="button" class="btn sec ancho" data-cerrar>Cerrar</button></div>';
+  V.abrirHoja(h);
+  var refrescar = function (msg) { toast(msg); V.hoja().close(); tabCombustible(); };
+  if ($('tqvt')) $('tqvt').onclick = function () { verArchivo(x.foto_tablero, 'Tablero · ' + km(x.km)); };
+  if ($('tqvb')) $('tqvb').onclick = function () { verArchivo(x.foto_boleta, 'Boleta · ' + V.soles(x.monto)); };
+  if ($('tqval')) $('tqval').onclick = function () { api('/api/flota/tanqueos/' + id, { method: 'PATCH', body: { km_valido: true, motivo: 'Validado con la foto del tablero' } }).then(function (r) { if (!r.ok) return toast(r.error, true); refrescar('Kilometraje validado'); }); };
+  $('tqcor').onclick = function () { formTq(x); };
+  $('tqanu').onclick = function () {
+    var m = prompt('¿Por qué se anula este tanqueo? (queda registrado)'); if (m === null) return;
+    api('/api/flota/tanqueos/' + id + '/anular', { method: 'POST', body: { motivo: m } }).then(function (r) {
+      if (!r.ok) return toast(r.error, true);
+      if (r.data.mov_uuid && confirm('Tanqueo anulado. ¿Anular también el gasto de ' + V.soles(x.monto) + ' en caja?')) {
+        return api('/api/movimientos/' + r.data.mov_uuid + '/anular', { method: 'POST', body: { motivo: 'Tanqueo anulado: ' + m } }).then(function (r2) { refrescar(r2.ok ? 'Tanqueo y gasto anulados' + (r2.data && r2.data.aviso ? ' · ' + r2.data.aviso : '') : 'Tanqueo anulado; el gasto no: ' + r2.error); });
+      }
+      refrescar('Tanqueo anulado');
+    });
+  };
+}
+function formTq(x) {
+  var h = '<h2 id="hoja-t">Corregir tanqueo</h2><p class="desc">' + esc(diaHora(x.fecha)) + ' · ' + esc(x.operador || '') + '. Queda registrado quién corrigió y por qué.</p>' +
+    '<div class="dos"><div class="campo"><label for="tck">Kilometraje</label><input id="tck" inputmode="numeric" class="num" value="' + esc(x.km) + '"></div><div class="campo"><label for="tcg">Galones</label><input id="tcg" inputmode="decimal" class="num" value="' + esc(x.galones) + '"></div></div>' +
+    '<div class="dos"><div class="campo"><label for="tcm">Total S/</label><input id="tcm" inputmode="decimal" class="num" value="' + esc(x.monto) + '"></div><div class="campo"><label for="tct">km/L del tablero</label><input id="tct" inputmode="decimal" class="num" value="' + esc(x.tablero_kml == null ? '' : x.tablero_kml) + '"></div></div>' +
+    '<div class="dos"><div class="campo"><label for="tcl">Carga</label><select id="tcl"><option value="1"' + (+x.lleno ? ' selected' : '') + '>Tanque lleno</option><option value="0"' + (+x.lleno ? '' : ' selected') + '>Parcial</option></select></div><div class="campo"><label for="tcr">Reset del tablero</label><select id="tcr"><option value="1"' + (+x.reseteo ? ' selected' : '') + '>Sí se reseteó</option><option value="0"' + (+x.reseteo ? '' : ' selected') + '>No se reseteó</option></select></div></div>' +
+    '<div class="campo"><label for="tcmo">Motivo</label><input id="tcmo" maxlength="200" placeholder="Ej. La foto del tablero dice 125,472 km"></div>' + V.botonesHoja('Guardar corrección');
+  V.abrirHoja(h);
+  $('ok').onclick = function () {
+    $('ok').disabled = true;
+    api('/api/flota/tanqueos/' + x.id, { method: 'PATCH', body: { km: $('tck').value, galones: $('tcg').value, monto: $('tcm').value, tablero_kml: $('tct').value, lleno: $('tcl').value === '1', reseteo: $('tcr').value === '1', motivo: $('tcmo').value } }).then(function (r) {
+      $('ok').disabled = false; if (!r.ok) { $('er').textContent = r.codigo === 'RED' ? 'Sin conexión' : r.error; return; }
+      V.hoja().close(); toast('Corrección guardada' + (r.data.aviso ? ' · ' + r.data.aviso : '')); tabCombustible();
+    });
+  };
+}
+/* Gráfico: km/gal real por tanque y lo que marcaba el tablero, con la línea de lo que usa el cotizador. Un solo eje. */
+function graficoComb(L, usa) {
+  var W = 360, H = 220, pl = 28, pr = 88, pt = 12, pb = 26, iw = W - pl - pr, ih = H - pt - pb;
+  var ys = [usa]; L.forEach(function (c) { ys.push(c.kmgal); if (c.tablero_kmgal) ys.push(c.tablero_kmgal); });
+  var lo = Math.floor((Math.min.apply(null, ys) - 1.5) / 2) * 2, hi = Math.ceil((Math.max.apply(null, ys) + 1.5) / 2) * 2, paso = hi - lo > 16 ? 4 : 2;
+  var X = function (i) { return pl + (L.length === 1 ? iw / 2 : i * iw / (L.length - 1)); }, Y = function (v) { return pt + ih - (v - lo) / (hi - lo) * ih; };
+  var g = '', i;
+  for (var v = lo; v <= hi; v += paso) g += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(v) + '" y2="' + Y(v) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (pl - 6) + '" y="' + (Y(v) + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + v + '</text>';
+  var cada = Math.max(1, Math.ceil(L.length / 6));
+  L.forEach(function (c, k) { if (k % cada === 0 || k === L.length - 1) g += '<text x="' + X(k) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="11" fill="var(--muted)">' + String(c.hasta).slice(8, 10) + '/' + String(c.hasta).slice(5, 7) + '</text>'; });
+  g += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + Y(usa) + '" y2="' + Y(usa) + '" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 4"/>';
+  var linea = function (key, col) {
+    var pts = L.map(function (c, k) { return c[key] ? [X(k), Y(c[key])] : null; }).filter(Boolean); if (!pts.length) return '';
+    var s = pts.length > 1 ? '<polyline fill="none" stroke="' + col + '" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" points="' + pts.map(function (p) { return p[0] + ',' + p[1]; }).join(' ') + '"/>' : '';
+    return s + pts.map(function (p) { return '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="4" fill="' + col + '" stroke="var(--surface)" stroke-width="2"/>'; }).join('');
+  };
+  g += linea('tablero_kmgal', 'var(--c-tab)') + linea('kmgal', 'var(--c-real)');
+  // Etiquetas directas a la derecha (texto en tinta de texto), separadas para que no se monten.
+  var ult = L[L.length - 1], et = [{ y: Y(ult.kmgal), t: 'Real ' + ult.kmgal, w: 700, c: 'var(--ink)' }, { y: Y(usa), t: 'Cotiza ' + usa, w: 500, c: 'var(--muted)' }];
+  if (ult.tablero_kmgal) et.push({ y: Y(ult.tablero_kmgal), t: 'Tablero ' + ult.tablero_kmgal, w: 500, c: 'var(--muted)' });
+  et.sort(function (a, b) { return a.y - b.y; });
+  for (i = 1; i < et.length; i++) if (et[i].y - et[i - 1].y < 14) et[i].y = et[i - 1].y + 14;
+  var exceso = et[et.length - 1].y - (pt + ih + 4); if (exceso > 0) et.forEach(function (e) { e.y -= exceso; });
+  et.forEach(function (e) { g += '<text x="' + (W - pr + 8) + '" y="' + (e.y + 4) + '" font-size="12" font-weight="' + e.w + '" fill="' + e.c + '">' + e.t + '</text>'; });
+  // Zonas de toque por tanque (más grandes que la marca) y guía vertical.
+  g += '<line id="cguia" x1="0" x2="0" y1="' + pt + '" y2="' + (pt + ih) + '" stroke="var(--muted)" stroke-width="1" opacity="0"/>';
+  for (i = 0; i < L.length; i++) { var w = L.length === 1 ? iw : iw / (L.length - 1); g += '<rect data-ci="' + i + '" x="' + (X(i) - w / 2) + '" y="' + pt + '" width="' + w + '" height="' + ih + '" fill="transparent"/>'; }
+  var hayTab = L.some(function (c) { return c.tablero_kmgal; });
+  return '<div class="c-ley"><span><i style="background:var(--c-real)"></i>Real (tanque lleno a lleno)</span>' + (hayTab ? '<span><i style="background:var(--c-tab)"></i>Lo que marcaba el tablero</span>' : '') + '<span><i style="background:repeating-linear-gradient(90deg,var(--muted) 0 5px,transparent 5px 9px)"></i>Lo que usa el cotizador</span></div>' +
+    '<div class="c-graf"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Rendimiento en km por galón de los últimos ' + L.length + ' tanques: último ' + ult.kmgal + ', el cotizador usa ' + usa + '">' + g + '</svg><div class="c-tip" id="ctip"></div></div>';
+}
+function enlazarGrafico(cont, L) {
+  var tip = cont.querySelector('#ctip'), guia = cont.querySelector('#cguia'), svg = cont.querySelector('.c-graf svg'); if (!tip || !svg) return;
+  var mostrar = function (r) {
+    var c = L[+r.getAttribute('data-ci')], bx = svg.getBoundingClientRect(), k = bx.width / 360, cx = (+r.getAttribute('x') + +r.getAttribute('width') / 2);
+    guia.setAttribute('x1', cx); guia.setAttribute('x2', cx); guia.setAttribute('opacity', '.5');
+    tip.innerHTML = '<b>Tanque al ' + esc(dia(c.hasta)) + '</b>' + km(c.km) + ' · ' + c.galones + ' gal<br><i style="background:var(--c-real)"></i>Real ' + c.kmgal + ' km/gal (' + c.kml + ' km/L)' + (c.tablero_kmgal ? '<br><i style="background:var(--c-tab)"></i>Tablero ' + c.tablero_kmgal + ' km/gal' : '') + (c.soles_km ? '<br>' + soles3(c.soles_km) + ' por km' : '');
+    tip.style.display = 'block'; tip.style.left = Math.min(Math.max(cx * k, 80), bx.width - 80) + 'px'; tip.style.top = '4px';
+  };
+  svg.querySelectorAll('[data-ci]').forEach(function (r) { r.addEventListener('pointerenter', function () { mostrar(r); }); r.addEventListener('click', function () { mostrar(r); }); });
+  svg.addEventListener('pointerleave', function () { tip.style.display = 'none'; guia.setAttribute('opacity', '0'); });
+}
+
 /* El estado y el borrador se cargan antes de pintar: así el operador ve su checklist pendiente al abrir. */
 var vistaBase = vista;
-vista = function () { return cargarBorrador().then(vistaBase, vistaBase); };
+vista = function () { return Promise.all([cargarBorrador(), V.kvGet('tq_grifos').then(function (g) { U.grifos = g || []; })]).then(vistaBase, vistaBase); };
 
 return {
   vista: function () { return vista(); },
   pasiva: function () { return !U.modo && !V.hoja().open; },
-  abrir: abrir, alSincronizar: alSincronizar, empezar: empezar,
+  abrir: abrir, alSincronizar: alSincronizar, empezar: empezar, empezarTanqueo: empezarTanqueo, botonTanqueo: botonTanqueo,
   tiraPanel: tiraPanel, enlazarTira: enlazarTira, bannerOperador: bannerOperador, enlazarBanner: enlazarBanner,
   tarjetaExc: tarjetaExc, modulo: modulo, salir: function () { document.body.classList.remove('en-chk'); },
   precargar: function () { plantilla().catch(function () {}); estadoReciente(); }

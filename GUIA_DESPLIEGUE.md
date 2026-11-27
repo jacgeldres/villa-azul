@@ -1,4 +1,4 @@
-# Villa Azul · v5.14.2 — Guía de despliegue
+# Villa Azul · v5.15.0 — Guía de despliegue
 
 Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; después, cada versión nueva es arrastrar los archivos a GitHub.
 
@@ -16,6 +16,34 @@ Un solo proyecto en Cloudflare sirve la app y la API. Se configura **una vez**; 
 6. **En cada teléfono:** abre la dirección en Chrome (Android) o Safari (iPhone) → menú → **Agregar a pantalla de inicio**.
 
 Las tablas se crean solas la primera vez que se abre la app. No hace falta consola.
+
+## Actualizar a la v5.15.0 · Bitácora de tanqueo y rendimiento real
+
+Sube `src/`, `public/` y `pruebas/` a GitHub. La base se actualiza sola al abrir la app (esquema 18): crea la tabla de tanqueos y anota la lectura del tablero del 26-nov (124,991 km · 7.6 km/L).
+
+**Para Jorge (botones grandes, funciona sin señal):** en «Registrar» y en «Checklist» aparece **Registrar tanqueo**. Son 4 pasos:
+1. ¿Tanque lleno o solo una parte?
+2. Foto del tablero + kilometraje (ODO) + km/L de «Tras reinicio» (antes de resetear).
+3. Galones y total de la boleta, cómo se pagó (efectivo / Yape / la oficina), grifo y foto de la boleta. Revisa el precio por galón al instante.
+4. Resetear el tablero (mantener OK en «Tras reinicio» hasta 0.0) → «Listo» o «No pude».
+
+- El gasto de **Combustible entra solo a su caja** (efectivo o Yape) con la foto de la boleta: no se registra dos veces. Si la caja del día ya estaba cerrada, el tanqueo igual queda y los administradores reciben un aviso para registrarlo a mano.
+- Al cerrar un tanque lleno, Jorge ve cuánto rindió (km/gal y km/L).
+
+**Para los administradores:** Unidad → **Combustible**.
+- Rendimiento real (tanque lleno a tanque lleno, incluye las cargas parciales de en medio), diésel por km, cuánto se equivoca el tablero y gasto del mes con proyección.
+- Gráfico por tanque: real, lo que marcaba el tablero y lo que usa el cotizador.
+- Historial con fotos; corregir datos, validar un km dudoso o anular (con opción de anular también el gasto en caja).
+- Un tanque que rinde 20 % menos que el promedio genera una alerta (fuga, filtro, llantas, carga).
+
+**Cotizador con datos reales:**
+- El rendimiento pasa de **35 a 28.8 km/gal** (tablero 7.6 km/L × 3.785), solo si nadie lo había cambiado a mano. Diésel Angasmarca–Trujillo ida y vuelta: de S/ 181 a S/ 220 (a S/ 17 el galón).
+- Con **3 tanques llenos** medidos en los últimos 120 días, el cotizador usa solo el **rendimiento real** (promedio de los 6 más recientes; un tanque muy distinto no mueve el promedio). Avisa cuando el valor cambia. Se apaga en Parámetros → «Rendimiento real automático».
+- «Usar dato real» del precio del diésel toma la mediana de las 3 últimas cargas del grifo.
+
+**Mantenimiento:** cada tanqueo cuenta como lectura del odómetro. Con la lectura del 26-nov (124,991 km), el mantenimiento aparecerá **vencido** si no hay uno registrado después del 11-ago (115,957 km). Si ya se hizo, regístralo en Unidad → Mantenimiento.
+
+Pruebas: `node pruebas/combustible.prueba.mjs` y `node pruebas/cotizar.prueba.mjs`.
 
 ## Actualizar a la v5.14.2 · Enlace más claro para el cliente
 

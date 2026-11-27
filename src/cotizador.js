@@ -2,6 +2,7 @@
  * Villa Azul · Cotizador de excursión, taxi/expreso y transporte privado (v4.0)
  * Calcula con los costos reales de la empresa cuando existen y con supuestos editables cuando no.
  */
+import { rendimientoReal, CICLOS_MIN } from './combustible.js';
 import { calcular, PARAMETROS_BASE, SERVICIOS, serviciosPara, PERFILES, EXTRAS_BASE, extrasDe, UNIDADES_EXTRA, detalleExtra, MODALIDADES, esBase, politicaEspera, bonoEspera, comidasPorHorario, montoComidas, COMIDAS } from '../public/js/cotizar.mjs';
 
 export const SQL_COT_V7 = [
@@ -89,7 +90,14 @@ export function crearCotizador(h) {
   async function parametros(env) {
     const filas = (await env.DB.prepare("SELECT clave, valor FROM config WHERE clave LIKE 'cot_%'").all()).results;
     const guardados = {}; filas.forEach(f => { guardados[f.clave.slice(4)] = num(f.valor); });
-    return { ...PARAMETROS_BASE, ...guardados, _guardados: Object.keys(guardados) };
+    const par = { ...PARAMETROS_BASE, ...guardados, _guardados: Object.keys(guardados) };
+    // v5.15: con 3 tanques llenos medidos, se cotiza con el rendimiento REAL de la van (bitácora de tanqueo), no con el supuesto.
+    const rr = await rendimientoReal(env).catch(() => ({ resumen: null, precio: null }));
+    const real = rr.resumen, auto = num(par.rend_auto) === 1, aplica = !!(auto && real && real.n >= CICLOS_MIN);
+    par._rend = { manual: par.rendimiento_km_gal, auto, aplicado: aplica, real: real ? { kmgal: real.kmgal, kml: real.kml, n: real.n, km: real.km, hasta: real.hasta } : null, minimo: CICLOS_MIN,
+      precio_grifo: rr.precio };
+    if (aplica) par.rendimiento_km_gal = real.kmgal;
+    return par;
   }
   /** Lo que dicen los datos reales: rendimiento y precio del diésel de los viajes con km y galones registrados. */
   async function sugeridos(env) {
@@ -100,9 +108,12 @@ export function crearCotizador(h) {
     exc.forEach(x => { if (x.gal > 0) { km += x.km_fin - x.km_inicio; gal += x.gal; soles += x.soles; nComb += x.n; } });
     const ruta = await env.DB.prepare("SELECT COALESCE(SUM(galones),0) gal, COALESCE(SUM(monto),0) soles, COUNT(*) n FROM movimientos WHERE estado='activo' AND galones > 0 AND monto/galones BETWEEN 8 AND 40").first();
     const galT = gal + num(ruta.gal), solesT = soles + num(ruta.soles), nT = nComb + num(ruta.n);
+    // v5.15: la bitácora de tanqueo (tanque lleno a tanque lleno) manda sobre las excursiones sueltas.
+    const rr = await rendimientoReal(env).catch(() => ({ resumen: null, precio: null }));
+    const bit = rr.resumen, pg = rr.precio;
     return {
-      rendimiento_km_gal: km && gal ? { valor: Math.round(km / gal * 10) / 10, base: `${Math.round(km)} km y ${Math.round(gal * 10) / 10} galones de ${exc.length} excursión(es)` } : null,
-      precio_galon: nT >= 3 && galT ? { valor: Math.round(solesT / galT * 100) / 100, base: `${nT} cargas de combustible con galones` } : null,
+      rendimiento_km_gal: bit ? { valor: bit.kmgal, base: `bitácora: ${bit.n} tanque(s) lleno(s), ${bit.km.toLocaleString('es-PE')} km` } : km && gal ? { valor: Math.round(km / gal * 10) / 10, base: `${Math.round(km)} km y ${Math.round(gal * 10) / 10} galones de ${exc.length} excursión(es)` } : null,
+      precio_galon: pg ? { valor: pg.valor, base: `grifo: ${pg.n === 1 ? 'última carga' : 'mediana de las ' + pg.n + ' últimas cargas'} (${String(pg.fecha).slice(8, 10)}/${String(pg.fecha).slice(5, 7)})` } : nT >= 3 && galT ? { valor: Math.round(solesT / galT * 100) / 100, base: `${nT} cargas de combustible con galones` } : null,
     };
   }
   async function verParametros(env) {

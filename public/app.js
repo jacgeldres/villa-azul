@@ -2,7 +2,7 @@
    Todo se guarda primero en el teléfono (IndexedDB) y se envía al servidor cuando hay señal. */
 (function () {
 'use strict';
-var VERSION = '5.14.2';
+var VERSION = '5.15.0';
 
 /* ════════════ Iconos ════════════ */
 var I = {
@@ -114,14 +114,19 @@ function api(ruta, opciones){
 function sesionVencida(){ ls('va_sesion', null); S.token=null; toast('Tu sesión venció. Entra de nuevo con tu PIN.', true); salir(true); }
 
 /* ════════════ v5.0 · Unidad: checklist, documentos y mantenimiento (public/js/unidad.js) ════════════ */
+/* v5.15: el gasto del tanqueo se ve al instante en «Mi día» y en la caja; el servidor lo crea con el mismo id. */
+function movLocal(m){ var mov = Object.assign({}, m, {usuario_id:S.yo.id, usuario:S.yo.legado||String(S.yo.nombre).toLowerCase(), estado:'activo', _local:true}); return tx('movs','readwrite',function(s){ s.put(mov); }).then(cargarLocal); }
+function quitarMovLocal(uuid){ return tx('movs','readwrite',function(s){ s.delete(uuid); }).then(cargarLocal).then(function(){ refrescarVista(); }); }
 function encolarOp(op){
   op.op_id = op.op_id || uuid(); op.creado = Date.now(); op.estado = 'pendiente';
   return tx('outbox','readwrite',function(s){ s.put(op); }).then(cargarLocal).then(function(){ pintarSenal(); sincronizar(); });
 }
 var UNI = window.VAUnidad({ S:S, api:api, esc:esc, ico:ico, toast:toast, $:$, abrirHoja:abrirHoja, hoja:function(){ return hoja; }, ir:ir, kvGet:kvGet, kvSet:kvSet, uuid:uuid,
   ahoraLima:ahoraLima, hoyLima:hoyLima, fechaCorta:fechaCorta, horaDe:horaDe, fechaLarga:fechaLarga, esMando:esMando, comprimirFoto:comprimirFoto, botonesHoja:botonesHoja,
-  recordarVista:recordarVista, soles:soles, encolarOp:encolarOp, cargarSheetJS:cargarSheetJS, notificar:notificarSistema });
-function etiquetaOp(o){ return o.tipo==='chk.crear' ? 'Checklist '+(o.datos.tipo==='post'?'post-ruta':'pre-ruta')+' · '+Number(o.datos.km||0).toLocaleString('es-PE')+' km' : nombreCat(o.datos)+' · '+soles(o.datos.monto); }
+  recordarVista:recordarVista, soles:soles, encolarOp:encolarOp, cargarSheetJS:cargarSheetJS, notificar:notificarSistema,
+  cuentaSugerida:function(medio){ return cuentaSugerida(medio); }, movLocal:movLocal, quitarMovLocal:quitarMovLocal });
+function etiquetaOp(o){ if(o.tipo==='tanq.crear') return 'Tanqueo · '+o.datos.galones+' gal · '+soles(o.datos.monto)+' · '+Number(o.datos.km||0).toLocaleString('es-PE')+' km';
+  return o.tipo==='chk.crear' ? 'Checklist '+(o.datos.tipo==='post'?'post-ruta':'pre-ruta')+' · '+Number(o.datos.km||0).toLocaleString('es-PE')+' km' : nombreCat(o.datos)+' · '+soles(o.datos.monto); }
 
 /* ════════════ Sincronización ════════════ */
 function cargarLocal(){
@@ -144,7 +149,7 @@ function sincronizar(forzarTodo){
     var desde = forzarTodo ? 0 : (cur||0);
     // Un checklist con fotos viaja solo: así ninguna petición pasa el límite de tiempo del servidor.
     var pend0 = S.outbox.filter(function(o){ return o.estado==='pendiente'; });
-    var pesada = function(o){ return o.tipo==='chk.crear' && o.datos && o.datos.fotos && Object.keys(o.datos.fotos).length; };
+    var pesada = function(o){ return (o.tipo==='chk.crear' && o.datos && o.datos.fotos && Object.keys(o.datos.fotos).length) || (o.tipo==='tanq.crear' && o.datos && (o.datos.foto_tablero || o.datos.foto_boleta)); };
     var pend = pend0.length && pesada(pend0[0]) ? [pend0[0]] : pend0.filter(function(o){ return !pesada(o); }).slice(0,50);
     quedan = pend0.length - pend.length;
     var req = pend.length ? api('/api/sync?desde='+desde, {method:'POST', body:{ops:pend.map(function(o){ return {op_id:o.op_id,tipo:o.tipo,datos:o.datos}; })}}) : api('/api/sync?desde='+desde);
@@ -488,9 +493,9 @@ function vRegistrar(){
   h += '<div class="campo"><label for="desc">Detalle <small style="font-weight:500;color:var(--muted)">(opcional)</small></label><input id="desc" maxlength="200" autocomplete="off"></div>';
   h += '<div class="campo"><label for="rfo">Comprobante <small style="font-weight:500;color:var(--muted)">(boleta, ticket de peaje o captura de Yape)</small></label><input id="rfo" type="file" accept="image/*,application/pdf" capture="environment"></div><img id="rpr" class="previa'+(S.fotoReg&&S.fotoReg.mime!=='application/pdf'?'':' oculto')+'" alt="Vista previa del comprobante"'+(S.fotoReg&&S.fotoReg.mime!=='application/pdf'?' src="data:'+S.fotoReg.mime+';base64,'+S.fotoReg.data+'"':'')+'>';
   h += '<button type="button" class="btn ancho" id="registrar" style="margin-top:20px" disabled></button></div>';
-  if(!esMando(S.yo)) h = h.replace('</div><div class="card">', '</div>'+UNI.bannerOperador()+'<div class="card">');
+  if(!esMando(S.yo)) h = h.replace('</div><div class="card">', '</div>'+UNI.bannerOperador()+UNI.botonTanqueo()+'<div class="card" style="margin-top:12px">');
   $('vista').innerHTML = h;
-  if(!esMando(S.yo)) UNI.enlazarBanner();
+  if(!esMando(S.yo)){ UNI.enlazarBanner(); $('vista').querySelectorAll('[data-tanquear]').forEach(function(b){ b.onclick = UNI.empezarTanqueo; }); }
   var v = $('vista');
   v.querySelectorAll('[data-tipo]').forEach(function(b){ b.onclick=function(){ S.tipo=b.dataset.tipo; S.cat_sel=null; vRegistrar(); }; });
   v.querySelectorAll('[data-cat]').forEach(function(b){ b.onclick=function(){ S.cat_sel=b.dataset.cat; v.querySelectorAll('[data-cat]').forEach(function(x){ x.setAttribute('aria-pressed', x===b); }); }; });
@@ -1078,7 +1083,7 @@ function revisionCot(c, OP){
   return h;
 }
 var COT_PAR = [
-  ['Combustible', [['precio_galon','Precio del diésel','S/ por galón · cámbialo cuando suba o baje'],['rendimiento_km_gal','Rendimiento de la Hiace','km por galón']]],
+  ['Combustible', [['precio_galon','Precio del diésel','S/ por galón · cámbialo cuando suba o baje'],['rend_auto','Rendimiento real automático','switch','Con 3 tanques llenos medidos en la bitácora de tanqueo, se cotiza con el rendimiento real de la van. Apagado: el valor fijo de abajo.'],['rendimiento_km_gal','Rendimiento de la Hiace','km por galón · valor fijo · tablero 7.6 km/L × 3.785 = 28.8']]],
   ['Conductor', [['conductor_km','Pago al conductor','S/ por km · hoy S/ 120 ÷ 372 km = 0.3226'],['comida_desayuno','Desayuno del conductor','S/ por comida'],['comida_almuerzo','Almuerzo del conductor','S/ por comida'],['comida_cena','Cena del conductor','S/ por comida'],['viatico_dia','Alimentación sin horario','S/ por día · cuando el viaje no tiene hora de salida y regreso'],['hospedaje_noche','Hospedaje','S/ por noche fuera']]],
   ['Van', [['cochera_noche','Cochera','S/ por noche fuera'],['desgaste_km','Desgaste (llantas, aceite)','S/ por km'],['emergencia','Fondo de emergencia','S/ por viaje · parchado de llanta'],['velocidad_promedio','Velocidad real promedio','km/h · 186 km en 6 h = 31']]],
   ['Espera (taxi y transporte privado)', [['espera_hora','Costo por hora incluida','S/ · va dentro del precio con margen; el cliente no la ve aparte'],['espera_larga_desde_h','Espera larga desde','horas · desde ahí la van está parada'],['espera_larga_hora','Costo por hora de espera larga','S/ · 0 = igual a la tarifa normal'],['tolerancia_min','Tolerancia sin costo','minutos · si no hay horas incluidas'],['espera_extra_hora','Hora adicional','S/ que paga el cliente, sin margen · hoy 10']]],
@@ -1091,8 +1096,11 @@ var COT_PAR = [
 function cotParametros(){
   var P = S.cotP, h = '<h2 id="hoja-t">Parámetros del cotizador</h2><p class="desc">Costos fijos que casi no cambian. Modifícalos solo cuando la situación lo amerite: alza del combustible, nuevo pago al conductor, etc. Cada cambio queda registrado.</p>';
   COT_PAR.forEach(function(g){ h += '<span class="etq" style="margin-top:18px">'+g[0]+'</span>'+g[1].map(function(x){ var s = P.sugeridos[x[0]], guardado = P.parametros._guardados.indexOf(x[0])>=0;
-    if(x[2]==='switch') return '<label class="campo interruptor-p"><input type="checkbox" id="pp_'+x[0]+'"'+(Number(P.parametros[x[0]])===1?' checked':'')+'><span><b>'+x[1]+' activos</b><small>El cliente puede sumar extras (WiFi, refrigerio…) al precio desde su enlace. Apagado: solo el precio Estándar.</small></span></label>';
-    return '<div class="campo"><label for="pp_'+x[0]+'">'+x[1]+' <small style="font-weight:500;color:var(--muted)">('+x[2]+')'+(guardado?'':' · valor inicial')+'</small></label><input id="pp_'+x[0]+'" inputmode="decimal" class="num" value="'+esc(P.parametros[x[0]])+'">'+
+    if(x[2]==='switch') return '<label class="campo interruptor-p"><input type="checkbox" id="pp_'+x[0]+'"'+(Number(P.parametros[x[0]])===1?' checked':'')+'><span><b>'+(x[3]?x[1]:x[1]+' activos')+'</b><small>'+(x[3]||'El cliente puede sumar extras (WiFi, refrigerio…) al precio desde su enlace. Apagado: solo el precio Estándar.')+'</small></span></label>';
+    // v5.15: si se cotiza con el rendimiento real, el campo muestra el valor fijo guardado y se avisa cuál se está usando.
+    var RD = P.parametros._rend, valor = x[0]==='rendimiento_km_gal' && RD ? RD.manual : P.parametros[x[0]];
+    var notaR = x[0]==='rendimiento_km_gal' && RD ? '<p class="ayuda" style="margin-top:6px">'+(RD.aplicado ? '<b>Hoy se cotiza con '+P.parametros.rendimiento_km_gal+' km/gal</b>: rendimiento real de '+RD.real.n+' tanques llenos ('+Number(RD.real.km).toLocaleString('es-PE')+' km). Este valor fijo se usa solo si apagas el automático.' : RD.real ? 'Bitácora: '+RD.real.kmgal+' km/gal con '+RD.real.n+' tanque(s); desde '+RD.minimo+' tanques se usa solo.' : 'Aún no hay tanques medidos en la bitácora: se usa este valor.')+'</p>' : '';
+    return '<div class="campo"><label for="pp_'+x[0]+'">'+x[1]+' <small style="font-weight:500;color:var(--muted)">('+x[2]+')'+(guardado?'':' · valor inicial')+'</small></label><input id="pp_'+x[0]+'" inputmode="decimal" class="num" value="'+esc(valor)+'">'+notaR+
       (s?'<button type="button" class="btn-mini" data-sug="'+x[0]+'" data-val="'+s.valor+'" style="margin-top:6px">Usar dato real: '+s.valor+' · '+esc(s.base)+'</button>':'')+'</div>'; }).join(''); });
   // Extras opcionales: lista editable. El precio es lo que paga cada pasajero; el costo, lo que te cuesta a ti.
   var EX = (P.extras||[]).map(function(e){ return Object.assign({}, e); }), UN = P.unidades_extra || {viaje:'por viaje', dia:'por día', tramo:'por tramo'};
@@ -1521,7 +1529,8 @@ function hojaCola(){
   hoja.querySelectorAll('[data-de]').forEach(function(b){ b.onclick=function(){
     var o=S.outbox.filter(function(x){return x.op_id===b.dataset.de;})[0];
     if(!confirm('¿Descartar '+etiquetaOp(o)+'? No se podrá recuperar.')) return;
-    tx('outbox','readwrite',function(s){ s.delete(o.op_id); }).then(function(){ return o.datos.uuid ? tx('movs','readwrite',function(s){ s.delete(o.datos.uuid); }) : null; }).then(cargarLocal).then(function(){ hoja.close(); refrescarVista(); toast('Registro descartado'); });
+    var movId = o.datos.uuid || (o.tipo==='tanq.crear' && o.datos.mov_uuid);
+    tx('outbox','readwrite',function(s){ s.delete(o.op_id); }).then(function(){ return movId ? tx('movs','readwrite',function(s){ s.delete(movId); }) : null; }).then(cargarLocal).then(function(){ hoja.close(); refrescarVista(); toast('Registro descartado'); });
   }; });
 }
 
@@ -1807,7 +1816,7 @@ var TICKET_FRASES = [
   'Cada viaje bien hecho trae al siguiente cliente. ¡Gracias por tu esfuerzo y tu paciencia en la ruta!',
   'La sierra exige experiencia y calma. Gracias por cuidar a la gente y a la van en cada curva.',
   'Puntualidad, buen trato y llegar con bien: eso es Villa Azul. ¡Gracias por representarnos así!'];
-var TICKET_RECORDAR = ['Checklist de la van antes de cada salida (entre 1 h y 30 min antes).','Anota el km al salir y al llegar, y los galones al cargar.','Toma foto a cada boleta: combustible, peajes y comidas.','Avisa por WhatsApp al llegar al punto de recojo.','Descansa antes de un viaje largo: nunca manejes con sueño.','En trocha: cinturón para todos y velocidad prudente.'];
+var TICKET_RECORDAR = ['Checklist de la van antes de cada salida (entre 1 h y 30 min antes).','Anota el km al salir y al llegar. Al cargar: tanque lleno, foto del tablero, «Registrar tanqueo» y reset del tablero.','Toma foto a cada boleta: combustible, peajes y comidas.','Avisa por WhatsApp al llegar al punto de recojo.','Descansa antes de un viaje largo: nunca manejes con sueño.','En trocha: cinturón para todos y velocidad prudente.'];
 /** Dibuja el ticket en un lienzo y lo devuelve como PNG. */
 function ticketPNG(t){
   var W = 440, S2 = 2, pad = 26, fam = getComputedStyle(document.body).fontFamily || 'system-ui, sans-serif';
